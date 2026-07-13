@@ -1,36 +1,135 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EarnProof Frontend
 
-## Getting Started
+EarnProof is an open-source, privacy-focused income and payment verification protocol built on Stellar.
 
-First, run the development server:
+This repository contains the Next.js web application for public education, proof verification, worker workflows, issuer workflows, admin workflows, and developer-facing setup pages.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Product Positioning
+
+EarnProof helps people prove financial facts without revealing more financial information than necessary.
+
+Primary tagline:
+
+```text
+Prove your income, not your entire financial history.
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The first implementation targets Stellar testnet and Freighter. The application should always make the active network visible and avoid implying that EarnProof provides credit decisions, legal identity verification, tax certification, or loan approval.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Current Scope
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Implemented:
 
-## Learn More
+- Next.js App Router application
+- TypeScript
+- Tailwind CSS
+- Public layout shell
+- Responsive public navigation
+- Footer
+- Landing page
+- How it works page
+- Privacy page
+- Developer page
+- Verification page shell
+- Issuer directory shell
+- Status page shell
+- Shared API client
+- Public environment configuration
 
-To learn more about Next.js, take a look at the following resources:
+Planned next:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Freighter wallet connection
+- Wallet challenge authentication flow
+- Worker dashboard
+- Payment discovery and classification
+- Proof creation wizard
+- Public verification result view
+- Proof revocation views
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Tech Stack
 
-## Deploy on Vercel
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- TanStack Query
+- React Hook Form
+- Zod
+- ESLint
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Repository Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```text
+app/
+  developers/
+  how-it-works/
+  issuers/
+  privacy/
+  status/
+  verify/
+components/
+  common/
+  layout/
+config/
+hooks/
+lib/
+  api/
+  validation/
+public/
+```
+
+## Local Setup
+
+```bash
+npm install
+cp .env.example .env.local
+npm run dev
+```
+
+Default local URL:
+
+```text
+http://localhost:3000
+```
+
+If port `3000` is already in use:
+
+```bash
+npm run dev -- --port 3001
+```
+
+## Environment Variables
+
+```env
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
+NEXT_PUBLIC_STELLAR_NETWORK=testnet
+NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE=Test SDF Network ; September 2015
+```
+
+No secret keys belong in this frontend repository or any public environment variable.
+
+## Validation
+
+```bash
+npm run lint
+npm run build
+```
+
+## Privacy and UX Requirements
+
+- Show Stellar testnet status on relevant screens.
+- Hide sensitive amounts by default.
+- Show a disclosure preview before proof creation.
+- Clearly distinguish valid, expired, revoked, invalid, and unverified issuer states.
+- Do not expose full wallet history on verification pages.
+- Do not put secret keys or signing material in client code.
+- Keep public verification views limited to intentionally disclosed claim data.
+
+## Related Repositories
+
+- `earnproof-backend`: API, payment indexing, proof generation, credential signing, and verification.
+- `earnproof-contracts`: Soroban issuer registry, proof commitment registry, revocation state, and protocol configuration.
+- `earnproof-sdk`: Future TypeScript SDK for integrations.
+- `earnproof-specification`: Future credential and verification standard.
+
