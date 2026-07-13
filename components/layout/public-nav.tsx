@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { NetworkBadge } from "@/components/common/network-badge";
@@ -21,7 +22,15 @@ export function PublicNav() {
   return (
     <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link className="text-lg font-semibold text-white" href="/">
+        <Link className="flex items-center gap-3 text-lg font-semibold text-white" href="/">
+          <Image
+            alt="EarnProof"
+            className="h-8 w-8"
+            height={32}
+            priority
+            src="/logo.svg"
+            width={32}
+          />
           EarnProof
         </Link>
 

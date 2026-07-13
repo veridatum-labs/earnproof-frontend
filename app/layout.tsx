@@ -16,6 +16,11 @@ export const metadata: Metadata = {
   title: "EarnProof",
   description:
     "Privacy-preserving income and payment verification on Stellar testnet.",
+  icons: {
+    icon: "/logo.svg",
+    shortcut: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export default function RootLayout({
