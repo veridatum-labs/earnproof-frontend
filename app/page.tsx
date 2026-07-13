@@ -1,4 +1,5 @@
 import { NetworkBadge } from "@/components/common/network-badge";
+import { PublicShell } from "@/components/layout/public-shell";
 
 const flowSteps = [
   "Connect Freighter on Stellar testnet",
@@ -9,7 +10,7 @@ const flowSteps = [
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <PublicShell>
       <section className="mx-auto flex min-h-screen w-full max-w-6xl flex-col justify-center px-6 py-16">
         <NetworkBadge />
 
@@ -40,6 +41,6 @@ export default function Home() {
           ))}
         </div>
       </section>
-    </main>
+    </PublicShell>
   );
 }
