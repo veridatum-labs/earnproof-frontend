@@ -115,8 +115,8 @@ export function ContactForm() {
     );
     const mailtoLink = `mailto:contact@earnproof.com?subject=${subject}&body=${body}`;
 
-    // Open user's default email client
-    window.location.href = mailtoLink;
+    // Open user's default email client in the current browsing context
+    window.open(mailtoLink, "_self");
   };
 
   return (
@@ -288,7 +288,7 @@ export function ContactForm() {
             How it works
           </p>
           <p className="mt-1.5 text-sm leading-5 text-slate-300">
-            Clicking "Send message" opens your default email client with a pre-filled message to contact@earnproof.com. 
+            Clicking &quot;Send message&quot; opens your default email client with a pre-filled message to contact@earnproof.com.
             You can review and edit before sending. No message content is stored or transmitted by this website.
           </p>
         </div>

@@ -1,21 +1,32 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
+import type { ComponentProps } from "react";
 import ContactPage from "./page";
 
 // Mock Next.js Image component
 jest.mock("next/image", () => ({
   __esModule: true,
-  default: (props: any) => {
+  default: (props: ComponentProps<"img">) => {
     // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
     return <img {...props} />;
   },
 }));
 
+jest.mock("next/navigation", () => ({
+  usePathname: () => "/contact",
+}));
+
 describe("ContactPage", () => {
+  const windowOpenSpy = jest
+    .spyOn(window, "open")
+    .mockImplementation(() => null);
+
   beforeEach(() => {
-    // Mock window.location.href
-    delete (window as any).location;
-    window.location = { href: "" } as any;
+    windowOpenSpy.mockClear();
+  });
+
+  afterAll(() => {
+    windowOpenSpy.mockRestore();
   });
 
   it("renders the contact page with heading and form", () => {
@@ -58,7 +69,7 @@ describe("ContactPage", () => {
     fireEvent.blur(emailInput);
 
     const submitButton = screen.getByRole("button", { name: /send message/i });
-    fireEvent.click(submitButton);
+    fireEvent.submit(submitButton.closest("form") as HTMLFormElement);
 
     await waitFor(() => {
       expect(
@@ -182,10 +193,14 @@ describe("ContactPage", () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(window.location.href).toContain("mailto:contact@earnproof.com");
-      expect(window.location.href).toContain("TECHNICAL");
-      expect(window.location.href).toContain("John%20Doe");
+      expect(windowOpenSpy).toHaveBeenCalledTimes(1);
     });
+
+    const mailtoLink = String(windowOpenSpy.mock.calls[0][0]);
+    expect(mailtoLink).toContain("mailto:contact@earnproof.com");
+    expect(mailtoLink).toContain("TECHNICAL");
+    expect(mailtoLink).toContain("John%20Doe");
+    expect(windowOpenSpy).toHaveBeenCalledWith(mailtoLink, "_self");
   });
 
   it("shows how it works information banner", () => {
