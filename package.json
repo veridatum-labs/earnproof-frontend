@@ -20,7 +20,10 @@
     "test:e2e:a11y:report": "playwright show-report",
     "test:e2e:visual": "playwright test --config=playwright.config.ts",
     "test:e2e:visual:update": "playwright test --config=playwright.config.ts --update-snapshots",
-    "perf:check": "node scripts/performance/check-budgets.js"
+    "perf:check": "node scripts/performance/check-budgets.js",
+    "bundle:analyze": "node scripts/bundle/analyze.js --build",
+    "bundle:check": "node scripts/bundle/analyze.js",
+    "bundle:baseline": "node scripts/bundle/analyze.js --update-baseline"
   },
   "dependencies": {
     "@stellar/freighter-api": "^6.0.1",
