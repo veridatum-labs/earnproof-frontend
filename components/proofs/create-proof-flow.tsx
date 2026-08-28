@@ -273,8 +273,15 @@ export function CreateProofFlow() {
           </p>
         </div>
         {user ? (
-          <div className="grid gap-3 text-sm text-slate-300">
-            <p className="break-words">
+          <div className="grid min-w-0 gap-3 text-sm text-slate-300">
+            {/*
+              `break-words` (overflow-wrap) lets a long word wrap but does not
+              reduce the element's min-content width, so a 56-character wallet
+              address still forces the whole page ~400px wide - horizontal
+              scrolling at 320 CSS px / 400% zoom. `break-all` (word-break)
+              does reduce it, which is what an opaque identifier needs.
+            */}
+            <p className="break-all">
               Connected as <span className="text-cyan-200">{user.walletAddress}</span>
             </p>
             <button
@@ -497,7 +504,9 @@ function PaymentRow({
         <p className="font-medium text-white">
           {payment.assetCode} incoming payment
         </p>
-        <p className="mt-1 break-words text-xs text-slate-400">
+        {/* Same reason as the wallet address above: an opaque hash needs
+            word-break, not overflow-wrap, to stop forcing a minimum width. */}
+        <p className="mt-1 break-all text-xs text-slate-400">
           {payment.stellarTransactionHash}
         </p>
         <p className="mt-1 text-xs text-slate-400">
@@ -534,10 +543,14 @@ function Field({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="grid gap-2 text-sm font-medium text-slate-200">
+    // `min-w-0` on the grid item and `w-full` on the control: without them
+    // the input keeps its intrinsic width (a `date` input is wide by
+    // default) and pushes past a narrow viewport, which forces horizontal
+    // scrolling at 320 CSS px / 400% zoom.
+    <label className="grid min-w-0 gap-2 text-sm font-medium text-slate-200">
       {label}
       <input
-        className="h-11 rounded-md border border-white/10 bg-slate-900 px-4 text-white"
+        className="h-11 w-full rounded-md border border-white/10 bg-slate-900 px-4 text-white"
         onChange={(event) => onChange(event.target.value)}
         type={type}
         value={value}
