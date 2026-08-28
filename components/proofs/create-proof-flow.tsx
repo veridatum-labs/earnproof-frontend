@@ -6,6 +6,7 @@ import { ArtifactExport } from "@/components/proofs/artifact-export";
 import { appConfig } from "@/config/app";
 import { apiClient, bearer } from "@/lib/api/client";
 import { buildCredentialExport, buildVerificationLinkExport } from "@/lib/credentials/export";
+import { formatDateTime } from "@/lib/i18n";
 
 type SessionUser = {
   id: string;
@@ -501,7 +502,7 @@ function PaymentRow({
           {payment.stellarTransactionHash}
         </p>
         <p className="mt-1 text-xs text-slate-400">
-          {new Date(payment.occurredAt).toLocaleString()}
+          {formatDateTime(payment.occurredAt)}
         </p>
       </div>
       <select

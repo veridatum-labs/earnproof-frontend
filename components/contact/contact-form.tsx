@@ -2,6 +2,17 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { defineMessages, formatMessage } from "@/lib/i18n";
+
+/**
+ * The subject line and body of the support email are user-facing text, so
+ * they are whole owned messages with placeholders rather than sentences
+ * assembled from fragments at the call site.
+ */
+const messages = defineMessages("contact", {
+  mailSubject: "[{category}] Contact from {name}",
+  mailBody: "Name: {name}\nEmail: {email}\nCategory: {category}\n\nMessage:\n{message}",
+});
 
 type ContactFormData = {
   name: string;
@@ -106,12 +117,20 @@ export function ContactForm() {
       return;
     }
 
-    // Construct mailto link with form data
+    // Construct mailto link from whole owned messages
     const subject = encodeURIComponent(
-      `[${formData.category.toUpperCase()}] Contact from ${formData.name}`
+      formatMessage(messages.mailSubject, {
+        category: formData.category.toUpperCase(),
+        name: formData.name,
+      }),
     );
     const body = encodeURIComponent(
-      `Name: ${formData.name}\nEmail: ${formData.email}\nCategory: ${formData.category}\n\nMessage:\n${formData.message}`
+      formatMessage(messages.mailBody, {
+        name: formData.name,
+        email: formData.email,
+        category: formData.category,
+        message: formData.message,
+      }),
     );
     const mailtoLink = `mailto:contact@earnproof.com?subject=${subject}&body=${body}`;
 
