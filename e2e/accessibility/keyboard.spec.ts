@@ -33,6 +33,33 @@ test.describe("skip link", () => {
   });
 });
 
+test.describe("mobile navigation", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("supports keyboard opening, trapped tab order, Escape, and focus restoration", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const trigger = page.getByRole("button", { name: "Toggle main navigation" });
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+
+    const close = page.getByRole("button", { name: "Close main navigation" });
+    await expect(close).toBeFocused();
+    await expect(trigger).toHaveAttribute("aria-expanded", "true");
+
+    await page.keyboard.press("Shift+Tab");
+    await expect(page.getByRole("link", { name: "Settings" })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(close).toBeFocused();
+
+    await page.keyboard.press("Escape");
+    await expect(trigger).toBeFocused();
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  });
+});
+
 test.describe("FAQ accordion disclosure", () => {
   test("Enter toggles a question open and focus stays on the trigger", async ({ page }) => {
     await page.goto("/faq");

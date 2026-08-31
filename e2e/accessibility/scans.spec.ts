@@ -28,3 +28,16 @@ for (const route of scannedRoutes) {
     await runAxeScan(page, testInfo, { routeName: route.name });
   });
 }
+
+test("open mobile navigation has no critical/serious axe violations", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Toggle main navigation" }).click();
+
+  await runAxeScan(page, testInfo, {
+    routeName: "mobile-navigation-open",
+    include: ['[role="dialog"]'],
+  });
+});
