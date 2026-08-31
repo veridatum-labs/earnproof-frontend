@@ -14,8 +14,17 @@ function ProofTypeCard({ proofType }: { proofType: ProofType }) {
     <article className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="min-w-0 flex-1">
-          <h3 className="text-xl font-semibold leading-7 text-white">{proofType.name}</h3>
-          <p className="text-sm text-slate-300 mt-1">{proofType.category}</p>
+          {isAvailable ? (
+            <Link href={`/proof-types/${proofType.id}`} className="block">
+              <h3 className="text-xl font-semibold leading-7 text-white transition hover:text-cyan-200">{proofType.name}</h3>
+              <p className="text-sm text-slate-300 mt-1">{proofType.category}</p>
+            </Link>
+          ) : (
+            <>
+              <h3 className="text-xl font-semibold leading-7 text-white">{proofType.name}</h3>
+              <p className="text-sm text-slate-300 mt-1">{proofType.category}</p>
+            </>
+          )}
         </div>
         <StatusBadge tone={isAvailable ? "success" : "warning"}>
           {proofType.status}
