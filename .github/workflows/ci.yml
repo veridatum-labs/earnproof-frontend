@@ -18,6 +18,9 @@ jobs:
       - run: npm run lint
       - run: npm run test -- --runInBand
       - run: npm run test:contracts
+      - run: npm run audit:browser-apis
+      - run: npm run validate:production
+      - run: npm run check:doc-freshness
       - run: npm run build
       # Bundle composition gate (issue #82). Runs its own production build
       # with ANALYZE_BUNDLE=1 so Turbopack emits the client source maps the
