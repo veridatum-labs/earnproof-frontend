@@ -1,6 +1,16 @@
 import { appConfig } from "@/config/app";
+import { categorizeError, reportClientError } from "@/lib/telemetry";
 
 const DEFAULT_TIMEOUT_MS = 10_000; // 10 seconds
+
+/**
+ * The current route, for telemetry only. `toRoutePattern` reduces this to a
+ * known static route (or "/other") and drops the query string entirely, so
+ * no proof ID or wallet address can travel out through it.
+ */
+function currentPathname(): string {
+  return typeof window === "undefined" ? "/" : window.location.pathname;
+}
 
 type ApiClientOptions = RequestInit & {
   path: string;
@@ -121,6 +131,32 @@ export async function apiClient<TResponse>({
   timeoutMs = DEFAULT_TIMEOUT_MS,
   ...init
 }: ApiClientOptions): Promise<TResponse> {
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(
+      `${appConfig.apiUrl}${path}`,
+      {
+        ...init,
+        timeoutMs,
+        headers: {
+          "Content-Type": "application/json",
+          ...headers,
+        },
+  const response = await fetch(`${appConfig.apiUrl}${path}`, {
+    ...init,
+    // Every response through this client is either wallet-authenticated,
+    // payment/proof data, or a verification lookup — none of it is safe
+    // for Next.js's fetch data cache, a browser HTTP cache, or a shared
+    // intermediary cache to store or replay. `cache: "no-store"` opts the
+    // request itself out of Next's fetch cache; the explicit request
+    // header is a defense-in-depth signal for any caching proxy sitting in
+    // front of the API that respects request Cache-Control. See
+    // docs/cache-policy.md.
+    cache: "no-store",
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+      ...headers,
   const response = await fetchWithTimeout(
     `${appConfig.apiUrl}${path}`,
     {
@@ -130,11 +166,27 @@ export async function apiClient<TResponse>({
         "Content-Type": "application/json",
         ...headers,
       },
-    },
-  );
+    );
+  } catch (error) {
+    // Diagnostics only: `reportClientError` never throws and returns
+    // synchronously, so the caller still sees the original failure,
+    // unchanged and at the same moment it would have without telemetry.
+    reportClientError({
+      error,
+      category: categorizeError(error),
+      pathname: currentPathname(),
+    });
+    throw error;
+  }
 
   if (!response.ok) {
-    throw new Error(`EarnProof API request failed with ${response.status}`);
+    const error = new Error(`EarnProof API request failed with ${response.status}`);
+    reportClientError({
+      error,
+      category: categorizeError(error, response),
+      pathname: currentPathname(),
+    });
+    throw error;
   }
 
   return response.json() as Promise<TResponse>;

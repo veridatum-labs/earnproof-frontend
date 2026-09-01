@@ -6,8 +6,18 @@ import {
   VerificationPanel,
   VerifyProofResponse,
 } from "@/components/verification/verification-panel";
+import { VerifyResultSkeleton } from "@/components/common/skeleton/verify-result-skeleton";
+
+import { defineMessages, formatMessage, formatNumber } from "@/lib/i18n";
 
 const MAX_FILE_BYTES = 32 * 1024; // 32 KB
+
+const messages = defineMessages("verifyCredential", {
+  // A whole sentence with a placeholder: the size can move anywhere a
+  // translation needs it, and the number itself is locale-formatted.
+  fileTooLarge:
+    "File exceeds the 32 KB limit ({size} KB). Paste the credential JSON instead.",
+});
 
 export function VerifyCredentialForm() {
   const [jsonInput, setJsonInput] = useState("");
@@ -28,7 +38,11 @@ export function VerifyCredentialForm() {
     if (!file) return;
 
     if (file.size > MAX_FILE_BYTES) {
-      setError(`File exceeds the 32 KB limit (${(file.size / 1024).toFixed(1)} KB). Paste the credential JSON instead.`);
+      setError(
+        formatMessage(messages.fileTooLarge, {
+          size: formatNumber(file.size / 1024, undefined, { maximumFractionDigits: 1 }),
+        }),
+      );
       // Reset so the same file can be reselected after fixing
       event.target.value = "";
       return;
@@ -149,14 +163,14 @@ export function VerifyCredentialForm() {
         <label className="grid gap-[7px] text-xs font-semibold text-slate-300">
           Network
           <input
-            className="h-[46px] rounded-lg border border-white/15 bg-transparent px-3 text-sm font-normal text-slate-500"
+            className="h-[46px] rounded-lg border border-white/15 bg-transparent px-3 text-sm font-normal text-slate-400"
             disabled
             value="Stellar Testnet"
           />
         </label>
 
         {/* Privacy info box — same copy and style as VerifyProofForm */}
-        <div className="rounded-lg border border-cyan-300/30 bg-cyan-300/10 p-3 text-sm leading-5">
+        <div className="rounded-lg border border-cyan-300/50 bg-cyan-300/10 p-3 text-sm leading-5">
           <p className="font-medium text-cyan-200">Privacy protected</p>
           <p className="mt-1.5 text-slate-300">
             Only the fields shown in the disclosure summary can be shared.
@@ -186,7 +200,7 @@ export function VerifyCredentialForm() {
         </button>
       </form>
 
-      <VerificationPanel result={result} />
+      {isLoading ? <VerifyResultSkeleton /> : <VerificationPanel result={result} />}
     </div>
   );
 }

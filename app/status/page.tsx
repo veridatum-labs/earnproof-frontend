@@ -3,7 +3,49 @@
 import { DataPanel, MetricGrid, StatusBadge, pageContainer } from "@/components/common/production-ui";
 import { PageHeading } from "@/components/common/page-heading";
 import { PublicShell } from "@/components/layout/public-shell";
+import { StatusCheckSkeleton } from "@/components/common/skeleton/status-check-skeleton";
 import { useHealthCheck } from "@/lib/health-check";
+import { defineMessages, formatRelativeTime, formatTime } from "@/lib/i18n";
+
+/**
+ * Every user-facing string on this route, owned in one place under a stable
+ * namespace. Punctuation that belongs to a label (the colon after "Last
+ * checked") lives in the message, because its form and spacing are
+ * locale-specific - French, for instance, sets a space before the colon.
+ */
+const messages = defineMessages("status", {
+  title: "System status",
+  description:
+    "Live health for the EarnProof API, indexer, Stellar providers, contracts, and webhooks.",
+  retry: "Retry",
+  timeout: "Timeout",
+  unreachable: "Unreachable",
+  servicesOnline: "Services online",
+  openIncidents: "Open incidents",
+  apiStatus: "API status",
+  up: "Up",
+  degraded: "Degraded",
+  lastCheckedLabel: "Last checked:",
+  apiTimestampLabel: "API timestamp:",
+  never: "Never",
+  justNow: "Just now",
+  lastSeen: "Last seen",
+  unknown: "Unknown",
+  active: "Active",
+  errored: "Error",
+  serviceApi: "EarnProof API",
+  serviceDatabase: "Database",
+  serviceIndexer: "Stellar indexer",
+  serviceContracts: "Smart contracts",
+  serviceWebhooks: "Webhook delivery",
+  regionGlobal: "Global",
+  regionTestnet: "Testnet",
+  columnService: "Service",
+  columnRegion: "Region",
+  columnChecked: "Checked",
+  columnStatus: "Status",
+  searchPlaceholder: "Search services",
+});
 
 type StatusRow = {
   primary: string;
@@ -22,8 +64,8 @@ function deriveStatusRow(
     return {
       primary: label,
       secondary: region,
-      tertiary: "Unknown",
-      status: "Unknown",
+      tertiary: messages.unknown,
+      status: messages.unknown,
       tone: "warning",
     };
   }
@@ -31,19 +73,20 @@ function deriveStatusRow(
   return {
     primary: label,
     secondary: region,
-    tertiary: "Just now",
-    status: ok ? "Active" : "Error",
+    tertiary: messages.justNow,
+    status: ok ? messages.active : messages.errored,
     tone: ok ? undefined : "warning",
   };
 }
 
+/**
+ * Relative time comes from `Intl.RelativeTimeFormat` rather than a
+ * hand-assembled `${n}m ago`: the unit word, its plural form and the word
+ * order are all locale-specific, and none of them can be expressed by
+ * concatenating a number with a suffix.
+ */
 function formatRelative(date: Date | null): string {
-  if (!date) return "Never";
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 5) return "Just now";
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}m ago`;
+  return date ? formatRelativeTime(date) : messages.never;
 }
 
 export default function StatusPage() {
@@ -53,8 +96,11 @@ export default function StatusPage() {
     error,
     lastChecked,
     lastUpdated,
+    isDataLive,
     refetch,
   } = useHealthCheck();
+
+  const showingCachedData = data !== null && !isDataLive;
 
   const isOperational =
     data !== null &&
@@ -63,38 +109,38 @@ export default function StatusPage() {
     !error;
 
   const httpStatus = deriveStatusRow(
-    "EarnProof API",
-    "Global",
+    messages.serviceApi,
+    messages.regionGlobal,
     data?.status ?? null,
   );
 
   const dbStatus = deriveStatusRow(
-    "Database",
-    "Global",
+    messages.serviceDatabase,
+    messages.regionGlobal,
     data?.database ?? null,
   );
 
   const stellarStatus: StatusRow = {
-    primary: "Stellar indexer",
-    secondary: "Testnet",
-    tertiary: data?.timestamp ? "Last seen" : "Unknown",
-    status: data?.timestamp ? "Active" : "Unknown",
+    primary: messages.serviceIndexer,
+    secondary: messages.regionTestnet,
+    tertiary: data?.timestamp ? messages.lastSeen : messages.unknown,
+    status: data?.timestamp ? messages.active : messages.unknown,
     tone: data?.timestamp ? undefined : "warning",
   };
 
   const contractsStatus: StatusRow = {
-    primary: "Smart contracts",
-    secondary: "Testnet",
-    tertiary: "Unknown",
-    status: "Unknown",
+    primary: messages.serviceContracts,
+    secondary: messages.regionTestnet,
+    tertiary: messages.unknown,
+    status: messages.unknown,
     tone: "warning",
   };
 
   const webhooksStatus: StatusRow = {
-    primary: "Webhook delivery",
-    secondary: "Global",
-    tertiary: "Unknown",
-    status: "Unknown",
+    primary: messages.serviceWebhooks,
+    secondary: messages.regionGlobal,
+    tertiary: messages.unknown,
+    status: messages.unknown,
     tone: "warning",
   };
 
@@ -107,7 +153,7 @@ export default function StatusPage() {
   ];
 
   const activeCount = allRows.filter(
-    (r) => r.status === "Active",
+    (r) => r.status === messages.active,
   ).length;
   const totalCount = allRows.length;
 
@@ -118,15 +164,12 @@ export default function StatusPage() {
   return (
     <PublicShell>
       <div className={pageContainer}>
-        <PageHeading
-          title="System status"
-          description="Live health for the EarnProof API, indexer, Stellar providers, contracts, and webhooks."
-        />
+        <PageHeading title={messages.title} description={messages.description} />
 
         {error && (
           <div className="flex items-center gap-3 rounded-lg border border-amber-300/30 bg-amber-300/10 px-4 py-3">
             <StatusBadge tone="warning">
-              {error === "Request timed out" ? "Timeout" : "Unreachable"}
+              {error === "Request timed out" ? messages.timeout : messages.unreachable}
             </StatusBadge>
             <span className="text-sm text-slate-300">{error}</span>
             <button
@@ -134,40 +177,94 @@ export default function StatusPage() {
               onClick={refetch}
               type="button"
             >
-              Retry
+              {messages.retry}
             </button>
+          </div>
+        )}
+
+        {showingCachedData && (
+          <div
+            aria-live="polite"
+            className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300"
+          >
+            Showing the last known status as of{" "}
+            {lastUpdated ? lastUpdated.toLocaleTimeString() : "an earlier check"}.
+            The connection could not be refreshed just now — this is not
+            necessarily the current state.
           </div>
         )}
 
         <MetricGrid
           items={[
-            { value: metricValue, label: "Services online" },
+            { value: metricValue, label: messages.servicesOnline },
             {
               value: isOperational ? "0" : data ? "1" : "...",
-              label: "Open incidents",
+              label: messages.openIncidents,
             },
             {
-              value: isOperational ? "Up" : data ? "Degraded" : "...",
-              label: "API status",
+              value: isOperational ? messages.up : data ? messages.degraded : "...",
+              label: messages.apiStatus,
             },
           ]}
         />
 
         <div className="flex items-center gap-4 text-xs text-slate-400">
-          <span>Last checked: {formatRelative(lastChecked)}</span>
+          <span>
+            {messages.lastCheckedLabel} {formatRelative(lastChecked)}
+          </span>
           {lastUpdated && (
             <span>
-              API timestamp:{" "}
-              {new Date(data?.timestamp ?? lastUpdated).toLocaleTimeString()}
+              {messages.apiTimestampLabel}{" "}
+              {formatTime(data?.timestamp ?? lastUpdated)}
             </span>
           )}
         </div>
 
         <DataPanel
-          headers={["Service", "Region", "Checked", "Status"]}
+          headers={[
+            messages.columnService,
+            messages.columnRegion,
+            messages.columnChecked,
+            messages.columnStatus,
+          ]}
           rows={allRows}
-          searchPlaceholder="Search services"
+          searchPlaceholder={messages.searchPlaceholder}
         />
+        {loading && !data ? (
+          <StatusCheckSkeleton rows={allRows.length} />
+        ) : (
+          <>
+            <MetricGrid
+              items={[
+                { value: metricValue, label: "Services online" },
+                {
+                  value: isOperational ? "0" : data ? "1" : "...",
+                  label: "Open incidents",
+                },
+                {
+                  value: isOperational ? "Up" : data ? "Degraded" : "...",
+                  label: "API status",
+                },
+              ]}
+            />
+
+            <div className="flex items-center gap-4 text-xs text-slate-400">
+              <span>Last checked: {formatRelative(lastChecked)}</span>
+              {lastUpdated && (
+                <span>
+                  API timestamp:{" "}
+                  {new Date(data?.timestamp ?? lastUpdated).toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+
+            <DataPanel
+              headers={["Service", "Region", "Checked", "Status"]}
+              rows={allRows}
+              searchPlaceholder="Search services"
+            />
+          </>
+        )}
       </div>
     </PublicShell>
   );

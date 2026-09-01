@@ -24,11 +24,12 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    // The performance budget scripts are plain Node CommonJS tooling that
-    // runs directly via `node scripts/performance/*.js` in CI, outside the
+    // The bundle and performance budget scripts are plain Node CommonJS tooling
+    // that run directly via `node scripts/<name>/*.js` in CI, outside the
     // Next.js bundler, so CommonJS `require`/`module.exports` is the
     // correct pattern here rather than an app-code smell.
     files: [
+      "scripts/bundle/**/*.js",
       "scripts/performance/**/*.js",
       "scripts/generate-api-types/**/*.js",
       "scripts/check-api-drift.js",
