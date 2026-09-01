@@ -1,0 +1,180 @@
+{
+  "budgetsHash": "dd0aa45de1793919a65fb190bcf92edc1460481f8c0dc5abd416d15607754c04",
+  "routes": {
+    "/": {
+      "clientJsBytes": 598746,
+      "owners": {
+        "next": 473172,
+        "next (polyfills)": 112594,
+        "[turbopack-runtime]": 9695,
+        "lib": 1806,
+        "components": 814,
+        "@swc/helpers": 665
+      }
+    },
+    "/about": {
+      "clientJsBytes": 598746,
+      "owners": {
+        "next": 473172,
+        "next (polyfills)": 112594,
+        "[turbopack-runtime]": 9695,
+        "lib": 1806,
+        "components": 814,
+        "@swc/helpers": 665
+      }
+    },
+    "/contact": {
+      "clientJsBytes": 605120,
+      "owners": {
+        "next": 473172,
+        "next (polyfills)": 112594,
+        "[turbopack-runtime]": 9695,
+        "components": 7188,
+        "lib": 1806,
+        "@swc/helpers": 665
+      }
+    },
+    "/developers": {
+      "clientJsBytes": 598746,
+      "owners": {
+        "next": 473172,
+        "next (polyfills)": 112594,
+        "[turbopack-runtime]": 9695,
+        "lib": 1806,
+        "components": 814,
+        "@swc/helpers": 665
+      }
+    },
+    "/faq": {
+      "clientJsBytes": 610129,
+      "owners": {
+        "next": 473172,
+        "next (polyfills)": 112594,
+        "[turbopack-runtime]": 9695,
+        "app": 5439,
+        "components": 4532,
+        "lib": 4032,
+        "@swc/helpers": 665
+      }
+    },
+    "/how-it-works": {
+      "clientJsBytes": 598746,
+      "owners": {
+        "next": 473172,
+        "next (polyfills)": 112594,
+        "[turbopack-runtime]": 9695,
+        "lib": 1806,
+        "components": 814,
+        "@swc/helpers": 665
+      }
+    },
+    "/issuers": {
+      "clientJsBytes": 598746,
+      "owners": {
+        "next": 473172,
+        "next (polyfills)": 112594,
+        "[turbopack-runtime]": 9695,
+        "lib": 1806,
+        "components": 814,
+        "@swc/helpers": 665
+      }
+    },
+    "/privacy": {
+      "clientJsBytes": 598746,
+      "owners": {
+        "next": 473172,
+        "next (polyfills)": 112594,
+        "[turbopack-runtime]": 9695,
+        "lib": 1806,
+        "components": 814,
+        "@swc/helpers": 665
+      }
+    },
+    "/proofs/create": {
+      "clientJsBytes": 615614,
+      "owners": {
+        "next": 473172,
+        "next (polyfills)": 112594,
+        "components": 11775,
+        "[turbopack-runtime]": 9695,
+        "lib": 7390,
+        "@swc/helpers": 665,
+        "config": 323
+      }
+    },
+    "/status": {
+      "clientJsBytes": 607034,
+      "owners": {
+        "next": 473172,
+        "next (polyfills)": 112594,
+        "[turbopack-runtime]": 9695,
+        "components": 4176,
+        "lib": 3768,
+        "app": 2595,
+        "@swc/helpers": 665,
+        "config": 369
+      }
+    },
+    "/terms": {
+      "clientJsBytes": 598746,
+      "owners": {
+        "next": 473172,
+        "next (polyfills)": 112594,
+        "[turbopack-runtime]": 9695,
+        "lib": 1806,
+        "components": 814,
+        "@swc/helpers": 665
+      }
+    },
+    "/verify": {
+      "clientJsBytes": 613454,
+      "owners": {
+        "next": 473172,
+        "next (polyfills)": 112594,
+        "lib": 10486,
+        "[turbopack-runtime]": 9695,
+        "components": 6545,
+        "@swc/helpers": 665,
+        "config": 297
+      }
+    },
+    "/verify/credential": {
+      "clientJsBytes": 612134,
+      "owners": {
+        "next": 473172,
+        "next (polyfills)": 112594,
+        "[turbopack-runtime]": 9695,
+        "components": 8286,
+        "lib": 7399,
+        "@swc/helpers": 665,
+        "config": 323
+      }
+    },
+    "/verify/scan": {
+      "clientJsBytes": 610430,
+      "owners": {
+        "next": 473172,
+        "next (polyfills)": 112594,
+        "[turbopack-runtime]": 9695,
+        "components": 7991,
+        "lib": 5963,
+        "@swc/helpers": 665,
+        "config": 350
+      }
+    }
+  },
+  "packages": [
+    {
+      "name": "@stellar/freighter-api",
+      "version": "6.0.1"
+    },
+    {
+      "name": "@swc/helpers",
+      "version": "0.5.15"
+    },
+    {
+      "name": "next",
+      "version": "16.3.0"
+    }
+  ]
+}
