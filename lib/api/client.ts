@@ -1,6 +1,16 @@
 import { appConfig } from "@/config/app";
+import { categorizeError, reportClientError } from "@/lib/telemetry";
 
 const DEFAULT_TIMEOUT_MS = 10_000; // 10 seconds
+
+/**
+ * The current route, for telemetry only. `toRoutePattern` reduces this to a
+ * known static route (or "/other") and drops the query string entirely, so
+ * no proof ID or wallet address can travel out through it.
+ */
+function currentPathname(): string {
+  return typeof window === "undefined" ? "/" : window.location.pathname;
+}
 
 type ApiClientOptions = RequestInit & {
   path: string;
@@ -121,6 +131,17 @@ export async function apiClient<TResponse>({
   timeoutMs = DEFAULT_TIMEOUT_MS,
   ...init
 }: ApiClientOptions): Promise<TResponse> {
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(
+      `${appConfig.apiUrl}${path}`,
+      {
+        ...init,
+        timeoutMs,
+        headers: {
+          "Content-Type": "application/json",
+          ...headers,
+        },
   const response = await fetch(`${appConfig.apiUrl}${path}`, {
     ...init,
     // Every response through this client is either wallet-authenticated,
@@ -145,11 +166,27 @@ export async function apiClient<TResponse>({
         "Content-Type": "application/json",
         ...headers,
       },
-    },
-  );
+    );
+  } catch (error) {
+    // Diagnostics only: `reportClientError` never throws and returns
+    // synchronously, so the caller still sees the original failure,
+    // unchanged and at the same moment it would have without telemetry.
+    reportClientError({
+      error,
+      category: categorizeError(error),
+      pathname: currentPathname(),
+    });
+    throw error;
+  }
 
   if (!response.ok) {
-    throw new Error(`EarnProof API request failed with ${response.status}`);
+    const error = new Error(`EarnProof API request failed with ${response.status}`);
+    reportClientError({
+      error,
+      category: categorizeError(error, response),
+      pathname: currentPathname(),
+    });
+    throw error;
   }
 
   return response.json() as Promise<TResponse>;
