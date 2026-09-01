@@ -29,7 +29,7 @@
     "validate:links": "node scripts/validate-internal-links.js",
     "validate:production": "node scripts/validate-production-readiness.js",
     "audit:browser-apis": "node scripts/audit-browser-apis.js",
-    "validate:build": "npm run build && npm run validate:production"
+    "validate:build": "npm run build && npm run validate:production",
     "check:doc-freshness": "node scripts/check-doc-freshness.js"
   },
   "dependencies": {
