@@ -18,9 +18,28 @@ jobs:
       - run: npm run lint
       - run: npm run test -- --runInBand
       - run: npm run test:contracts
+      - run: npm run audit:browser-apis
+      - run: npm run validate:production
+      - run: npm run check:doc-freshness
       - run: npm run build
+      # Bundle composition gate (issue #82). Runs its own production build
+      # with ANALYZE_BUNDLE=1 so Turbopack emits the client source maps the
+      # analyzer needs to attribute chunks to packages; the build above stays
+      # a normal, source-map-free production build.
+      - name: Check bundle composition and duplicate dependency budgets
+        run: npm run bundle:analyze
+      - name: Upload bundle composition report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          # Sizes and package names only - no application data, no secrets.
+          name: bundle-composition-report
+          path: .next/analyze/bundle-report.json
+          retention-days: 14
 
-  accessibility:
+  # NOTE: a stray empty `accessibility:` key used to sit here, which made the
+  # whole workflow fail YAML validation. The accessibility scans run as steps
+  # of the job below.
   visual-regression:
     runs-on: ubuntu-latest
     steps:
