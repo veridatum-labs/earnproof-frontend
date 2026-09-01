@@ -197,8 +197,14 @@ export default function FAQPage() {
                   role="region"
                   aria-labelledby={`question-${item.id}`}
                   hidden={!item.isOpen}
+                  // An open answer must not be height-capped: at 40% text
+                  // expansion (or at browser zoom, or with a longer
+                  // translation) a `max-h-96` clamp combined with
+                  // `overflow-hidden` silently cuts the answer off with no
+                  // way to scroll to the rest. The closed state keeps its
+                  // clamp, which is what the collapse animation needs.
                   className={`border-t border-white/10 transition-all overflow-hidden ${
-                    item.isOpen ? "max-h-96" : "max-h-0"
+                    item.isOpen ? "max-h-none" : "max-h-0"
                   }`}
                 >
                   <p className="px-4 py-4 sm:px-5 sm:py-5 text-sm leading-6 text-slate-300">

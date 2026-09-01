@@ -8,7 +8,16 @@ import {
 } from "@/components/verification/verification-panel";
 import { VerifyResultSkeleton } from "@/components/common/skeleton/verify-result-skeleton";
 
+import { defineMessages, formatMessage, formatNumber } from "@/lib/i18n";
+
 const MAX_FILE_BYTES = 32 * 1024; // 32 KB
+
+const messages = defineMessages("verifyCredential", {
+  // A whole sentence with a placeholder: the size can move anywhere a
+  // translation needs it, and the number itself is locale-formatted.
+  fileTooLarge:
+    "File exceeds the 32 KB limit ({size} KB). Paste the credential JSON instead.",
+});
 
 export function VerifyCredentialForm() {
   const [jsonInput, setJsonInput] = useState("");
@@ -29,7 +38,11 @@ export function VerifyCredentialForm() {
     if (!file) return;
 
     if (file.size > MAX_FILE_BYTES) {
-      setError(`File exceeds the 32 KB limit (${(file.size / 1024).toFixed(1)} KB). Paste the credential JSON instead.`);
+      setError(
+        formatMessage(messages.fileTooLarge, {
+          size: formatNumber(file.size / 1024, undefined, { maximumFractionDigits: 1 }),
+        }),
+      );
       // Reset so the same file can be reselected after fixing
       event.target.value = "";
       return;

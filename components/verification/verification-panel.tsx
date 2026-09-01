@@ -1,6 +1,19 @@
 import { ArtifactExport } from "@/components/proofs/artifact-export";
 import { appConfig } from "@/config/app";
 import { buildCredentialExport, buildVerificationLinkExport } from "@/lib/credentials/export";
+import {
+  defineMessages,
+  formatDateRange,
+  formatDateTime,
+  formatMessage,
+  formatNumber,
+} from "@/lib/i18n";
+
+const messages = defineMessages("verification", {
+  // One whole sentence with placeholders, not three fragments joined in JSX:
+  // a translation is free to reorder the operator, the amount and the asset.
+  claim: "Income {operator} {amount} {asset}",
+});
 
 export type VerificationResult =
   | "VALID"
@@ -59,11 +72,13 @@ export const statusStyles: Record<VerifyProofResponse["status"], string> = {
   invalid: "border-rose-300/30 bg-rose-300/10 text-rose-100",
 };
 
+/**
+ * Kept as a named export for existing callers; the hard-coded "en" locale it
+ * used to carry now comes from `lib/i18n`, which defaults to the app locale
+ * and can be overridden per call.
+ */
 export function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+  return formatDateTime(value);
 }
 
 export function ResultItem({ label, value }: { label: string; value: string }) {
@@ -95,17 +110,25 @@ export function VerificationPanel({ result }: { result: VerifyProofResponse | nu
           <ResultItem label="Network" value={result.proof.network} />
           <ResultItem
             label="Claim"
-            value={`Income ${result.credential.claim.operator} ${result.credential.claim.thresholdAmount} ${result.credential.claim.assetCode}`}
+            value={formatMessage(messages.claim, {
+              operator: result.credential.claim.operator,
+              amount: result.credential.claim.thresholdAmount,
+              asset: result.credential.claim.assetCode,
+            })}
           />
           <ResultItem
             label="Qualifying payments"
-            value={String(result.credential.claim.qualifyingPaymentCount)}
+            value={formatNumber(result.credential.claim.qualifyingPaymentCount)}
           />
           <ResultItem
             label="Period"
-            value={`${formatDate(result.credential.claim.periodStart)} to ${formatDate(
+            // The connector between two dates, their order, and the elision
+            // of shared parts are all locale-specific, so the range is
+            // formatted as one phrase rather than joined with " to ".
+            value={formatDateRange(
+              result.credential.claim.periodStart,
               result.credential.claim.periodEnd,
-            )}`}
+            )}
           />
           <ResultItem label="Expires" value={formatDate(result.proof.expiresAt)} />
           <ResultItem

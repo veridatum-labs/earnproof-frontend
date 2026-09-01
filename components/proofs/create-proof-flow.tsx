@@ -7,6 +7,7 @@ import { PaymentListSkeleton } from "@/components/common/skeleton/payment-list-s
 import { appConfig } from "@/config/app";
 import { apiClient, bearer } from "@/lib/api/client";
 import { buildCredentialExport, buildVerificationLinkExport } from "@/lib/credentials/export";
+import { formatDateTime } from "@/lib/i18n";
 import { resolveIdempotencyKey, type IdempotencyState, type ProofIntent } from "@/lib/proofs/idempotency";
 import { createSubmissionGuard } from "@/lib/proofs/submission-guard";
 
@@ -569,7 +570,7 @@ function PaymentRow({
           {payment.stellarTransactionHash}
         </p>
         <p className="mt-1 text-xs text-slate-400">
-          {new Date(payment.occurredAt).toLocaleString()}
+          {formatDateTime(payment.occurredAt)}
         </p>
       </div>
       <select
