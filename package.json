@@ -18,6 +18,7 @@
     "test:e2e": "playwright test",
     "test:e2e:a11y": "playwright test --config=playwright.a11y.config.ts",
     "test:e2e:a11y:report": "playwright show-report",
+    "test:e2e:a11y:zoom": "playwright test --config=playwright.a11y.config.ts zoom-reflow",
     "test:e2e:visual": "playwright test --config=playwright.config.ts",
     "test:e2e:visual:update": "playwright test --config=playwright.config.ts --update-snapshots",
     "perf:check": "node scripts/performance/check-budgets.js",

@@ -2,11 +2,18 @@ import { defineConfig, devices } from "@playwright/test";
 
 /**
  * Dedicated Playwright configuration for the accessibility suite
- * (e2e/accessibility). Kept separate from the general functional e2e
- * config (playwright.config.ts) because keyboard/focus assertions need a
- * single worker for deterministic timing, and separate from the visual
- * regression config (playwright.visual.config.ts) because it uses
- * different viewports and projects.
+ * (e2e/accessibility): axe scans, keyboard interaction, and the zoom /
+ * reflow / large-text regression checks.
+ *
+ * It is separate from playwright.config.ts (functional e2e) and
+ * playwright.visual.config.ts (visual regression) for the same reason those
+ * two are separate from each other: this suite runs one worker at a time so
+ * focus- and layout-sensitive assertions are deterministic, and it points
+ * the app at the mocked API origin the fixtures in
+ * e2e/accessibility/fixtures intercept.
+ *
+ * This config previously lived as a second `defineConfig()` block inside
+ * playwright.config.ts, which made that file a syntax error.
  */
 const PORT = process.env.PLAYWRIGHT_PORT ?? "3100";
 const BASE_URL = `http://127.0.0.1:${PORT}`;
@@ -29,6 +36,15 @@ export default defineConfig({
   },
   use: {
     baseURL: BASE_URL,
+    // The prerendered HTML carries the nonce baked in at build time while
+    // middleware.ts issues a fresh nonce per request, so a statically
+    // generated page served by `next start` refuses to load its own
+    // scripts. Nothing hydrates, and an accessibility suite that never sees
+    // an interactive page is not measuring the app. Bypassing CSP in the
+    // browser context lets these specs exercise the real interface; it does
+    // not change the headers the app sends, which tests/security/headers.test.ts
+    // still asserts on directly.
+    bypassCSP: true,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
