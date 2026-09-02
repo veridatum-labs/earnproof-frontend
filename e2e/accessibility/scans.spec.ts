@@ -14,7 +14,7 @@ import { scannedRoutes } from "./routes";
 for (const route of scannedRoutes) {
   test(`${route.name} has no critical/serious axe violations`, async ({ page }, testInfo) => {
     // Verify + verify-credential routes hit the API on submit only, but
-    // proofs/create fires an unauthenticated /auth flow lazily; mock both
+    // proofs fires an unauthenticated /auth flow lazily; mock both
     // up front so an initial-render scan never depends on a live backend.
     await mockEarnProofApi(page);
     await mockVerifyApi(page);

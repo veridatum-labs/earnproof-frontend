@@ -28,8 +28,8 @@ export const scannedRoutes: ScannedRoute[] = [
   { name: "terms", path: "/terms", description: "Legal / terms of service" },
   { name: "status", path: "/status", description: "System status page" },
   {
-    name: "proofs-create",
-    path: "/proofs/create",
+    name: "proofs",
+    path: "/proofs",
     description:
       "Wallet authentication + proof creation flow (closest current analog to auth/payments)",
   },

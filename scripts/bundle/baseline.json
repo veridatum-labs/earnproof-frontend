@@ -299,6 +299,19 @@
         "config": 206
       }
     },
+    "/verify/[proofId]": {
+      "clientJsBytes": 628446,
+      "owners": {
+        "next": 474825,
+        "next (polyfills)": 112594,
+        "lib": 15924,
+        "[turbopack-runtime]": 9695,
+        "components": 7465,
+        "app": 7071,
+        "@swc/helpers": 661,
+        "config": 211
+      }
+    },
     "/verify/credential": {
       "clientJsBytes": 630591,
       "owners": {

@@ -115,13 +115,13 @@ test.describe("form error announcements", () => {
     await expect(submit).toHaveAttribute("aria-describedby", "verify-credential-error");
   });
 
-  test("proofs/create: proof-creation failure moves focus to an associated alert", async ({
+  test("proofs: proof-creation failure moves focus to an associated alert", async ({
     page,
   }) => {
     await mockEarnProofApi(page, { failProofCreation: true });
     await mockFreighterWallet(page);
 
-    await page.goto("/proofs/create");
+    await page.goto("/proofs");
     await page.getByRole("button", { name: "Connect Freighter" }).click();
     await expect(page.getByText(/Connected as/)).toBeVisible();
     await page.getByRole("button", { name: "Sync" }).click();
@@ -141,7 +141,7 @@ test.describe("focus restoration", () => {
     await mockEarnProofApi(page);
     await mockFreighterWallet(page);
 
-    await page.goto("/proofs/create");
+    await page.goto("/proofs");
     await page.getByRole("button", { name: "Connect Freighter" }).click();
     const disconnect = page.getByRole("button", { name: "Disconnect" });
     await expect(disconnect).toBeVisible();

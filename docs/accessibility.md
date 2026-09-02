@@ -24,9 +24,9 @@ That is exactly the condition the layout has to survive.
 
 The text-spacing and large-text overrides are installed through the CSSOM
 (`document.adoptedStyleSheets`) rather than `page.addStyleTag`. The app sends
-a strict `style-src 'self' 'nonce-...'` policy that correctly blocks an
-injected inline `<style>`, and that policy is worth keeping — so the test
-adapts instead.
+a strict nonce-based style element policy that correctly blocks an injected
+inline `<style>`, and that policy is worth keeping — so the test adapts
+instead.
 
 ## What each check asserts
 
@@ -115,17 +115,14 @@ navigation menu is a product change rather than a regression fix. It is
 recorded here, and in `docs/accessibility-testing.md`, as the outstanding
 work.
 
-## Known issue: CSP nonce blocks hydration on prerendered pages
+## Resolved issue: CSP nonce and hydration
 
-`middleware.ts` issues a fresh CSP nonce per request while statically
-prerendered HTML carries the nonce baked in at build time. Under `next
-start`, the two do not match, so a statically generated page refuses to load
-its own scripts and never hydrates.
+Nonce-based CSP requires request-time rendering so the fresh nonce generated
+by `proxy.ts` can also be applied to the Next.js runtime scripts in the
+HTML response. `app/layout.tsx` therefore opts the app shell into dynamic
+rendering, and `proxy.ts` forwards the CSP on the request headers that
+Next's renderer reads for nonce extraction.
 
-This is a production-affecting bug, not a test-only one — it is what makes
-six of the seven existing keyboard specs fail on `develop`. The accessibility
-config sets `bypassCSP: true` in the browser context so this suite can
-exercise a real, interactive interface rather than an inert page. That is a
-measure to keep the suite meaningful, not a fix: the headers the app sends
-are unchanged, and `tests/security/headers.test.ts` still asserts on them
-directly. The underlying nonce mismatch needs its own change.
+The accessibility suite now runs with CSP enforcement enabled, so future
+nonce regressions surface as real browser failures instead of being hidden by
+the test configuration.

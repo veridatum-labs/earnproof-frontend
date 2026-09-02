@@ -36,15 +36,6 @@ export default defineConfig({
   },
   use: {
     baseURL: BASE_URL,
-    // The prerendered HTML carries the nonce baked in at build time while
-    // middleware.ts issues a fresh nonce per request, so a statically
-    // generated page served by `next start` refuses to load its own
-    // scripts. Nothing hydrates, and an accessibility suite that never sees
-    // an interactive page is not measuring the app. Bypassing CSP in the
-    // browser context lets these specs exercise the real interface; it does
-    // not change the headers the app sends, which tests/security/headers.test.ts
-    // still asserts on directly.
-    bypassCSP: true,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },

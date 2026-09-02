@@ -2,6 +2,7 @@ const {
   routeToHtmlFile,
   listMeasurableBuildRoutes,
   extractStaticAssetPaths,
+  extractRouteAssetPaths,
   resolveBudget,
   evaluateBudgets,
   formatReport,
@@ -22,10 +23,13 @@ describe("routeToHtmlFile", () => {
 });
 
 describe("listMeasurableBuildRoutes", () => {
-  it("skips dynamic routes that have no prerendered HTML", () => {
+  it("includes dynamic routes that expose client-reference manifests", () => {
     const buildDir = fs.mkdtempSync(path.join(os.tmpdir(), "earnproof-build-"));
     try {
       fs.mkdirSync(path.join(buildDir, "server", "app", "proofs"), { recursive: true });
+      fs.mkdirSync(path.join(buildDir, "server", "app", "verify", "[proofId]", "page"), {
+        recursive: true,
+      });
       fs.writeFileSync(
         path.join(buildDir, "app-path-routes-manifest.json"),
         JSON.stringify({
@@ -35,9 +39,50 @@ describe("listMeasurableBuildRoutes", () => {
           "/_not-found/page": "/_not-found",
         }),
       );
-      fs.writeFileSync(path.join(buildDir, "server", "app", "proofs.html"), "<html></html>");
+      fs.writeFileSync(
+        path.join(buildDir, "server", "app", "proofs.html"),
+        '<html><script src="/_next/static/chunks/proofs.js"></script></html>',
+      );
+      fs.writeFileSync(
+        path.join(
+          buildDir,
+          "server",
+          "app",
+          "verify",
+          "[proofId]",
+          "page",
+          "build-manifest.json",
+        ),
+        JSON.stringify({
+          polyfillFiles: ["static/chunks/polyfill.js"],
+          rootMainFiles: ["static/chunks/runtime.js"],
+        }),
+      );
+      fs.writeFileSync(
+        path.join(
+          buildDir,
+          "server",
+          "app",
+          "verify",
+          "[proofId]",
+          "page_client-reference-manifest.js",
+        ),
+        [
+          "globalThis.__RSC_MANIFEST = globalThis.__RSC_MANIFEST || {};",
+          'globalThis.__RSC_MANIFEST["/verify/[proofId]/page"] = {"clientModules":{"[project]/components/x.tsx":{"chunks":["/_next/static/chunks/route.js"],"async":false}},"entryJSFiles":{"[project]/app/layout":["static/chunks/layout.js"]},"entryCSSFiles":{"[project]/app/layout":[{"path":"static/chunks/app.css","inlined":false}]}};',
+        ].join("\n"),
+      );
 
-      expect(listMeasurableBuildRoutes(buildDir)).toEqual(["/proofs"]);
+      expect(listMeasurableBuildRoutes(buildDir)).toEqual(["/proofs", "/verify/[proofId]"]);
+      expect(extractRouteAssetPaths(buildDir, "/verify/[proofId]").sort()).toEqual(
+        [
+          "/_next/static/chunks/app.css",
+          "/_next/static/chunks/layout.js",
+          "/_next/static/chunks/polyfill.js",
+          "/_next/static/chunks/route.js",
+          "/_next/static/chunks/runtime.js",
+        ].sort(),
+      );
     } finally {
       fs.rmSync(buildDir, { recursive: true, force: true });
     }

@@ -11,12 +11,13 @@ function createNonce(): string {
   return btoa(binary);
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const nonce = createNonce();
   const policy = buildSecurityPolicy({ nonce });
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("content-security-policy", policy.csp);
 
   const response = NextResponse.next({
     request: { headers: requestHeaders },

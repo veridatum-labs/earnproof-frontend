@@ -40,8 +40,7 @@ const { spawnSync } = require("child_process");
 const {
   listMeasurableBuildRoutes,
   listSkippedBuildRoutes,
-  extractStaticAssetPaths,
-  routeToHtmlFile,
+  extractRouteAssetPaths,
 } = require("../performance/budget-check");
 
 const {
@@ -231,9 +230,7 @@ function buildClientModuleIndex(chunks, ownerAliases) {
  * never disagree about what a route loads).
  */
 function measureRouteComposition(route, chunkIndexByAsset, ownerAliases) {
-  const htmlFile = path.join(buildDir, "server", "app", routeToHtmlFile(route));
-  const html = fs.readFileSync(htmlFile, "utf8");
-  const assetPaths = extractStaticAssetPaths(html).filter((assetPath) =>
+  const assetPaths = extractRouteAssetPaths(buildDir, route).filter((assetPath) =>
     assetPath.split("?")[0].endsWith(".js"),
   );
 

@@ -27,6 +27,15 @@ function routeToHtmlPath(buildDir, route) {
   return path.join(buildDir, "server", "app", routeToHtmlFile(route));
 }
 
+function normalizeNextStaticAssetPath(assetPath) {
+  const cleanPath = assetPath.split("?")[0];
+  const publicPath = cleanPath.startsWith("/_next/")
+    ? cleanPath
+    : `/_next/${cleanPath.replace(/^\//, "")}`;
+
+  return publicPath.startsWith("/_next/static/") ? publicPath : null;
+}
+
 /**
  * Pull every `/_next/static/...` script and stylesheet URL referenced by a
  * rendered route's HTML. This mirrors exactly what a browser loads on
@@ -40,13 +49,15 @@ function extractStaticAssetPaths(html) {
 
   let match;
   while ((match = scriptRe.exec(html))) {
-    found.add(match[1]);
+    const assetPath = normalizeNextStaticAssetPath(match[1]);
+    if (assetPath) found.add(assetPath);
   }
   while ((match = linkRe.exec(html))) {
-    found.add(match[1]);
+    const assetPath = normalizeNextStaticAssetPath(match[1]);
+    if (assetPath) found.add(assetPath);
   }
 
-  return [...found].filter((assetPath) => assetPath.startsWith("/_next/static/"));
+  return [...found];
 }
 
 /**
@@ -68,8 +79,92 @@ function listBuildRoutes(buildDir) {
   return [...routes].sort();
 }
 
+function routeToAppEntryKey(buildDir, route) {
+  const manifestPath = path.join(buildDir, "app-path-routes-manifest.json");
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+
+  for (const [entryKey, routePath] of Object.entries(manifest)) {
+    if (entryKey.endsWith("/route")) continue;
+    if (routePath === route) return entryKey;
+  }
+
+  return null;
+}
+
+function clientReferenceManifestPath(buildDir, entryKey) {
+  const entryPath = entryKey.replace(/^\//, "");
+  return path.join(
+    buildDir,
+    "server",
+    "app",
+    entryPath.replace(/page$/, "page_client-reference-manifest.js"),
+  );
+}
+
+function pageBuildManifestPath(buildDir, entryKey) {
+  return path.join(buildDir, "server", "app", entryKey.replace(/^\//, ""), "build-manifest.json");
+}
+
+function readClientReferenceManifest(filePath) {
+  const lines = fs.readFileSync(filePath, "utf8").trim().split(/\r?\n/);
+  const assignment = [...lines].reverse().find((line) => line.includes(" = {"));
+  if (!assignment) return null;
+
+  const valueStart = assignment.indexOf(" = ") + 3;
+  const rawValue = assignment.slice(valueStart).replace(/;$/, "");
+  return JSON.parse(rawValue);
+}
+
+function addAssetPath(found, assetPath) {
+  if (!assetPath) return;
+  const normalized = normalizeNextStaticAssetPath(assetPath);
+  if (normalized) found.add(normalized);
+}
+
+function extractDynamicAssetPaths(buildDir, route) {
+  const entryKey = routeToAppEntryKey(buildDir, route);
+  if (!entryKey) return [];
+
+  const found = new Set();
+  const buildManifestPath = pageBuildManifestPath(buildDir, entryKey);
+  if (fs.existsSync(buildManifestPath)) {
+    const buildManifest = JSON.parse(fs.readFileSync(buildManifestPath, "utf8"));
+    for (const assetPath of buildManifest.polyfillFiles || []) addAssetPath(found, assetPath);
+    for (const assetPath of buildManifest.rootMainFiles || []) addAssetPath(found, assetPath);
+  }
+
+  const clientManifestPath = clientReferenceManifestPath(buildDir, entryKey);
+  if (!fs.existsSync(clientManifestPath)) return [...found];
+
+  const clientManifest = readClientReferenceManifest(clientManifestPath);
+  if (!clientManifest) return [...found];
+
+  for (const moduleRef of Object.values(clientManifest.clientModules || {})) {
+    for (const assetPath of moduleRef.chunks || []) addAssetPath(found, assetPath);
+  }
+
+  for (const assetList of Object.values(clientManifest.entryJSFiles || {})) {
+    for (const assetPath of assetList || []) addAssetPath(found, assetPath);
+  }
+
+  for (const cssList of Object.values(clientManifest.entryCSSFiles || {})) {
+    for (const entry of cssList || []) addAssetPath(found, entry.path);
+  }
+
+  return [...found];
+}
+
+function extractRouteAssetPaths(buildDir, route) {
+  const htmlPath = routeToHtmlPath(buildDir, route);
+  if (fs.existsSync(htmlPath)) {
+    return extractStaticAssetPaths(fs.readFileSync(htmlPath, "utf8"));
+  }
+
+  return extractDynamicAssetPaths(buildDir, route);
+}
+
 function listMeasurableBuildRoutes(buildDir) {
-  return listBuildRoutes(buildDir).filter((route) => fs.existsSync(routeToHtmlPath(buildDir, route)));
+  return listBuildRoutes(buildDir).filter((route) => extractRouteAssetPaths(buildDir, route).length > 0);
 }
 
 function listSkippedBuildRoutes(buildDir) {
@@ -84,9 +179,7 @@ function listSkippedBuildRoutes(buildDir) {
  * against.
  */
 function measureRoute(buildDir, route) {
-  const htmlFile = routeToHtmlPath(buildDir, route);
-  const html = fs.readFileSync(htmlFile, "utf8");
-  const assetPaths = extractStaticAssetPaths(html);
+  const assetPaths = extractRouteAssetPaths(buildDir, route);
 
   const assets = assetPaths.map((assetPath) => {
     const relative = assetPath.replace(/^\/_next\//, "");
@@ -212,6 +305,8 @@ function formatReport(results) {
 module.exports = {
   routeToHtmlFile,
   extractStaticAssetPaths,
+  extractDynamicAssetPaths,
+  extractRouteAssetPaths,
   listBuildRoutes,
   listMeasurableBuildRoutes,
   listSkippedBuildRoutes,

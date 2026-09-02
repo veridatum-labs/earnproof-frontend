@@ -24,6 +24,10 @@ export const metadata: Metadata = {
   },
 };
 
+// Nonce-based CSP requires request-time rendering so Next can tag its
+// framework scripts and inline bootstrap with the per-request nonce.
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: Readonly<{

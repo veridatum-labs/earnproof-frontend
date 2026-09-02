@@ -77,6 +77,14 @@ export class ApiMock {
     const path = url.pathname.replace(new URL(this.apiUrl).pathname, "");
     const method = request.method();
 
+    if (path === "/health" && method === "GET") {
+      return this.json(route, 200, {
+        status: "ok",
+        database: "ok",
+        timestamp: "2026-09-02T12:00:00.000Z",
+      });
+    }
+
     if (path === "/auth/challenge" && method === "POST") {
       const body = request.postDataJSON() as { walletAddress: string };
       this.authRequests.push({ walletAddress: body.walletAddress });

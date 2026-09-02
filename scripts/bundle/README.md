@@ -41,11 +41,11 @@ build rather than reusing the deploy build.
 
 From there:
 
-1. Every route's client JS is read from the prerendered HTML Next.js emits
-   under `.next/server/app/**.html` — the same source of truth
-   `scripts/performance/budget-check.js` uses, so the two gates can never
-   disagree about what a route loads. That module's route/asset helpers are
-   imported directly rather than duplicated.
+1. Every route's client JS is read with the same route/asset helper used by
+   `scripts/performance/budget-check.js`: prerendered HTML when it exists,
+   and Next.js client-reference manifests for dynamic app routes. That keeps
+   the two gates aligned even when nonce-based CSP requires request-time
+   rendering instead of static HTML.
 2. Each chunk is matched to its source map through the chunk's own
    `sourceMappingURL` comment (Turbopack hashes map filenames independently
    of the chunk, so the `<chunk>.js.map` sibling convention does not hold).

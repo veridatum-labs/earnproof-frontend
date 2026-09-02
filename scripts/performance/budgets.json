@@ -2,7 +2,7 @@
   "testConditions": {
     "buildCommand": "next build",
     "buildMode": "production (Turbopack build, no dev-mode overhead)",
-    "measuredFrom": "static assets referenced by the prerendered HTML in .next/server/app/**.html after `next build`, resolved against real file sizes in .next/static",
+    "measuredFrom": "static assets referenced by prerendered HTML when present, or by per-route client-reference manifests for dynamic app routes, resolved against real file sizes in .next/static after `next build`",
     "node": ">=20.11.1 (see .nvmrc)",
     "npm": ">=10.0.0",
     "vitals": {

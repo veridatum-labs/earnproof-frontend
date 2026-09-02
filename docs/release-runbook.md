@@ -81,8 +81,9 @@ paired `earnproof-backend` API contract this frontend consumes.
 
 - [ ] Fetch the deployed preview and confirm the response headers match
       [`config/security-headers.ts`](../config/security-headers.ts):
-      `Content-Security-Policy` (nonce-based `script-src`/`style-src`, no
-      `unsafe-inline`, no `*` wildcards), plus the remaining headers from
+      `Content-Security-Policy` (nonce-based `script-src`/`style-src`,
+      `style-src-attr` limited to reviewed inline style attributes, no `*`
+      wildcards), plus the remaining headers from
       `nextHeaderList`. Example check:
       ```bash
       curl -sI https://<preview-url>/ | grep -i "content-security-policy\|x-frame-options\|strict-transport-security"

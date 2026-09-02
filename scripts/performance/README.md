@@ -10,12 +10,11 @@ every navigable app route (from `.next/app-path-routes-manifest.json`, minus
 route handlers and Next-internal routes) it:
 
 1. Reads the prerendered HTML Next.js emits at
-   `.next/server/app/<route>.html` — this is what a browser actually
-   receives and parses for `<script src>` / `<link href>` tags pointing at
-   `/_next/static/...`. Using the real rendered HTML, rather than
-   reconstructing the asset list from Next's internal chunk manifests, keeps
-   this script correct across bundler/version changes without needing to
-   track Turbopack/webpack manifest internals.
+   `.next/server/app/<route>.html` when a route has static HTML. Dynamic
+   app routes have no route HTML at build time, so the script falls back to
+   that route's Next.js client-reference manifest and page build manifest to
+   collect the same `/_next/static/...` script and stylesheet assets the
+   browser needs on first load.
 2. Resolves each referenced asset to a file under `.next/static` and reads
    its real size on disk.
 3. Sums the JS assets into **First Load JS** for that route, and finds the
@@ -36,7 +35,7 @@ below.
 ## Test conditions (documented, per acceptance criteria)
 
 - **Build**: `next build` in production mode (Turbopack), no dev-server
-  overhead. Sizes are read from the build output only.
+  overhead. Sizes are read from the build output only, using prerendered HTML for static routes and client-reference manifests for dynamic routes.
 - **Node/npm**: Node `>=20.11.1` (`.nvmrc`), npm `>=10.0.0`, matching
   `package.json#engines`.
 - **JS / largest-asset budgets**: enforced in CI on every PR and push, via
@@ -65,11 +64,11 @@ milliseconds under `npm test`, doesn't require mutating the app to prove a
 negative, and tests the exact same `evaluateBudgets` function the CLI uses
 against real build output — so there's no gap between what's tested and
 what runs in CI. A full-build regression test would additionally exercise
-`measureRoute`'s HTML-parsing path, which is covered separately by the
-`extractStaticAssetPaths` / `routeToHtmlFile` unit tests using small HTML
-fixtures — so both halves (parsing real build output, and the budget
-comparison) are tested without needing a second, slower, real-build-based
-test run.
+`measureRoute`'s build-output parsing path, which is covered separately by the
+`extractStaticAssetPaths`, `extractRouteAssetPaths`, and `routeToHtmlFile`
+unit tests using small HTML and client-manifest fixtures - so both halves
+(parsing real build output, and the budget comparison) are tested without
+needing a second, slower, real-build-based test run.
 
 ## Why LCP/CLS/interaction latency aren't machine-gated in CI (yet)
 
@@ -93,9 +92,8 @@ profile above is exactly what that job should use.
 ## Wallet code isolation (`@stellar/freighter-api`)
 
 `/verify`, `/verify/credential`, and every other public/landing route never
-reference the `@stellar/freighter-api` chunk — confirmed by inspecting the
-`<script src>` tags Next.js actually emits for each route's HTML after
-`next build`. Only the `/proofs` creation surfaces load it, and even there
+reference the `@stellar/freighter-api` chunk - confirmed by inspecting the
+static assets Next.js assigns to each route after `next build`. Only the `/proofs` creation surfaces load it, and even there
 it is loaded lazily via a dynamic `import("@stellar/freighter-api")` inside
 the wallet
 connect handler in `components/proofs/create-proof-flow.tsx`, not as part of

@@ -42,7 +42,7 @@ const CORE_ROUTES = [
   { name: "status", path: "/status" },
   { name: "verify", path: "/verify" },
   { name: "verify-credential", path: "/verify/credential" },
-  { name: "proofs-create", path: "/proofs/create" },
+  { name: "proofs", path: "/proofs" },
 ];
 
 async function visit(page: import("@playwright/test").Page, path: string) {
@@ -181,7 +181,7 @@ for (const mode of DISPLAY_MODES) {
     test("proof creation: the wallet step is reachable and operable by keyboard", async ({
       page,
     }) => {
-      await visit(page, "/proofs/create");
+      await visit(page, "/proofs");
       await applyDisplayMode(page, mode);
 
       const connect = page.getByRole("button", { name: /connect freighter/i });
