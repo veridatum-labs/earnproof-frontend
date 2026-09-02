@@ -202,7 +202,7 @@ function VerificationResult({ result }: { result: VerifyProofResponse }) {
           Verify another proof
         </Link>
         <Link
-          href="/proofs/create"
+          href="/proofs"
           className="inline-flex h-10 items-center justify-center rounded-lg border border-cyan-300/50 bg-cyan-300 px-6 text-sm font-medium text-slate-950 transition hover:bg-cyan-200"
         >
           Create your own proof

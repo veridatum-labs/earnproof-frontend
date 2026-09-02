@@ -46,7 +46,7 @@ describe("MinimumIncomeProofTypePage", () => {
     render(<MinimumIncomeProofTypePage />);
 
     const createLink = screen.getByText("Create a minimum income proof").closest("a");
-    expect(createLink).toHaveAttribute("href", "/proofs/create");
+    expect(createLink).toHaveAttribute("href", "/proofs");
   });
 
   it("links back to all proof types", () => {

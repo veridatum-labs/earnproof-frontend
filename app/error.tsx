@@ -97,7 +97,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
                 Verify a proof
               </Link>
               <Link
-                href="/proofs/create"
+                href="/proofs"
                 className="inline-flex h-10 items-center justify-center rounded-lg border border-white/15 px-6 text-sm font-medium text-white transition hover:bg-white/10"
               >
                 Create a proof

@@ -1,6 +1,6 @@
 [
   {
-    "route": "about",
+    "route": "/about",
     "type": "public/indexable",
     "filePath": "app\\about\\page.tsx",
     "metadata": {
@@ -9,7 +9,7 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000about",
+    "canonicalUrl": "http://localhost:3000/about",
     "validationRequirements": {
       "needsTitle": true,
       "needsDescription": true,
@@ -19,7 +19,7 @@
     }
   },
   {
-    "route": "accessibility",
+    "route": "/accessibility",
     "type": "public/indexable",
     "filePath": "app\\accessibility\\page.tsx",
     "metadata": {
@@ -28,7 +28,7 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000accessibility",
+    "canonicalUrl": "http://localhost:3000/accessibility",
     "validationRequirements": {
       "needsTitle": true,
       "needsDescription": true,
@@ -38,7 +38,7 @@
     }
   },
   {
-    "route": "contact",
+    "route": "/contact",
     "type": "public/indexable",
     "filePath": "app\\contact\\page.tsx",
     "metadata": {
@@ -47,7 +47,7 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000contact",
+    "canonicalUrl": "http://localhost:3000/contact",
     "validationRequirements": {
       "needsTitle": true,
       "needsDescription": true,
@@ -57,8 +57,8 @@
     }
   },
   {
-    "route": "developers/api-keys",
-    "type": "public/indexable",
+    "route": "/developers/api-keys",
+    "type": "private",
     "filePath": "app\\developers\\api-keys\\page.tsx",
     "metadata": {
       "hasTitle": false,
@@ -66,17 +66,17 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000developers/api-keys",
+    "canonicalUrl": "http://localhost:3000/developers/api-keys",
     "validationRequirements": {
-      "needsTitle": true,
-      "needsDescription": true,
-      "needsCanonical": true,
-      "shouldBeIndexable": true,
-      "shouldNotBeIndexable": false
+      "needsTitle": false,
+      "needsDescription": false,
+      "needsCanonical": false,
+      "shouldBeIndexable": false,
+      "shouldNotBeIndexable": true
     }
   },
   {
-    "route": "developers",
+    "route": "/developers",
     "type": "public/indexable",
     "filePath": "app\\developers\\page.tsx",
     "metadata": {
@@ -85,7 +85,7 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000developers",
+    "canonicalUrl": "http://localhost:3000/developers",
     "validationRequirements": {
       "needsTitle": true,
       "needsDescription": true,
@@ -95,7 +95,7 @@
     }
   },
   {
-    "route": "faq",
+    "route": "/faq",
     "type": "public/indexable",
     "filePath": "app\\faq\\page.tsx",
     "metadata": {
@@ -104,7 +104,7 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000faq",
+    "canonicalUrl": "http://localhost:3000/faq",
     "validationRequirements": {
       "needsTitle": true,
       "needsDescription": true,
@@ -114,7 +114,7 @@
     }
   },
   {
-    "route": "how-it-works",
+    "route": "/how-it-works",
     "type": "public/indexable",
     "filePath": "app\\how-it-works\\page.tsx",
     "metadata": {
@@ -123,7 +123,7 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000how-it-works",
+    "canonicalUrl": "http://localhost:3000/how-it-works",
     "validationRequirements": {
       "needsTitle": true,
       "needsDescription": true,
@@ -133,7 +133,7 @@
     }
   },
   {
-    "route": "issuers",
+    "route": "/issuers",
     "type": "public/indexable",
     "filePath": "app\\issuers\\page.tsx",
     "metadata": {
@@ -142,7 +142,7 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000issuers",
+    "canonicalUrl": "http://localhost:3000/issuers",
     "validationRequirements": {
       "needsTitle": true,
       "needsDescription": true,
@@ -152,7 +152,7 @@
     }
   },
   {
-    "route": "issuers/veridatum-labs",
+    "route": "/issuers/veridatum-labs",
     "type": "public/indexable",
     "filePath": "app\\issuers\\veridatum-labs\\page.tsx",
     "metadata": {
@@ -161,7 +161,7 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000issuers/veridatum-labs",
+    "canonicalUrl": "http://localhost:3000/issuers/veridatum-labs",
     "validationRequirements": {
       "needsTitle": true,
       "needsDescription": true,
@@ -190,7 +190,7 @@
     }
   },
   {
-    "route": "privacy",
+    "route": "/privacy",
     "type": "public/indexable",
     "filePath": "app\\privacy\\page.tsx",
     "metadata": {
@@ -199,7 +199,7 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000privacy",
+    "canonicalUrl": "http://localhost:3000/privacy",
     "validationRequirements": {
       "needsTitle": true,
       "needsDescription": true,
@@ -209,7 +209,26 @@
     }
   },
   {
-    "route": "proof-types",
+    "route": "/proof-types/minimum-income",
+    "type": "public/indexable",
+    "filePath": "app\\proof-types\\minimum-income\\page.tsx",
+    "metadata": {
+      "hasTitle": false,
+      "hasDescription": false,
+      "hasCustomMetadata": false,
+      "usesLayoutMetadata": true
+    },
+    "canonicalUrl": "http://localhost:3000/proof-types/minimum-income",
+    "validationRequirements": {
+      "needsTitle": true,
+      "needsDescription": true,
+      "needsCanonical": true,
+      "shouldBeIndexable": true,
+      "shouldNotBeIndexable": false
+    }
+  },
+  {
+    "route": "/proof-types",
     "type": "public/indexable",
     "filePath": "app\\proof-types\\page.tsx",
     "metadata": {
@@ -218,7 +237,7 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000proof-types",
+    "canonicalUrl": "http://localhost:3000/proof-types",
     "validationRequirements": {
       "needsTitle": true,
       "needsDescription": true,
@@ -228,8 +247,8 @@
     }
   },
   {
-    "route": "proofs/minimum-income",
-    "type": "public/indexable",
+    "route": "/proofs/minimum-income",
+    "type": "private",
     "filePath": "app\\proofs\\minimum-income\\page.tsx",
     "metadata": {
       "hasTitle": false,
@@ -237,18 +256,18 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000proofs/minimum-income",
+    "canonicalUrl": "http://localhost:3000/proofs/minimum-income",
     "validationRequirements": {
-      "needsTitle": true,
-      "needsDescription": true,
-      "needsCanonical": true,
-      "shouldBeIndexable": true,
-      "shouldNotBeIndexable": false
+      "needsTitle": false,
+      "needsDescription": false,
+      "needsCanonical": false,
+      "shouldBeIndexable": false,
+      "shouldNotBeIndexable": true
     }
   },
   {
-    "route": "proofs",
-    "type": "public/indexable",
+    "route": "/proofs",
+    "type": "workflow-only",
     "filePath": "app\\proofs\\page.tsx",
     "metadata": {
       "hasTitle": false,
@@ -256,18 +275,18 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000proofs",
+    "canonicalUrl": "http://localhost:3000/proofs",
     "validationRequirements": {
-      "needsTitle": true,
-      "needsDescription": true,
-      "needsCanonical": true,
-      "shouldBeIndexable": true,
-      "shouldNotBeIndexable": false
+      "needsTitle": false,
+      "needsDescription": false,
+      "needsCanonical": false,
+      "shouldBeIndexable": false,
+      "shouldNotBeIndexable": true
     }
   },
   {
-    "route": "proofs/payment-receipt",
-    "type": "public/indexable",
+    "route": "/proofs/payment-receipt",
+    "type": "private",
     "filePath": "app\\proofs\\payment-receipt\\page.tsx",
     "metadata": {
       "hasTitle": false,
@@ -275,18 +294,18 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000proofs/payment-receipt",
+    "canonicalUrl": "http://localhost:3000/proofs/payment-receipt",
     "validationRequirements": {
-      "needsTitle": true,
-      "needsDescription": true,
-      "needsCanonical": true,
-      "shouldBeIndexable": true,
-      "shouldNotBeIndexable": false
+      "needsTitle": false,
+      "needsDescription": false,
+      "needsCanonical": false,
+      "shouldBeIndexable": false,
+      "shouldNotBeIndexable": true
     }
   },
   {
-    "route": "proofs/recurring-income",
-    "type": "public/indexable",
+    "route": "/proofs/recurring-income",
+    "type": "private",
     "filePath": "app\\proofs\\recurring-income\\page.tsx",
     "metadata": {
       "hasTitle": false,
@@ -294,18 +313,18 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000proofs/recurring-income",
+    "canonicalUrl": "http://localhost:3000/proofs/recurring-income",
     "validationRequirements": {
-      "needsTitle": true,
-      "needsDescription": true,
-      "needsCanonical": true,
-      "shouldBeIndexable": true,
-      "shouldNotBeIndexable": false
+      "needsTitle": false,
+      "needsDescription": false,
+      "needsCanonical": false,
+      "shouldBeIndexable": false,
+      "shouldNotBeIndexable": true
     }
   },
   {
-    "route": "settings/issuers",
-    "type": "public/indexable",
+    "route": "/settings/issuers",
+    "type": "private",
     "filePath": "app\\settings\\issuers\\page.tsx",
     "metadata": {
       "hasTitle": false,
@@ -313,18 +332,18 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000settings/issuers",
+    "canonicalUrl": "http://localhost:3000/settings/issuers",
     "validationRequirements": {
-      "needsTitle": true,
-      "needsDescription": true,
-      "needsCanonical": true,
-      "shouldBeIndexable": true,
-      "shouldNotBeIndexable": false
+      "needsTitle": false,
+      "needsDescription": false,
+      "needsCanonical": false,
+      "shouldBeIndexable": false,
+      "shouldNotBeIndexable": true
     }
   },
   {
-    "route": "settings/organizations",
-    "type": "public/indexable",
+    "route": "/settings/organizations",
+    "type": "private",
     "filePath": "app\\settings\\organizations\\page.tsx",
     "metadata": {
       "hasTitle": false,
@@ -332,18 +351,18 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000settings/organizations",
+    "canonicalUrl": "http://localhost:3000/settings/organizations",
     "validationRequirements": {
-      "needsTitle": true,
-      "needsDescription": true,
-      "needsCanonical": true,
-      "shouldBeIndexable": true,
-      "shouldNotBeIndexable": false
+      "needsTitle": false,
+      "needsDescription": false,
+      "needsCanonical": false,
+      "shouldBeIndexable": false,
+      "shouldNotBeIndexable": true
     }
   },
   {
-    "route": "settings",
-    "type": "public/indexable",
+    "route": "/settings",
+    "type": "private",
     "filePath": "app\\settings\\page.tsx",
     "metadata": {
       "hasTitle": false,
@@ -351,17 +370,17 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000settings",
+    "canonicalUrl": "http://localhost:3000/settings",
     "validationRequirements": {
-      "needsTitle": true,
-      "needsDescription": true,
-      "needsCanonical": true,
-      "shouldBeIndexable": true,
-      "shouldNotBeIndexable": false
+      "needsTitle": false,
+      "needsDescription": false,
+      "needsCanonical": false,
+      "shouldBeIndexable": false,
+      "shouldNotBeIndexable": true
     }
   },
   {
-    "route": "status",
+    "route": "/status",
     "type": "public/indexable",
     "filePath": "app\\status\\page.tsx",
     "metadata": {
@@ -370,7 +389,7 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000status",
+    "canonicalUrl": "http://localhost:3000/status",
     "validationRequirements": {
       "needsTitle": true,
       "needsDescription": true,
@@ -380,7 +399,7 @@
     }
   },
   {
-    "route": "terms",
+    "route": "/terms",
     "type": "public/indexable",
     "filePath": "app\\terms\\page.tsx",
     "metadata": {
@@ -389,7 +408,7 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000terms",
+    "canonicalUrl": "http://localhost:3000/terms",
     "validationRequirements": {
       "needsTitle": true,
       "needsDescription": true,
@@ -399,8 +418,8 @@
     }
   },
   {
-    "route": "verify/credential",
-    "type": "public/indexable",
+    "route": "/verify/credential",
+    "type": "public/non-indexable",
     "filePath": "app\\verify\\credential\\page.tsx",
     "metadata": {
       "hasTitle": false,
@@ -408,18 +427,18 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000verify/credential",
+    "canonicalUrl": "http://localhost:3000/verify/credential",
     "validationRequirements": {
       "needsTitle": true,
       "needsDescription": true,
       "needsCanonical": true,
-      "shouldBeIndexable": true,
-      "shouldNotBeIndexable": false
+      "shouldBeIndexable": false,
+      "shouldNotBeIndexable": true
     }
   },
   {
-    "route": "verify",
-    "type": "public/indexable",
+    "route": "/verify",
+    "type": "public/non-indexable",
     "filePath": "app\\verify\\page.tsx",
     "metadata": {
       "hasTitle": false,
@@ -427,18 +446,18 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000verify",
+    "canonicalUrl": "http://localhost:3000/verify",
     "validationRequirements": {
       "needsTitle": true,
       "needsDescription": true,
       "needsCanonical": true,
-      "shouldBeIndexable": true,
-      "shouldNotBeIndexable": false
+      "shouldBeIndexable": false,
+      "shouldNotBeIndexable": true
     }
   },
   {
-    "route": "verify/scan",
-    "type": "public/indexable",
+    "route": "/verify/scan",
+    "type": "public/non-indexable",
     "filePath": "app\\verify\\scan\\page.tsx",
     "metadata": {
       "hasTitle": true,
@@ -446,18 +465,18 @@
       "hasCustomMetadata": true,
       "rawContent": "import { PageHeading } from \"@/components/common/page-heading\";\r\nimport { pageContainer } from \"@/components/common/production-ui\";\r\nimport { PublicShell } from \"@/components/layout/public-shell\";\r\nimport { VerifyScan } from \"@/components/verification/verify-scan\";\r\n\r\nexport const metadata = {\r\n    title: \"Scan proof | EarnProof\",\r\n    description: \"Scan or enter an EarnProof QR proof to verify it publicly.\",\r\n};\r\n\r\nexport default function VerifyScanPage() {\r\n    return (\r\n        <PublicShell>\r"
     },
-    "canonicalUrl": "http://localhost:3000verify/scan",
+    "canonicalUrl": "http://localhost:3000/verify/scan",
     "validationRequirements": {
       "needsTitle": true,
       "needsDescription": true,
       "needsCanonical": true,
-      "shouldBeIndexable": true,
-      "shouldNotBeIndexable": false
+      "shouldBeIndexable": false,
+      "shouldNotBeIndexable": true
     }
   },
   {
-    "route": "verify/[proofId]",
-    "type": "public/indexable",
+    "route": "/verify/[proofId]",
+    "type": "public/non-indexable",
     "filePath": "app\\verify\\[proofId]\\page.tsx",
     "metadata": {
       "hasTitle": false,
@@ -465,13 +484,13 @@
       "hasCustomMetadata": false,
       "usesLayoutMetadata": true
     },
-    "canonicalUrl": "http://localhost:3000verify/[proofId]",
+    "canonicalUrl": "http://localhost:3000/verify/[proofId]",
     "validationRequirements": {
       "needsTitle": true,
       "needsDescription": true,
       "needsCanonical": true,
-      "shouldBeIndexable": true,
-      "shouldNotBeIndexable": false
+      "shouldBeIndexable": false,
+      "shouldNotBeIndexable": true
     }
   }
 ]

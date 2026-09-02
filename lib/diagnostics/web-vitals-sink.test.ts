@@ -43,7 +43,7 @@ describe("sanitizeMetric", () => {
   it("only ever exposes the fields defined on WebVitalMetricPayload", () => {
     const payload = sanitizeMetric(
       { name: "FID", value: 10, rating: "good", navigationType: "reload" },
-      "/proofs/create",
+      "/proofs",
     );
 
     expect(Object.keys(payload).sort()).toEqual(

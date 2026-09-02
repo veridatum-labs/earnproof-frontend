@@ -72,7 +72,7 @@ paired `earnproof-backend` API contract this frontend consumes.
       Android. If `docs/browser-support.md` exists in this repository at
       release time, use its matrix instead — that document supersedes this
       list when the two disagree.
-- [ ] Freighter wallet flows (`/proofs/create`) were smoke-tested in a
+- [ ] Freighter wallet flows (`/proofs`) were smoke-tested in a
       Chromium-based browser with the Freighter extension installed — this
       is the only supported wallet browser environment; other browsers must
       show the no-wallet-detected fallback state instead of a broken flow.
@@ -136,9 +136,9 @@ screenshot, response header dump, or console output as noted.
 | `/verify/credential` | upload a well-formed signed JSON credential | Credential renders through `VerifyCredentialForm` without exposing unrelated wallet data | Screenshot |
 | `/verify/credential` | upload a malformed JSON file | Client-side validation error, no unhandled exception in console | Console log |
 | `/verify/scan` | scan/paste a valid QR-encoded proof reference | Resolves to the same result states as `/verify` above | Screenshot |
-| `/proofs/create` | no Freighter extension installed | Explicit "wallet not detected" state, no silent failure | Screenshot |
-| `/proofs/create` | Freighter installed, wallet challenge signed | Authenticated payment sync and minimum-income proof creation form become available | Screenshot |
-| `/proofs/create` | disclosure preview step | Disclosure preview is shown before the proof is created; amounts hidden by default per [README.md Privacy and UX Requirements](../README.md#privacy-and-ux-requirements) | Screenshot |
+| `/proofs` | no Freighter extension installed | Explicit "wallet not detected" state, no silent failure | Screenshot |
+| `/proofs` | Freighter installed, wallet challenge signed | Authenticated payment sync and minimum-income proof creation form become available | Screenshot |
+| `/proofs` | disclosure preview step | Disclosure preview is shown before the proof is created; amounts hidden by default per [README.md Privacy and UX Requirements](../README.md#privacy-and-ux-requirements) | Screenshot |
 | `/issuers` | default | Issuer directory shell renders | Screenshot |
 | any route | — | Response headers match section 2.4 | `curl -sI` output |
 | any route | — | No `console.error` in the browser devtools console on load | Console log |
@@ -156,7 +156,7 @@ following are true post-promotion:
 
 - Security headers from section 2.4 are missing or weakened (e.g. CSP
   falls back to a permissive default).
-- `/proofs/create` or `/verify` throws an unhandled client error on load,
+- `/proofs` or `/verify` throws an unhandled client error on load,
   or renders sensitive data (full wallet history, hidden amounts) beyond
   what [README.md Privacy and UX Requirements](../README.md#privacy-and-ux-requirements)
   allows.

@@ -31,7 +31,7 @@ adapts instead.
 ## What each check asserts
 
 Run against `/`, `/faq`, `/status`, `/verify`, `/verify/credential` and
-`/proofs/create`, in every mode:
+`/proofs`, in every mode:
 
 - **No control is clipped or collapsed.** Every focusable control has a
   non-zero box, sits inside the viewport, and is not cut off by an ancestor

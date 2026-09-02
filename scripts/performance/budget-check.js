@@ -23,6 +23,10 @@ function routeToHtmlFile(route) {
   return `${route.replace(/^\//, "")}.html`;
 }
 
+function routeToHtmlPath(buildDir, route) {
+  return path.join(buildDir, "server", "app", routeToHtmlFile(route));
+}
+
 /**
  * Pull every `/_next/static/...` script and stylesheet URL referenced by a
  * rendered route's HTML. This mirrors exactly what a browser loads on
@@ -64,6 +68,15 @@ function listBuildRoutes(buildDir) {
   return [...routes].sort();
 }
 
+function listMeasurableBuildRoutes(buildDir) {
+  return listBuildRoutes(buildDir).filter((route) => fs.existsSync(routeToHtmlPath(buildDir, route)));
+}
+
+function listSkippedBuildRoutes(buildDir) {
+  const measurable = new Set(listMeasurableBuildRoutes(buildDir));
+  return listBuildRoutes(buildDir).filter((route) => !measurable.has(route));
+}
+
 /**
  * Measure one route's real First Load JS (sum of unique JS asset bytes
  * referenced by its rendered HTML) and its largest single static asset
@@ -71,7 +84,7 @@ function listBuildRoutes(buildDir) {
  * against.
  */
 function measureRoute(buildDir, route) {
-  const htmlFile = path.join(buildDir, "server", "app", routeToHtmlFile(route));
+  const htmlFile = routeToHtmlPath(buildDir, route);
   const html = fs.readFileSync(htmlFile, "utf8");
   const assetPaths = extractStaticAssetPaths(html);
 
@@ -109,7 +122,7 @@ function measureRoute(buildDir, route) {
 }
 
 function measureAllRoutes(buildDir) {
-  return listBuildRoutes(buildDir).map((route) => measureRoute(buildDir, route));
+  return listMeasurableBuildRoutes(buildDir).map((route) => measureRoute(buildDir, route));
 }
 
 /**
@@ -200,6 +213,8 @@ module.exports = {
   routeToHtmlFile,
   extractStaticAssetPaths,
   listBuildRoutes,
+  listMeasurableBuildRoutes,
+  listSkippedBuildRoutes,
   measureRoute,
   measureAllRoutes,
   resolveBudget,

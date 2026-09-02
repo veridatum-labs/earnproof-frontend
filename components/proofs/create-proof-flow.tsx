@@ -630,7 +630,7 @@ function Field({
 
 // The Freighter wallet SDK is loaded on demand, only once a worker actually
 // starts the connect flow on this route. This keeps `@stellar/freighter-api`
-// out of the initial First Load JS for /proofs/create (and, by construction,
+// out of the initial First Load JS for /proofs (and, by construction,
 // out of every public route that never renders this component).
 async function loadFreighter(): Promise<{
   getAddress: typeof getAddress;

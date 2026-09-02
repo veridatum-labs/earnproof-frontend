@@ -34,12 +34,12 @@ describe("generateCorrelationId", () => {
     const first = buildClientErrorEvent({
       error: walletError,
       category: "wallet.rejected",
-      pathname: "/proofs/create",
+      pathname: "/proofs",
     });
     const second = buildClientErrorEvent({
       error: walletError,
       category: "wallet.rejected",
-      pathname: "/proofs/create",
+      pathname: "/proofs",
     });
 
     // Identical input, different id: the id carries no information about

@@ -15,7 +15,7 @@ const APP_DIR = path.join(APP_ROOT, 'app');
 
 // Configuration from app.ts
 const appConfig = require(path.join(APP_ROOT, 'config/app.ts')).appConfig;
-const APP_URL = appConfig.appUrl;
+const APP_URL = appConfig.appUrl.replace(/\/+$/, '');
 
 // Route classification
 const ROUTE_TYPES = {
@@ -45,7 +45,6 @@ const ROUTE_CLASSIFICATION = {
   
   // Proof creation routes - workflow/private
   '/proofs': ROUTE_TYPES.WORKFLOW_ONLY,
-  '/proofs/create': ROUTE_TYPES.PRIVATE,
   '/proofs/minimum-income': ROUTE_TYPES.PRIVATE,
   '/proofs/payment-receipt': ROUTE_TYPES.PRIVATE,
   '/proofs/recurring-income': ROUTE_TYPES.PRIVATE,
@@ -69,6 +68,15 @@ function fileExists(filePath) {
   } catch {
     return false;
   }
+}
+
+function normalizeRoutePath(routePath) {
+  const normalized = routePath.replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '');
+  return normalized === '' ? '/' : `/${normalized}`;
+}
+
+function buildCanonicalUrl(routePath) {
+  return routePath === '/' ? APP_URL : `${APP_URL}${routePath}`;
 }
 
 // Extract metadata from a page file
@@ -143,7 +151,7 @@ function generateRouteManifest() {
   const manifest = [];
   
   for (const pageFile of pageFiles) {
-    const routePath = pageFile.routePath.replace(/\\/g, '/');
+    const routePath = normalizeRoutePath(pageFile.routePath);
     const routeType = ROUTE_CLASSIFICATION[routePath] || ROUTE_TYPES.PUBLIC_INDEXABLE;
     const metadata = extractMetadataFromFile(pageFile.fullPath);
     
@@ -152,7 +160,7 @@ function generateRouteManifest() {
       type: routeType,
       filePath: path.relative(APP_ROOT, pageFile.fullPath),
       metadata: metadata,
-      canonicalUrl: routePath === '/' ? APP_URL : `${APP_URL}${routePath}`,
+      canonicalUrl: buildCanonicalUrl(routePath),
       validationRequirements: {
         needsTitle: routeType === ROUTE_TYPES.PUBLIC_INDEXABLE || routeType === ROUTE_TYPES.PUBLIC_NON_INDEXABLE,
         needsDescription: routeType === ROUTE_TYPES.PUBLIC_INDEXABLE || routeType === ROUTE_TYPES.PUBLIC_NON_INDEXABLE,
@@ -202,6 +210,9 @@ function validateManifest(manifest) {
       }
       if (!canonicalUrl.startsWith(APP_URL)) {
         errors.push(`[WRONG_CANONICAL_ORIGIN] ${routePath}: Canonical origin doesn't match app origin (${canonicalUrl})`);
+      }
+      if (canonicalUrl !== buildCanonicalUrl(routePath)) {
+        errors.push(`[WRONG_CANONICAL_PATH] ${routePath}: Canonical URL should be ${buildCanonicalUrl(routePath)} (${canonicalUrl})`);
       }
     }
   }
@@ -253,6 +264,8 @@ if (require.main === module) {
 module.exports = {
   generateRouteManifest,
   validateManifest,
+  normalizeRoutePath,
+  buildCanonicalUrl,
   ROUTE_TYPES,
   ROUTE_CLASSIFICATION
 };

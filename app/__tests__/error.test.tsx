@@ -79,7 +79,7 @@ describe("ErrorPage", () => {
     expect(verifyLink.closest("a")).toHaveAttribute("href", "/verify");
     
     const createLink = screen.getByText("Create a proof");
-    expect(createLink.closest("a")).toHaveAttribute("href", "/proofs/create");
+    expect(createLink.closest("a")).toHaveAttribute("href", "/proofs");
   });
 
   it("provides link to accessibility page for support", () => {

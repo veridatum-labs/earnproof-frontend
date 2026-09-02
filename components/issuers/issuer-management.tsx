@@ -121,7 +121,7 @@ export function IssuerManagement() {
         </p>
         <a
           className="mt-4 inline-flex h-10 items-center justify-center rounded-md bg-cyan-300 px-4 text-xs font-semibold text-slate-950 transition hover:bg-cyan-200"
-          href="/proofs/create"
+          href="/proofs"
         >
           Connect Wallet
         </a>

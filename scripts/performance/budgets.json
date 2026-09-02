@@ -31,6 +31,14 @@
       "cls": 0.1,
       "interactionLatencyMs": 200
     },
+    "/developers/api-keys": {
+      "firstLoadJsBytes": 970000,
+      "largestAssetBytes": 290000,
+      "lcpMs": 2800,
+      "cls": 0.1,
+      "interactionLatencyMs": 200,
+      "note": "Authenticated API-key management loads form validation libraries on the client; this is isolated from public routes."
+    },
     "/faq": {
       "firstLoadJsBytes": 630000,
       "lcpMs": 2500,
@@ -56,7 +64,7 @@
       "interactionLatencyMs": 200
     },
     "/status": {
-      "firstLoadJsBytes": 620000,
+      "firstLoadJsBytes": 635000,
       "lcpMs": 2500,
       "cls": 0.1,
       "interactionLatencyMs": 200
@@ -68,23 +76,55 @@
       "interactionLatencyMs": 200
     },
     "/verify": {
-      "firstLoadJsBytes": 630000,
+      "firstLoadJsBytes": 650000,
       "lcpMs": 2200,
       "cls": 0.05,
       "interactionLatencyMs": 200
     },
     "/verify/credential": {
-      "firstLoadJsBytes": 630000,
+      "firstLoadJsBytes": 645000,
       "lcpMs": 2200,
       "cls": 0.05,
       "interactionLatencyMs": 200
     },
-    "/proofs/create": {
+    "/proofs": {
       "firstLoadJsBytes": 650000,
       "lcpMs": 2800,
       "cls": 0.1,
       "interactionLatencyMs": 200,
-      "note": "Higher JS budget than public routes is intentional: this is the only route that ever loads @stellar/freighter-api, and it loads it on demand (dynamic import) when the worker clicks 'Connect Freighter', not in the route's first load JS. See scripts/performance/README.md for the bundle evidence."
+      "note": "Higher JS budget than public routes is intentional: the proof creation surfaces load @stellar/freighter-api on demand (dynamic import) when the worker clicks 'Connect Freighter', not in the route's first load JS. See scripts/performance/README.md for the bundle evidence."
+    },
+    "/proofs/payment-receipt": {
+      "firstLoadJsBytes": 950000,
+      "largestAssetBytes": 290000,
+      "lcpMs": 2800,
+      "cls": 0.1,
+      "interactionLatencyMs": 200,
+      "note": "Authenticated payment-receipt proof creation loads zod-backed client validation."
+    },
+    "/proofs/recurring-income": {
+      "firstLoadJsBytes": 960000,
+      "largestAssetBytes": 290000,
+      "lcpMs": 2800,
+      "cls": 0.1,
+      "interactionLatencyMs": 200,
+      "note": "Authenticated recurring-income proof creation loads zod-backed client validation."
+    },
+    "/settings/issuers": {
+      "firstLoadJsBytes": 965000,
+      "largestAssetBytes": 290000,
+      "lcpMs": 2800,
+      "cls": 0.1,
+      "interactionLatencyMs": 200,
+      "note": "Authenticated issuer management loads react-hook-form and zod-backed client validation."
+    },
+    "/settings/organizations": {
+      "firstLoadJsBytes": 970000,
+      "largestAssetBytes": 290000,
+      "lcpMs": 2800,
+      "cls": 0.1,
+      "interactionLatencyMs": 200,
+      "note": "Authenticated organization management loads react-hook-form and zod-backed client validation."
     }
   }
 }

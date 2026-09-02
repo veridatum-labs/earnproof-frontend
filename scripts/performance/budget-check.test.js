@@ -1,10 +1,14 @@
 const {
   routeToHtmlFile,
+  listMeasurableBuildRoutes,
   extractStaticAssetPaths,
   resolveBudget,
   evaluateBudgets,
   formatReport,
 } = require("./budget-check");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
 
 describe("routeToHtmlFile", () => {
   it("maps the root route to index.html", () => {
@@ -13,7 +17,30 @@ describe("routeToHtmlFile", () => {
 
   it("maps nested routes to their nested html file", () => {
     expect(routeToHtmlFile("/verify/credential")).toBe("verify/credential.html");
-    expect(routeToHtmlFile("/proofs/create")).toBe("proofs/create.html");
+    expect(routeToHtmlFile("/proofs")).toBe("proofs.html");
+  });
+});
+
+describe("listMeasurableBuildRoutes", () => {
+  it("skips dynamic routes that have no prerendered HTML", () => {
+    const buildDir = fs.mkdtempSync(path.join(os.tmpdir(), "earnproof-build-"));
+    try {
+      fs.mkdirSync(path.join(buildDir, "server", "app", "proofs"), { recursive: true });
+      fs.writeFileSync(
+        path.join(buildDir, "app-path-routes-manifest.json"),
+        JSON.stringify({
+          "/proofs/page": "/proofs",
+          "/verify/[proofId]/page": "/verify/[proofId]",
+          "/favicon.ico/route": "/favicon.ico",
+          "/_not-found/page": "/_not-found",
+        }),
+      );
+      fs.writeFileSync(path.join(buildDir, "server", "app", "proofs.html"), "<html></html>");
+
+      expect(listMeasurableBuildRoutes(buildDir)).toEqual(["/proofs"]);
+    } finally {
+      fs.rmSync(buildDir, { recursive: true, force: true });
+    }
   });
 });
 
@@ -98,13 +125,13 @@ describe("evaluateBudgets", () => {
     const lowBudgets = {
       defaults: { firstLoadJsBytes: 600_000, largestAssetBytes: 260_000 },
       routes: {
-        "/proofs/create": { firstLoadJsBytes: 10_000 }, // artificially low
+        "/proofs": { firstLoadJsBytes: 10_000 }, // artificially low
       },
     };
 
     const measurements = [
       {
-        route: "/proofs/create",
+        route: "/proofs",
         firstLoadJsBytes: 609_487, // real measured baseline for this route
         largestAsset: { chunk: "4561u0v7ysn3r.js", bytes: 228_844 },
         largestJsChunk: { chunk: "3jq6h0_m4yl2-.js", bytes: 19_705 },
@@ -126,7 +153,7 @@ describe("evaluateBudgets", () => {
     // The rendered report must surface the route and the chunk, not just
     // "failed" — this is what makes the CI output actionable.
     const report = formatReport(result ? [result] : []);
-    expect(report).toContain("/proofs/create");
+    expect(report).toContain("/proofs");
     expect(report).toContain("3jq6h0_m4yl2-.js");
     expect(report).toContain("FAIL");
   });

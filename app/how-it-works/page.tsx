@@ -13,7 +13,7 @@ export default function HowItWorksPage() {
     <PublicShell>
       <div className={pageContainer}>
         <PageHeading title="How EarnProof works" description="A clear path from wallet payments to a portable, privacy-preserving credential." />
-        <MarketingHero title="How EarnProof works" description="A clear path from wallet payments to a portable, privacy-preserving credential." action="See proof types" href="/proofs/create" />
+        <MarketingHero title="How EarnProof works" description="A clear path from wallet payments to a portable, privacy-preserving credential." action="See proof types" href="/proofs" />
         <FeatureGrid items={features} />
       </div>
     </PublicShell>

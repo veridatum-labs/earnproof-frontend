@@ -228,7 +228,7 @@ describe("VerifyProofPage", () => {
       expect(verifyAnotherLink.closest("a")).toHaveAttribute("href", "/verify");
       
       const createProofLink = screen.getByText("Create your own proof");
-      expect(createProofLink.closest("a")).toHaveAttribute("href", "/proofs/create");
+      expect(createProofLink.closest("a")).toHaveAttribute("href", "/proofs");
     });
   });
 

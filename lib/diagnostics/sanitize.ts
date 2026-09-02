@@ -24,7 +24,7 @@ export const KNOWN_ROUTE_PATTERNS = [
   "/how-it-works",
   "/issuers",
   "/privacy",
-  "/proofs/create",
+  "/proofs",
   "/status",
   "/terms",
   "/verify",

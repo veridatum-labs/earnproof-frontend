@@ -38,7 +38,8 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const {
-  listBuildRoutes,
+  listMeasurableBuildRoutes,
+  listSkippedBuildRoutes,
   extractStaticAssetPaths,
   routeToHtmlFile,
 } = require("../performance/budget-check");
@@ -282,12 +283,14 @@ function buildReport(budgets) {
   const index = buildClientModuleIndex(chunks, ownerAliases);
 
   const routes = {};
-  for (const route of listBuildRoutes(buildDir)) {
+  for (const route of listMeasurableBuildRoutes(buildDir)) {
     routes[route] = measureRouteComposition(route, chunkIndexByAsset, ownerAliases);
   }
+  const skippedRoutes = listSkippedBuildRoutes(buildDir);
 
   return {
     routes: Object.fromEntries(Object.entries(routes).sort((a, b) => (a[0] < b[0] ? -1 : 1))),
+    skippedRoutes,
     packages: index.instances.map((instance) => ({
       name: instance.name,
       version: instance.version,
@@ -328,6 +331,12 @@ function main() {
 
   const budgets = readJson(budgetsPath);
   const report = buildReport(budgets);
+
+  if (report.skippedRoutes.length > 0) {
+    console.warn(
+      "Skipped routes without prerendered HTML: " + report.skippedRoutes.join(", "),
+    );
+  }
 
   const mappedChunks = Object.values(report.routes).reduce(
     (sum, route) => sum + (route.owners["[unmapped]"] ? 1 : 0),

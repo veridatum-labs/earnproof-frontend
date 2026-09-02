@@ -51,7 +51,7 @@ describe("ProofTypesPage", () => {
     
     // Should have active create proof link
     const createLinks = screen.getAllByText("Create proof");
-    expect(createLinks[0].closest("a")).toHaveAttribute("href", "/proofs/create");
+    expect(createLinks[0].closest("a")).toHaveAttribute("href", "/proofs");
   });
 
   it("shows planned proof types as coming soon", () => {

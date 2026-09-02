@@ -80,7 +80,7 @@ describe("cacheHeaderRules", () => {
     },
   );
 
-  it.each(["/proofs/create"])(
+  it.each(["/proofs"])(
     "marks the authenticated route %s as no-store",
     (pathname) => {
       expect(cacheControlFor(pathname)).toBe("no-store, private");

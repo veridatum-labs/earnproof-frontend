@@ -95,10 +95,11 @@ profile above is exactly what that job should use.
 `/verify`, `/verify/credential`, and every other public/landing route never
 reference the `@stellar/freighter-api` chunk — confirmed by inspecting the
 `<script src>` tags Next.js actually emits for each route's HTML after
-`next build`. Only `/proofs/create` loads it, and even there it is loaded
-lazily via a dynamic `import("@stellar/freighter-api")` inside the wallet
+`next build`. Only the `/proofs` creation surfaces load it, and even there
+it is loaded lazily via a dynamic `import("@stellar/freighter-api")` inside
+the wallet
 connect handler in `components/proofs/create-proof-flow.tsx`, not as part of
-that route's first load JS — it only downloads once a worker clicks
+those routes' first load JS — it only downloads once a worker clicks
 "Connect Freighter". See the PR description for the exact chunk-level
 evidence from a real build.
 
@@ -106,5 +107,5 @@ evidence from a real build.
 
 Bump the relevant number in `budgets.json` in the same PR as the change that
 needs it, with a one-line reason (see the existing `note` field on
-`/proofs/create` for the expected format). Don't bump a budget to silence a
+`/proofs` for the expected format). Don't bump a budget to silence a
 regression without understanding what grew.
