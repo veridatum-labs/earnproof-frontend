@@ -36,15 +36,16 @@ function readStoredSession(): SessionData | null {
 }
 
 export function ApiKeyManagement() {
-  const [session, setSession] = useState<SessionData | null>(() => readStoredSession());
+  const [session] = useState<SessionData | null>(() => readStoredSession());
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdKey, setCreatedKey] = useState<CreateApiKeyResponse | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const sessionToken = session?.token ?? null;
 
   const loadApiKeys = useCallback(async () => {
-    if (!session?.token) {
+    if (!sessionToken) {
       return;
     }
 
@@ -60,11 +61,11 @@ export function ApiKeyManagement() {
     setError(null);
 
     try {
-      const keys = await getApiKeys(session.token, controller.signal);
+      const keys = await getApiKeys(sessionToken, controller.signal);
       if (!controller.signal.aborted) {
         setApiKeys(keys);
       }
-    } catch (err) {
+    } catch {
       if (!controller.signal.aborted) {
         setError("Failed to load API keys. Please try again.");
       }
@@ -73,13 +74,20 @@ export function ApiKeyManagement() {
         setLoading(false);
       }
     }
-  }, [session?.token]);
+  }, [sessionToken]);
 
   useEffect(() => {
-    loadApiKeys();
+    let active = true;
+
+    void Promise.resolve().then(() => {
+      if (active) {
+        void loadApiKeys();
+      }
+    });
     
     // Cleanup on unmount
     return () => {
+      active = false;
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }

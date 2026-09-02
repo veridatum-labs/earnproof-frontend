@@ -108,9 +108,7 @@ describe("ArtifactExport", () => {
 
     expect(mockedDownload).toHaveBeenCalledWith(plan);
 
-    expect(
-      screen.getByText("Download started."),
-    ).toBeInTheDocument();
+    expect(screen.getAllByText("Download started.")).toHaveLength(2);
   });
 
   it("handles download failures without exposing credential contents", () => {
@@ -168,7 +166,7 @@ describe("ArtifactExport", () => {
       expect(mockedCopy).toHaveBeenCalledWith(plan.body);
     });
 
-    expect(screen.getByText("Copied to clipboard.")).toBeInTheDocument();
+    expect(screen.getAllByText("Copied to clipboard.")).toHaveLength(2);
   });
 
   it("handles clipboard failures", async () => {

@@ -172,7 +172,7 @@ function validateManifest(manifest) {
   const titles = new Set();
   
   for (const route of manifest) {
-    const { route: routePath, type, metadata, validationRequirements } = route;
+    const { route: routePath, metadata, validationRequirements } = route;
     
     // Check for duplicate titles (for indexable routes)
     if (validationRequirements.needsTitle && metadata && metadata.hasTitle) {

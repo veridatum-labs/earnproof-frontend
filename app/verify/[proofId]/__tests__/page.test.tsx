@@ -102,7 +102,7 @@ describe("VerifyProofPage", () => {
     expect(screen.getByText("This proof has been successfully verified and is currently valid.")).toBeInTheDocument();
     expect(screen.getByText("ep_7F3A")).toBeInTheDocument();
     expect(screen.getByText("testnet")).toBeInTheDocument();
-    expect(screen.getByText("≥ 100 USDC")).toBeInTheDocument();
+    expect(screen.getByText(">= 100 USDC")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument(); // Qualifying payments
   });
 
@@ -212,7 +212,7 @@ describe("VerifyProofPage", () => {
     
     await waitFor(() => {
       // Should show truncated wallet hash, not full hash
-      expect(screen.getByText("sha256:7fc0123456789abc...")).toBeInTheDocument();
+      expect(screen.getByText("sha256:7fc012345...")).toBeInTheDocument();
       // Should not show the full hash
       expect(screen.queryByText("sha256:7fc0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")).not.toBeInTheDocument();
     });

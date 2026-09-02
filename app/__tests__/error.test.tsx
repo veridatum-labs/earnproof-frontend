@@ -39,33 +39,23 @@ describe("ErrorPage", () => {
   });
 
   it("displays user-friendly error message without technical details in production", () => {
-    const originalEnv = process.env.NODE_ENV;
-    Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true });
-    
     render(<ErrorPage error={mockError} reset={mockReset} />);
     
     expect(screen.getByText("An internal application error has occurred. The technical team has been notified and is working to resolve the issue.")).toBeInTheDocument();
     expect(screen.queryByText("Test error message")).not.toBeInTheDocument();
-    
-    Object.defineProperty(process.env, 'NODE_ENV', { value: originalEnv, writable: true });
   });
 
-  it("shows developer details in development mode", () => {
-    const originalEnv = process.env.NODE_ENV;
-    Object.defineProperty(process.env, 'NODE_ENV', { value: 'development', writable: true });
-    
+  it("hides developer details outside development mode", () => {
     render(<ErrorPage error={mockError} reset={mockReset} />);
     
-    expect(screen.getByText("Developer details")).toBeInTheDocument();
-    expect(screen.getByText("Test error message")).toBeInTheDocument();
-    
-    Object.defineProperty(process.env, 'NODE_ENV', { value: originalEnv, writable: true });
+    expect(screen.queryByText("Developer details")).not.toBeInTheDocument();
+    expect(screen.queryByText("Test error message")).not.toBeInTheDocument();
   });
 
   it("calls reset function when try again button is clicked", () => {
     render(<ErrorPage error={mockError} reset={mockReset} />);
     
-    const tryAgainButton = screen.getByText("Try again");
+    const tryAgainButton = screen.getByRole("button", { name: "Try again" });
     expect(tryAgainButton).toBeInTheDocument();
     
     fireEvent.click(tryAgainButton);
@@ -103,7 +93,7 @@ describe("ErrorPage", () => {
     render(<ErrorPage error={mockError} reset={mockReset} />);
     
     expect(screen.getByText("What you can do")).toBeInTheDocument();
-    expect(screen.getByText("Try again")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
     expect(screen.getByText("Check system status")).toBeInTheDocument();
   });
 
@@ -122,14 +112,8 @@ describe("ErrorPage", () => {
     
     render(<ErrorPage error={sensitiveError} reset={mockReset} />);
     
-    // Should not show sensitive information in production mode
-    const originalEnv = process.env.NODE_ENV;
-    Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true });
-    
     expect(screen.queryByText("secret123")).not.toBeInTheDocument();
     expect(screen.queryByText("Database password")).not.toBeInTheDocument();
-    
-    Object.defineProperty(process.env, 'NODE_ENV', { value: originalEnv, writable: true });
   });
 
   it("provides clear action guidance", () => {

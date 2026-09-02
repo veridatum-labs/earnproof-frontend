@@ -129,6 +129,57 @@
         }
       }
     },
+    "/proofs/payment-receipt": {
+      "post": {
+        "tags": ["proofs"],
+        "operationId": "createPaymentReceiptProof",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "Created payment receipt proof",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProofCreated" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/proofs/recurring-income": {
+      "post": {
+        "tags": ["proofs"],
+        "operationId": "createRecurringIncomeProof",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "Created recurring income proof",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecurringIncomeProof" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/proofs/recurring-income/analyze-coverage": {
+      "post": {
+        "tags": ["proofs"],
+        "operationId": "analyzeRecurringIncomeCoverage",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Coverage analysis",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/proofs/{id}/verify": {
       "get": {
         "tags": ["proofs"],
@@ -156,6 +207,21 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": ["issuers"],
+        "operationId": "createIssuer",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "Issuer",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Issuer" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
       }
     },
     "/issuers/{id}": {
@@ -168,6 +234,23 @@
             "description": "Issuer",
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Issuer" } } }
           },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["issuers"],
+        "operationId": "updateIssuer",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Issuer",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Issuer" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
           "404": { "$ref": "#/components/responses/Error" }
         }
       }
@@ -186,6 +269,53 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": ["organizations"],
+        "operationId": "createOrganization",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "Organization",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Organization" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/organizations/{id}": {
+      "get": {
+        "tags": ["organizations"],
+        "operationId": "getOrganization",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Organization",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Organization" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["organizations"],
+        "operationId": "updateOrganization",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Organization",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Organization" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
       }
     },
     "/api-keys": {
@@ -202,6 +332,48 @@
             }
           },
           "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["api-keys"],
+        "operationId": "createApiKey",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "API key",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiKey" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api-keys/{id}/rotate": {
+      "post": {
+        "tags": ["api-keys"],
+        "operationId": "rotateApiKey",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "201": {
+            "description": "API key",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiKey" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api-keys/{id}": {
+      "delete": {
+        "tags": ["api-keys"],
+        "operationId": "revokeApiKey",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "204": { "description": "API key revoked" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
         }
       }
     },
@@ -431,6 +603,16 @@
           "proofId": { "type": "string", "example": "EP-FIXT-0001" },
           "status": { "type": "string", "example": "issued" },
           "verificationUrl": { "type": "string", "example": "https://app.earnproof.example/verify?proof=EP-FIXT-0001" },
+          "credential": { "$ref": "#/components/schemas/SignedCredential" }
+        }
+      },
+      "RecurringIncomeProof": {
+        "type": "object",
+        "required": ["proofId", "status", "verificationUrl", "credential"],
+        "properties": {
+          "proofId": { "type": "string", "example": "EP-FIXT-RECURRING-0001" },
+          "status": { "type": "string", "example": "issued" },
+          "verificationUrl": { "type": "string", "example": "https://app.earnproof.example/verify?proof=EP-FIXT-RECURRING-0001" },
           "credential": { "$ref": "#/components/schemas/SignedCredential" }
         }
       },

@@ -43,6 +43,14 @@ function objectType(schema, spec) {
   return `{\n${lines.join("\n")}\n}`;
 }
 
+function schemaDeclaration(name, schema, spec) {
+  if (schema.type === "object" || schema.properties) {
+    return `export interface ${name} ${objectType(schema, spec)}`;
+  }
+
+  return `export type ${name} = ${tsType(schema, spec)};`;
+}
+
 function generate(spec) {
   const header = [
     "/**",
@@ -60,7 +68,7 @@ function generate(spec) {
 
   const schemas = spec.components.schemas ?? {};
   const body = Object.entries(schemas).map(([name, schema]) => {
-    return `export interface ${name} ${objectType(schema, spec)}`;
+    return schemaDeclaration(name, schema, spec);
   });
 
   return `${header.join("\n")}${body.join("\n\n")}\n`;

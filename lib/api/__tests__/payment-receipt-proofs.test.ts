@@ -32,7 +32,7 @@ describe("Payment Receipt Proof Utilities", () => {
     it("requires boolean disclosure preferences", () => {
       const request = {
         paymentId: "payment_123",
-        discloseSender: undefined as any,
+        discloseSender: undefined as unknown as boolean,
         discloseAmount: false,
       };
       expect(validatePaymentReceiptProofRequest(request)).toBe("Sender disclosure preference is required");
@@ -40,7 +40,7 @@ describe("Payment Receipt Proof Utilities", () => {
       const request2 = {
         paymentId: "payment_123",
         discloseSender: false,
-        discloseAmount: undefined as any,
+        discloseAmount: undefined as unknown as boolean,
       };
       expect(validatePaymentReceiptProofRequest(request2)).toBe("Amount disclosure preference is required");
     });

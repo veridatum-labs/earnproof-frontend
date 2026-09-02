@@ -116,7 +116,7 @@ export function IntervalConfigStep({
               <div>
                 <h4 className="text-sm font-semibold text-emerald-100">Interval Configured</h4>
                 <p className="mt-1 text-xs text-emerald-200">
-                  You'll create a proof showing income received every <strong>{formatInterval(intervalUnit, intervalCount)}</strong>. 
+                  You&apos;ll create a proof showing income received every <strong>{formatInterval(intervalUnit, intervalCount)}</strong>.
                   The system will analyze your payment history to verify this pattern.
                 </p>
               </div>

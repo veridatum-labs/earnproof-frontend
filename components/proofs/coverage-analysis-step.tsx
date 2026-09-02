@@ -1,6 +1,7 @@
 "use client";
 
 import { formatInterval, getCoverageStatus, getCoverageStatusColor, formatCoveragePercentage, type IntervalUnit, type IntervalCoverageAnalysis } from "@/lib/api/recurring-income-proofs";
+import { formatDateRange } from "@/lib/i18n";
 
 export function CoverageAnalysisStep({
   intervalUnit,
@@ -38,7 +39,7 @@ export function CoverageAnalysisStep({
           <h3 className="text-sm font-semibold text-cyan-100">Configuration Summary</h3>
           <div className="mt-2 grid gap-1 text-sm text-cyan-200">
             <div><strong>Interval:</strong> Every {formatInterval(intervalUnit, intervalCount)}</div>
-            <div><strong>Period:</strong> {new Date(periodStart).toLocaleDateString()} - {new Date(periodEnd).toLocaleDateString()}</div>
+            <div><strong>Period:</strong> {formatDateRange(periodStart, periodEnd)}</div>
             <div><strong>Selected Payments:</strong> {selectedPaymentIds.length}</div>
           </div>
         </div>

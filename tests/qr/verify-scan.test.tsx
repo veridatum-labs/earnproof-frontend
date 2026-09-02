@@ -65,9 +65,9 @@ describe("VerifyScan safety and recovery", () => {
     render(<VerifyScan />);
     await userEvent.click(screen.getByRole("button", { name: "Allow camera" }));
 
-    expect(
-      await screen.findByText(/Camera scanning is not available/),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /Camera scanning is not available/,
+    );
     expect(screen.getByLabelText("Proof ID or verification URL")).toBeEnabled();
     expect(screen.getByLabelText("Upload QR image")).toBeInTheDocument();
     expect(push).not.toHaveBeenCalled();
@@ -79,9 +79,9 @@ describe("VerifyScan safety and recovery", () => {
     render(<VerifyScan />);
     await userEvent.click(screen.getByRole("button", { name: "Allow camera" }));
 
-    expect(
-      await screen.findByText(/Camera access was denied or unavailable/),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /Camera access was denied or unavailable/,
+    );
     expect(screen.getByRole("button", { name: "Allow camera" })).toBeEnabled();
     expect(screen.getByLabelText("Proof ID or verification URL")).toBeEnabled();
     expect(push).not.toHaveBeenCalled();
@@ -131,7 +131,9 @@ describe("VerifyScan safety and recovery", () => {
     const file = new File(["blur"], "blurred.png", { type: "image/png" });
     await userEvent.upload(screen.getByLabelText("Upload QR image"), file);
 
-    expect(await screen.findByText(/No readable EarnProof QR code/)).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /No readable EarnProof QR code/,
+    );
     expect(push).not.toHaveBeenCalled();
   });
 

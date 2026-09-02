@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ApiKey } from "@/lib/api/generated/v1";
+import { formatDate } from "@/lib/i18n";
 
 export function OneTimeSecret({
   apiKey,
@@ -24,9 +25,10 @@ export function OneTimeSecret({
 
   // Clear the secret from memory when component unmounts
   useEffect(() => {
+    const input = secretRef.current;
     return () => {
-      if (secretRef.current) {
-        secretRef.current.value = "";
+      if (input) {
+        input.value = "";
       }
     };
   }, []);
@@ -41,7 +43,7 @@ export function OneTimeSecret({
       
       // Clear status after 3 seconds
       setTimeout(() => setCopyStatus(null), 3000);
-    } catch (error) {
+    } catch {
       setCopyError("Failed to copy to clipboard. Please copy manually.");
     }
   }, [secret]);
@@ -122,7 +124,7 @@ export function OneTimeSecret({
               </div>
               {apiKey.expiresAt && (
                 <div>
-                  <span className="font-semibold">Expires:</span> {new Date(apiKey.expiresAt).toLocaleDateString()}
+                  <span className="font-semibold">Expires:</span> {formatDate(apiKey.expiresAt)}
                 </div>
               )}
             </div>
@@ -135,7 +137,7 @@ export function OneTimeSecret({
               onClick={onDismiss}
               type="button"
             >
-              I've saved the secret, dismiss this
+              I&apos;ve saved the secret, dismiss this
             </button>
           </div>
         </div>

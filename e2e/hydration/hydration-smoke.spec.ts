@@ -68,7 +68,7 @@ test.describe('Hydration Smoke Tests', () => {
       test.info().attachments.push({
         name: `hydration-${route.replace(/\//g, '-')}`,
         contentType: 'image/png',
-        path: await page.screenshot({ fullPage: true }),
+        body: await page.screenshot({ fullPage: true }),
       });
       
       // Check for hydration errors

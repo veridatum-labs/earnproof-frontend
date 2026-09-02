@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { formatDateTime } from "@/lib/i18n";
 
 type PaymentClassification =
   | "INCOME"
@@ -82,7 +83,7 @@ export function PaymentSelection({
               No eligible payments found.
             </p>
             <p className="mt-2 text-xs text-slate-400">
-              Sync your payments or ensure you have eligible payments that aren't excluded from proof creation.
+              Sync your payments or ensure you have eligible payments that aren&apos;t excluded from proof creation.
             </p>
           </div>
         ) : (
@@ -114,16 +115,6 @@ function PaymentCard({
   isSelected: boolean;
   onSelect: () => void;
 }) {
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   const truncateHash = (hash: string) => {
     return `${hash.slice(0, 8)}...${hash.slice(-8)}`;
   };
@@ -169,7 +160,7 @@ function PaymentCard({
             </div>
             <div className="text-right">
               <p className="text-sm text-slate-300">
-                {formatDate(payment.occurredAt)}
+                {formatDateTime(payment.occurredAt)}
               </p>
               <p className={`mt-1 text-xs font-medium ${getClassificationColor(payment.classification)}`}>
                 {payment.classification.replace("_", " ")}

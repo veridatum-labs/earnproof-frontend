@@ -15,8 +15,7 @@ export const STORAGE_KEYS = {
 export type StorageKey = keyof typeof STORAGE_KEYS;
 
 export interface StorageSchema {
-  [STORAGE_KEYS.SESSION]: {
-    version: 1;
+  SESSION: {
     data: {
       token: string;
       user: {
@@ -39,7 +38,26 @@ export interface StorageMetadata {
   key: StorageKey;
 }
 
-export type StoredValue<K extends StorageKey> = StorageSchema[K];
+export type StoredValue<K extends StorageKey> = StorageSchema[K] &
+  StorageMetadata & {
+    key: K;
+  };
+
+type StorageMigration = (data: unknown) => unknown;
+
+type StorageStats = Record<
+  string,
+  {
+    exists: boolean;
+    version: number | "none";
+    size: number;
+    age: string;
+  }
+>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
 
 /**
  * Base storage interface
@@ -71,7 +89,7 @@ export const localStorageDriver: StorageDriver = {
 /**
  * Migration functions for each storage key
  */
-export const migrations: Record<StorageKey, Record<number, (data: any) => any>> = {
+export const migrations: Record<StorageKey, Record<number, StorageMigration>> = {
   SESSION: {
     // Version 1 is current - no migration needed
     1: (data) => data,
@@ -89,15 +107,15 @@ export function getStorageValue<K extends StorageKey>(
     const raw = driver.getItem(key);
     if (!raw) return null;
 
-    const parsed = JSON.parse(raw);
+    const parsed: unknown = JSON.parse(raw);
     
     // Check if it has version metadata
-    if (parsed && typeof parsed === 'object' && 'version' in parsed) {
+    if (isRecord(parsed) && typeof parsed.version === 'number') {
       const version = parsed.version;
       const currentVersion = CURRENT_VERSIONS[key];
       
       if (version === currentVersion) {
-        return parsed as StoredValue<K>;
+        return parsed as unknown as StoredValue<K>;
       }
       
       // Try to migrate
@@ -177,12 +195,16 @@ export function clearAllStorage(driver: StorageDriver = localStorageDriver): voi
  */
 function migrateValue<K extends StorageKey>(
   key: K,
-  value: any,
+  value: unknown,
   fromVersion: number,
   toVersion: number
 ): StoredValue<K> | null {
   try {
-    let current = value;
+    if (fromVersion > toVersion) {
+      return null;
+    }
+
+    let current: unknown = value;
     
     // Apply migrations in sequence
     for (let v = fromVersion + 1; v <= toVersion; v++) {
@@ -195,6 +217,10 @@ function migrateValue<K extends StorageKey>(
       }
     }
     
+    if (!isRecord(current)) {
+      return null;
+    }
+
     return {
       ...current,
       version: toVersion,
@@ -212,20 +238,34 @@ function migrateValue<K extends StorageKey>(
  */
 function migrateLegacyValue<K extends StorageKey>(
   key: K,
-  legacyValue: any
+  legacyValue: unknown
 ): StoredValue<K> | null {
   // Session migration from legacy format
   if (key === 'SESSION') {
     try {
       // Legacy format: { token: string, user: { ... } }
-      if (legacyValue && typeof legacyValue === 'object' && 'token' in legacyValue && 'user' in legacyValue) {
+      if (
+        isRecord(legacyValue) &&
+        typeof legacyValue.token === 'string' &&
+        isRecord(legacyValue.user) &&
+        typeof legacyValue.user.id === 'string' &&
+        typeof legacyValue.user.walletAddress === 'string'
+      ) {
+        const user = {
+          id: legacyValue.user.id,
+          walletAddress: legacyValue.user.walletAddress,
+          ...(typeof legacyValue.user.email === 'string'
+            ? { email: legacyValue.user.email }
+            : {}),
+        };
+
         return {
           version: 1,
           timestamp: new Date().toISOString(),
           key: 'SESSION',
           data: {
             token: legacyValue.token,
-            user: legacyValue.user,
+            user,
           },
         } as StoredValue<K>;
       }
@@ -240,14 +280,14 @@ function migrateLegacyValue<K extends StorageKey>(
 /**
  * Get storage statistics for debugging
  */
-export function getStorageStats(): Record<string, any> {
+export function getStorageStats(driver: StorageDriver = localStorageDriver): StorageStats {
   if (typeof window === 'undefined') return {};
   
-  const stats: Record<string, any> = {};
+  const stats: StorageStats = {};
   
   Object.entries(STORAGE_KEYS).forEach(([keyName, keyValue]) => {
     const key = keyName as StorageKey;
-    const value = getStorageValue(key);
+    const value = getStorageValue(key, driver);
     
     stats[keyValue] = {
       exists: value !== null,

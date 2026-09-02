@@ -43,13 +43,9 @@ describe("WizardSteps", () => {
       />
     );
 
-    const stepButtons = screen.getAllByRole("button").filter(button => 
-      /^\d+$/.test(button.textContent || "")
-    );
-
-    // Second step (Period Config) should be current (index 1)
-    expect(stepButtons[1]).toHaveClass("bg-cyan-300");
-    expect(stepButtons[1]).toHaveAttribute("aria-current", "step");
+    const currentStepButton = screen.getByRole("button", { name: "2" });
+    expect(currentStepButton).toHaveClass("bg-cyan-300");
+    expect(currentStepButton).toHaveAttribute("aria-current", "step");
   });
 
   it("shows completed steps with checkmark", () => {
@@ -187,7 +183,7 @@ describe("WizardSteps", () => {
     const nav = screen.getByLabelText("Progress");
     expect(nav).toBeInTheDocument();
 
-    const currentStepButton = screen.getByText("1");
+    const currentStepButton = screen.getByRole("button", { name: "1" });
     expect(currentStepButton).toHaveAttribute("aria-current", "step");
   });
 });

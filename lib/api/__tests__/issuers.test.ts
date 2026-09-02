@@ -44,7 +44,7 @@ describe("Issuer Utilities", () => {
     });
 
     it("returns original value for unknown status", () => {
-      expect(formatIssuerStatus("UNKNOWN" as any)).toBe("UNKNOWN");
+      expect(formatIssuerStatus("UNKNOWN" as unknown as Parameters<typeof formatIssuerStatus>[0])).toBe("UNKNOWN");
     });
   });
 
@@ -57,7 +57,7 @@ describe("Issuer Utilities", () => {
     });
 
     it("returns accent for unknown status", () => {
-      expect(getIssuerStatusTone("UNKNOWN" as any)).toBe("accent");
+      expect(getIssuerStatusTone("UNKNOWN" as unknown as Parameters<typeof getIssuerStatusTone>[0])).toBe("accent");
     });
   });
 });

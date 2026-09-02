@@ -4,7 +4,14 @@ import { useCallback, useState } from "react";
 import { updateIssuer, formatIssuerStatus, getIssuerStatusTone } from "@/lib/api/issuers";
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 import { StatusBadge } from "@/components/common/production-ui";
+import { formatMessage } from "@/lib/i18n";
 import type { Issuer, Organization } from "@/lib/api/generated/v1";
+
+const issuerActionLabels = {
+  suspend: "Suspend",
+  activate: "Activate",
+  revoke: "Revoke",
+} as const;
 
 export function IssuerList({
   issuers,
@@ -43,7 +50,7 @@ export function IssuerList({
         controller.signal
       );
       onIssuerUpdated(updated);
-    } catch (err) {
+    } catch {
       setError("Failed to update issuer status. Please try again.");
     } finally {
       setActionLoading(null);
@@ -125,15 +132,26 @@ export function IssuerList({
 
       {confirmAction && (
         <ConfirmationDialog
-          title={`${confirmAction.type.charAt(0).toUpperCase() + confirmAction.type.slice(1)} Issuer`}
+          title={formatMessage("{action} Issuer", {
+            action: issuerActionLabels[confirmAction.type],
+          })}
           message={
             confirmAction.type === "revoke"
-              ? `Are you sure you want to revoke "${confirmAction.issuerName}"? This action cannot be undone and will permanently disable the issuer.`
+              ? formatMessage(
+                  'Are you sure you want to revoke "{issuerName}"? This action cannot be undone and will permanently disable the issuer.',
+                  { issuerName: confirmAction.issuerName },
+                )
               : confirmAction.type === "suspend"
-              ? `Are you sure you want to suspend "${confirmAction.issuerName}"? This will temporarily disable issuer operations.`
-              : `Are you sure you want to activate "${confirmAction.issuerName}"? This will enable issuer operations.`
+              ? formatMessage(
+                  'Are you sure you want to suspend "{issuerName}"? This will temporarily disable issuer operations.',
+                  { issuerName: confirmAction.issuerName },
+                )
+              : formatMessage(
+                  'Are you sure you want to activate "{issuerName}"? This will enable issuer operations.',
+                  { issuerName: confirmAction.issuerName },
+                )
           }
-          confirmText={confirmAction.type.charAt(0).toUpperCase() + confirmAction.type.slice(1)}
+          confirmText={issuerActionLabels[confirmAction.type]}
           confirmVariant={confirmAction.type === "revoke" ? "danger" : "primary"}
           onConfirm={() => {
             const statusMap = {

@@ -15,7 +15,7 @@ const navItems = [
 ];
 
 export function PublicNav() {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "/";
   const isActive = (href: string) =>
     pathname === href ||
     (href === "/proofs" && pathname.startsWith("/proofs")) ||

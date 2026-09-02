@@ -41,7 +41,7 @@ export function PrivacyControls({
             }`}>
               <h3 className="text-sm font-medium text-white">Sender Information</h3>
               <p className="mt-1 text-xs text-slate-400">
-                Control whether the sender's identity is revealed to verifiers.
+                Control whether the sender&apos;s identity is revealed to verifiers.
               </p>
               
               <div className="mt-3 grid gap-2">
@@ -49,6 +49,7 @@ export function PrivacyControls({
                   <input
                     type="radio"
                     name="sender-disclosure"
+                    value="false"
                     checked={!discloseSender}
                     onChange={() => onDiscloseSenderChange(false)}
                     disabled={disabled}
@@ -68,6 +69,7 @@ export function PrivacyControls({
                   <input
                     type="radio"
                     name="sender-disclosure"
+                    value="true"
                     checked={discloseSender}
                     onChange={() => onDiscloseSenderChange(true)}
                     disabled={disabled}
@@ -101,6 +103,7 @@ export function PrivacyControls({
                   <input
                     type="radio"
                     name="amount-disclosure"
+                    value="false"
                     checked={!discloseAmount}
                     onChange={() => onDiscloseAmountChange(false)}
                     disabled={disabled}
@@ -120,6 +123,7 @@ export function PrivacyControls({
                   <input
                     type="radio"
                     name="amount-disclosure"
+                    value="true"
                     checked={discloseAmount}
                     onChange={() => onDiscloseAmountChange(true)}
                     disabled={disabled}

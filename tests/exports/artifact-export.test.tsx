@@ -59,13 +59,13 @@ describe("ArtifactExport", () => {
   });
 
   it("announces clipboard denial and keeps retry available", async () => {
+    const user = userEvent.setup();
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: {
         writeText: jest.fn().mockRejectedValue(new Error("denied")),
       },
     });
-    const user = userEvent.setup();
     render(
       <ArtifactExport
         plan={buildCredentialExport({
@@ -109,6 +109,6 @@ describe("ArtifactExport", () => {
     await user.click(screen.getByRole("button", { name: "Download" }));
 
     expect(click).toHaveBeenCalled();
-    expect(screen.getByText("Download started.")).toBeInTheDocument();
+    expect(screen.getAllByText("Download started.")).toHaveLength(2);
   });
 });

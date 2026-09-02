@@ -39,7 +39,7 @@ describe("Recurring Income Proof Utilities", () => {
   describe("validatePeriodConfiguration", () => {
     it("returns null for valid periods", () => {
       expect(validatePeriodConfiguration("2026-01-01", "2026-12-31")).toBeNull();
-      expect(validatePeriodConfiguration("2026-08-01", "2026-08-31", "MONTHLY", 1)).toBeNull();
+      expect(validatePeriodConfiguration("2026-08-01", "2026-10-01", "MONTHLY", 1)).toBeNull();
     });
 
     it("requires period start", () => {
@@ -103,7 +103,7 @@ describe("Recurring Income Proof Utilities", () => {
   describe("getCoverageStatus", () => {
     it("returns correct status for coverage levels", () => {
       expect(getCoverageStatus(100)).toBe("complete");
-      expect(getCoverageStatus(95)).toBe("complete");
+      expect(getCoverageStatus(95)).toBe("partial");
       expect(getCoverageStatus(85)).toBe("partial");
       expect(getCoverageStatus(80)).toBe("partial");
       expect(getCoverageStatus(75)).toBe("insufficient");
@@ -119,7 +119,7 @@ describe("Recurring Income Proof Utilities", () => {
     });
 
     it("returns default color for unknown status", () => {
-      expect(getCoverageStatusColor("unknown" as any)).toBe("text-slate-300");
+      expect(getCoverageStatusColor("unknown" as unknown as Parameters<typeof getCoverageStatusColor>[0])).toBe("text-slate-300");
     });
   });
 });

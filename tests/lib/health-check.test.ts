@@ -10,6 +10,7 @@ jest.mock("@/config/app", () => ({
 describe("useHealthCheck", () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-09-02T12:00:00.000Z"));
     global.fetch = jest.fn();
   });
 
@@ -23,7 +24,7 @@ describe("useHealthCheck", () => {
     status: "ok",
     service: "earnproof-api",
     database: "ok",
-    timestamp: new Date().toISOString(),
+    timestamp: "2026-09-02T12:00:00.000Z",
   };
 
   it("reports a successful health check", async () => {
