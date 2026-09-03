@@ -35,10 +35,12 @@ preview build of the same branch.
 
 - [ ] `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_STELLAR_NETWORK`,
       `NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE`, and `NEXT_PUBLIC_STELLAR_HORIZON_URL`
-      are all set in the target Vercel environment. Production and preview both
-      fail closed (build throws) if any are missing — see
-      [`loadPublicEnv`](../lib/validation/env.ts). A successful build is
-      itself evidence this passed; attach the build log link as evidence.
+      are all set in the target production Vercel environment. Production fails
+      closed (build throws) if any are missing — see
+      [`loadPublicEnv`](../lib/validation/env.ts). Preview builds may use
+      Vercel's generated preview URL plus documented testnet defaults when
+      project variables are not configured, so a passing preview build is not
+      evidence that production configuration is complete.
 - [ ] `NEXT_PUBLIC_STELLAR_NETWORK` is `testnet` (the only supported value
       today). If a release intends to change this, treat it as a breaking
       change requiring its own sign-off, not a routine release.
@@ -72,7 +74,7 @@ paired `earnproof-backend` API contract this frontend consumes.
       Android. If `docs/browser-support.md` exists in this repository at
       release time, use its matrix instead — that document supersedes this
       list when the two disagree.
-- [ ] Freighter wallet flows (`/proofs/create`) were smoke-tested in a
+- [ ] Freighter wallet flows (`/proofs`) were smoke-tested in a
       Chromium-based browser with the Freighter extension installed — this
       is the only supported wallet browser environment; other browsers must
       show the no-wallet-detected fallback state instead of a broken flow.
@@ -81,8 +83,9 @@ paired `earnproof-backend` API contract this frontend consumes.
 
 - [ ] Fetch the deployed preview and confirm the response headers match
       [`config/security-headers.ts`](../config/security-headers.ts):
-      `Content-Security-Policy` (nonce-based `script-src`/`style-src`, no
-      `unsafe-inline`, no `*` wildcards), plus the remaining headers from
+      `Content-Security-Policy` (nonce-based `script-src`/`style-src`,
+      `style-src-attr` limited to reviewed inline style attributes, no `*`
+      wildcards), plus the remaining headers from
       `nextHeaderList`. Example check:
       ```bash
       curl -sI https://<preview-url>/ | grep -i "content-security-policy\|x-frame-options\|strict-transport-security"
@@ -136,9 +139,9 @@ screenshot, response header dump, or console output as noted.
 | `/verify/credential` | upload a well-formed signed JSON credential | Credential renders through `VerifyCredentialForm` without exposing unrelated wallet data | Screenshot |
 | `/verify/credential` | upload a malformed JSON file | Client-side validation error, no unhandled exception in console | Console log |
 | `/verify/scan` | scan/paste a valid QR-encoded proof reference | Resolves to the same result states as `/verify` above | Screenshot |
-| `/proofs/create` | no Freighter extension installed | Explicit "wallet not detected" state, no silent failure | Screenshot |
-| `/proofs/create` | Freighter installed, wallet challenge signed | Authenticated payment sync and minimum-income proof creation form become available | Screenshot |
-| `/proofs/create` | disclosure preview step | Disclosure preview is shown before the proof is created; amounts hidden by default per [README.md Privacy and UX Requirements](../README.md#privacy-and-ux-requirements) | Screenshot |
+| `/proofs` | no Freighter extension installed | Explicit "wallet not detected" state, no silent failure | Screenshot |
+| `/proofs` | Freighter installed, wallet challenge signed | Authenticated payment sync and minimum-income proof creation form become available | Screenshot |
+| `/proofs` | disclosure preview step | Disclosure preview is shown before the proof is created; amounts hidden by default per [README.md Privacy and UX Requirements](../README.md#privacy-and-ux-requirements) | Screenshot |
 | `/issuers` | default | Issuer directory shell renders | Screenshot |
 | any route | — | Response headers match section 2.4 | `curl -sI` output |
 | any route | — | No `console.error` in the browser devtools console on load | Console log |
@@ -156,7 +159,7 @@ following are true post-promotion:
 
 - Security headers from section 2.4 are missing or weakened (e.g. CSP
   falls back to a permissive default).
-- `/proofs/create` or `/verify` throws an unhandled client error on load,
+- `/proofs` or `/verify` throws an unhandled client error on load,
   or renders sensitive data (full wallet history, hidden amounts) beyond
   what [README.md Privacy and UX Requirements](../README.md#privacy-and-ux-requirements)
   allows.

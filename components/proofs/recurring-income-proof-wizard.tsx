@@ -54,12 +54,12 @@ export function RecurringIncomeProofWizard() {
   
   // Wizard state
   const [intervalUnit, setIntervalUnit] = useState<IntervalUnit>(DEFAULT_VALUES.intervalUnit);
-  const [intervalCount, setIntervalCount] = useState(DEFAULT_VALUES.intervalCount);
+  const [intervalCount, setIntervalCount] = useState<number>(DEFAULT_VALUES.intervalCount);
   const [periodStart, setPeriodStart] = useState("2026-08-01");
   const [periodEnd, setPeriodEnd] = useState("2026-11-30");
   const [selectedPaymentIds, setSelectedPaymentIds] = useState<string[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<{ code: string; issuer: string | null } | null>(null);
-  const [expiresInDays, setExpiresInDays] = useState(DEFAULT_VALUES.expiresInDays);
+  const [expiresInDays, setExpiresInDays] = useState<number>(DEFAULT_VALUES.expiresInDays);
   
   // Analysis and results
   const [coverageAnalysis, setCoverageAnalysis] = useState<IntervalCoverageAnalysis | null>(null);
@@ -222,7 +222,7 @@ export function RecurringIncomeProofWizard() {
       
       setCoverageAnalysis(analysis);
       setStatus("Coverage analysis complete.");
-    } catch (err) {
+    } catch {
       setStatus(null);
       setError("Coverage analysis failed. Please try again.");
     }
@@ -253,7 +253,7 @@ export function RecurringIncomeProofWizard() {
 
       setProof(created);
       setStatus("Recurring income proof created.");
-    } catch (err) {
+    } catch {
       setStatus(null);
       setError("Proof creation failed. Please verify your configuration and try again.");
     }
@@ -488,11 +488,7 @@ function readStoredSession() {
 }
 
 // Import Freighter wallet functions (same as in other proof flows)
-async function loadFreighter(): Promise<{
-  getAddress: any;
-  requestAccess: any;
-  signMessage: any;
-}> {
+async function loadFreighter(): Promise<typeof import("@stellar/freighter-api")> {
   return import("@stellar/freighter-api");
 }
 

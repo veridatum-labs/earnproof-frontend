@@ -259,7 +259,7 @@ describe("credential export utilities", () => {
       expect(click).toHaveBeenCalledTimes(1);
       expect(revokeObjectURL).toHaveBeenCalledWith("blob:earnproof-test");
 
-      const anchor = click.mock.instances[0] as HTMLAnchorElement;
+      const anchor = click.mock.instances[0] as unknown as HTMLAnchorElement;
 
       expect(anchor.download).toBe(VERIFICATION_LINK_EXPORT_FILENAME);
       expect(anchor.rel).toBe("noopener");
@@ -267,6 +267,7 @@ describe("credential export utilities", () => {
 
     it("rejects unsafe filenames before starting a download", () => {
       const createObjectURL = jest.spyOn(URL, "createObjectURL");
+      createObjectURL.mockClear();
 
       expect(() =>
         downloadTextFile({

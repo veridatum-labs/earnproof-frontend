@@ -24,6 +24,12 @@ export const AVAILABLE_SCOPES = [
   "webhooks:manage"
 ] as const;
 
+export type ApiKeyScope = (typeof AVAILABLE_SCOPES)[number];
+
+function isApiKeyScope(scope: string): scope is ApiKeyScope {
+  return (AVAILABLE_SCOPES as readonly string[]).includes(scope);
+}
+
 export async function getApiKeys(token: string, signal: AbortSignal): Promise<ApiKey[]> {
   return retryRead(async (signal) => {
     return apiClient<ApiKey[]>({
@@ -107,7 +113,7 @@ export function validateApiKeyScopes(scopes: string[]): string | null {
     return "At least one scope is required";
   }
   
-  const invalidScopes = scopes.filter(scope => !AVAILABLE_SCOPES.includes(scope as any));
+  const invalidScopes = scopes.filter((scope) => !isApiKeyScope(scope));
   if (invalidScopes.length > 0) {
     return `Invalid scopes: ${invalidScopes.join(", ")}`;
   }

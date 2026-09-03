@@ -87,7 +87,7 @@ describe("proof-types data", () => {
     });
 
     it("handles partial matches", () => {
-      const results = searchProofTypes(proofTypes, "pay");
+      const results = searchProofTypes(proofTypes, "receipt");
       expect(results).toHaveLength(1);
       expect(results[0].id).toBe("payment-receipt");
     });

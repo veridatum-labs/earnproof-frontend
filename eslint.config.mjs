@@ -29,6 +29,7 @@ const eslintConfig = defineConfig([
     // Next.js bundler, so CommonJS `require`/`module.exports` is the
     // correct pattern here rather than an app-code smell.
     files: [
+      "scripts/**/*.js",
       "scripts/bundle/**/*.js",
       "scripts/performance/**/*.js",
       "scripts/generate-api-types/**/*.js",

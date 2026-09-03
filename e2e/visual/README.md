@@ -42,7 +42,7 @@ viewport).
 | `public-pages.visual.spec.ts` | `/`, `/how-it-works`, `/developers`, `/issuers`, `/faq`, `/privacy`, `/terms`, `/status` | `components/layout/public-shell.tsx`, `public-nav.tsx`, `public-footer.tsx`, `components/common/production-ui.tsx` (`MarketingHero`, `FeatureGrid`, `MetricGrid`, `DataPanel`, `StatusBadge`), `components/common/page-heading.tsx` | Whoever owns the shared shell/marketing components — a diff on more than one of these routes at once almost always means a shared component changed, not the page itself. |
 | `verify.visual.spec.ts` | `/verify` | `components/verification/verify-proof-form.tsx`, `verification-panel.tsx` | Verification-surface owner. |
 | `verify-credential.visual.spec.ts` | `/verify/credential` | `components/verification/verify-credential-form.tsx`, `verification-panel.tsx` (shared with the spec above) | Verification-surface owner; cross-check `verify.visual.spec.ts` since both consume `VerificationPanel`. |
-| `proof-flow.visual.spec.ts` | `/proofs/create` | `components/proofs/create-proof-flow.tsx` | Proof-creation flow owner. |
+| `proof-flow.visual.spec.ts` | `/proofs` | `components/proofs/create-proof-flow.tsx` | Proof-creation flow owner. |
 
 Each spec file also carries this table as a comment block at the top, so
 it stays next to the code it documents.
@@ -54,10 +54,10 @@ empty / error / success):
 
 - **Public**: every route in `public-pages.visual.spec.ts`, plus the
   disconnected/default state of `/verify`, `/verify/credential`, and
-  `/proofs/create`.
+  `/proofs`.
 - **Authenticated**: the app has no dashboard or login route yet — the
   only "authenticated" surface today is the wallet-connected state inside
-  `/proofs/create`. Those states are reached by seeding a synthetic
+  `/proofs`. Those states are reached by seeding a synthetic
   session token into `localStorage` (see `seedSession` in
   `utils/stabilize.ts`), never by driving a real wallet extension. This is
   called out explicitly as the closest real analog, not a fabricated
@@ -97,7 +97,7 @@ non-deterministic is fixed before a screenshot is taken:
   `next/font/google` (bundled at build time, no runtime request to
   fonts.googleapis.com), and the suite runs against `next build && next
   start`, so there are no third-party network dependencies to mock.
-- **Wallet extension**: `/proofs/create` normally depends on a real
+- **Wallet extension**: `/proofs` normally depends on a real
   Freighter browser extension. The suite never installs one — it either
   lets the real "not found" failure occur (a genuine error state, see
   above) or injects a `window.freighter` shim that intentionally never

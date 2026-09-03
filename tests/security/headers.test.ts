@@ -25,6 +25,13 @@ const localEnv = {
   NEXT_PUBLIC_HELP_URL: "https://help.earnproof.com",
 };
 
+function cspDirective(csp: string, name: string): string {
+  return csp
+    .split(";")
+    .map((directive) => directive.trim())
+    .find((directive) => directive.startsWith(`${name} `)) ?? "";
+}
+
 describe("browser security policy", () => {
   it("emits explicit frame, MIME, referrer, permissions, and CSP headers", () => {
     const policy = buildSecurityPolicy({
@@ -56,13 +63,21 @@ describe("browser security policy", () => {
     ).toContain("camera=(self)");
   });
 
-  it("does not add unsafe-inline or host wildcards to script or connect sources", () => {
+  it("does not add unsafe-inline or host wildcards to script, connect, or style element sources", () => {
     const policy = buildSecurityPolicy({ env: localEnv, nonce: "test-nonce" });
+    const scriptSrc = cspDirective(policy.csp, "script-src");
+    const connectSrc = cspDirective(policy.csp, "connect-src");
+    const styleSrc = cspDirective(policy.csp, "style-src");
+    const styleSrcElem = cspDirective(policy.csp, "style-src-elem");
+    const styleSrcAttr = cspDirective(policy.csp, "style-src-attr");
 
-    expect(policy.csp).not.toMatch(/unsafe-inline/);
-    expect(policy.csp).not.toMatch(/script-src[^;]*\*/);
-    expect(policy.csp).not.toMatch(/connect-src[^;]*\*/);
+    expect(scriptSrc).not.toMatch(/unsafe-inline/);
+    expect(styleSrc).not.toMatch(/unsafe-inline/);
+    expect(styleSrcElem).not.toMatch(/unsafe-inline/);
+    expect(scriptSrc).not.toMatch(/\*/);
+    expect(connectSrc).not.toMatch(/\*/);
     expect(policy.csp).toContain("'nonce-test-nonce'");
+    expect(styleSrcAttr).toBe("style-src-attr 'unsafe-inline'");
     expect(policy.csp).toContain("object-src 'none'");
     expect(policy.csp).toContain("frame-src 'none'");
     expect(policy.csp).toContain("frame-ancestors 'none'");
@@ -110,10 +125,27 @@ describe("deployment origin requirements", () => {
     expect(loadPublicEnv({}).NEXT_PUBLIC_APP_URL).toBe("http://localhost:3000");
   });
 
-  it("fails clearly when preview origins are missing", () => {
+  it("uses Vercel preview URLs with documented testnet defaults", () => {
+    const env = loadPublicEnv({
+      VERCEL_ENV: "preview",
+      VERCEL_BRANCH_URL: "earnproof-git-fix-codebase-hallabs-projects.vercel.app",
+    });
+
+    expect(resolveDeploymentProfile({ VERCEL_ENV: "preview" })).toBe("preview");
+    expect(env.NEXT_PUBLIC_APP_URL).toBe(
+      "https://earnproof-git-fix-codebase-hallabs-projects.vercel.app",
+    );
+    expect(env.NEXT_PUBLIC_API_URL).toBe("http://localhost:4000/api/v1");
+    expect(env.NEXT_PUBLIC_STELLAR_HORIZON_URL).toBe(
+      "https://horizon-testnet.stellar.org",
+    );
+  });
+
+  it("fails clearly when preview origins are explicitly required", () => {
     expect(() =>
       loadPublicEnv({
         VERCEL_ENV: "preview",
+        EARNPROOF_REQUIRE_SECURITY_ORIGINS: "true",
       }),
     ).toThrow(/preview policy/);
   });

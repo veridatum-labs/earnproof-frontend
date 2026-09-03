@@ -13,7 +13,7 @@ import {
 } from "./fixtures/payments";
 
 /**
- * /proofs/create — the wallet-connect + income proof creation flow.
+ * /proofs — the wallet-connect + income proof creation flow.
  *
  * Ownership: components/proofs/create-proof-flow.tsx. This is the only
  * "authenticated" surface that exists in the app today (there is no
@@ -23,7 +23,7 @@ import {
  */
 
 test("proof-flow: disconnected initial state", async ({ page }) => {
-  await page.goto("/proofs/create");
+  await page.goto("/proofs");
   await disableMotion(page);
   await expect(page).toHaveScreenshot("proof-flow-disconnected.png", {
     fullPage: true,
@@ -34,7 +34,7 @@ test("proof-flow: wallet connecting (loading) state", async ({ page }) => {
   // No extension is installed in this browser context. requestAccess()
   // then genuinely never resolves (see utils/stabilize.ts), so this is the
   // app's real, unmodified behavior — not a simulated wait.
-  await page.goto("/proofs/create");
+  await page.goto("/proofs");
   await disableMotion(page);
   await page.getByRole("button", { name: "Connect Freighter" }).click();
   await expect(
@@ -47,7 +47,7 @@ test("proof-flow: wallet connecting (loading) state", async ({ page }) => {
 
 test("proof-flow: wallet error state", async ({ page }) => {
   await mockFreighterNoAccess(page);
-  await page.goto("/proofs/create");
+  await page.goto("/proofs");
   await disableMotion(page);
   await page.getByRole("button", { name: "Connect Freighter" }).click();
   await expect(
@@ -61,7 +61,7 @@ test("proof-flow: wallet error state", async ({ page }) => {
 test("proof-flow: connected, empty payments state", async ({ page }) => {
   await seedSession(page, FIXTURE_SESSION);
   await mockApi(page, "/payments", EMPTY_PAYMENTS);
-  await page.goto("/proofs/create");
+  await page.goto("/proofs");
   await disableMotion(page);
   await page.getByRole("button", { name: "Refresh" }).click();
   await expect(page.getByText("No payments loaded yet.")).toBeVisible();
@@ -73,7 +73,7 @@ test("proof-flow: connected, empty payments state", async ({ page }) => {
 test("proof-flow: connected, with payments state", async ({ page }) => {
   await seedSession(page, FIXTURE_SESSION);
   await mockApi(page, "/payments", FIXTURE_PAYMENTS);
-  await page.goto("/proofs/create");
+  await page.goto("/proofs");
   await disableMotion(page);
   await page.getByRole("button", { name: "Refresh" }).click();
   await expect(page.getByText("USDC incoming payment").first()).toBeVisible();
@@ -86,7 +86,7 @@ test("proof-flow: proof created (success) state", async ({ page }) => {
   await seedSession(page, FIXTURE_SESSION);
   await mockApi(page, "/payments", FIXTURE_PAYMENTS);
   await mockApi(page, "/proofs/minimum-income", FIXTURE_PROOF);
-  await page.goto("/proofs/create");
+  await page.goto("/proofs");
   await disableMotion(page);
   await page.getByRole("button", { name: "Refresh" }).click();
   await expect(page.getByText("USDC incoming payment").first()).toBeVisible();

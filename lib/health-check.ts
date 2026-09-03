@@ -78,16 +78,32 @@ export function useHealthCheck(pollIntervalMs = 30_000) {
 
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
-    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const clearTimeoutIfActive = () => {
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    };
+
+    const timeout = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        controller.abort();
+        reject(new Error("Request timed out"));
+      }, TIMEOUT_MS);
+    });
 
     try {
-      const res = await fetch(`${appConfig.apiUrl}/health`, {
-        signal: controller.signal,
-        cache: "no-store",
-        headers: { "Cache-Control": "no-store" },
-      });
+      const res = await Promise.race([
+        fetch(`${appConfig.apiUrl}/health`, {
+          signal: controller.signal,
+          cache: "no-store",
+          headers: { "Cache-Control": "no-store" },
+        }),
+        timeout,
+      ]);
 
-      clearTimeout(timeoutId);
+      clearTimeoutIfActive();
 
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
@@ -124,7 +140,7 @@ export function useHealthCheck(pollIntervalMs = 30_000) {
         isDataLive: true,
       });
     } catch (err: unknown) {
-      clearTimeout(timeoutId);
+      clearTimeoutIfActive();
 
       if (!isCurrent()) {
         return;

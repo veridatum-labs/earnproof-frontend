@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDisclosureChoice } from "@/lib/api/payment-receipt-proofs";
+import { formatDateTime } from "@/lib/i18n";
 
 type Payment = {
   id: string;
@@ -24,16 +24,6 @@ export function ProofConfirmation({
   discloseAmount: boolean;
   expiresInDays: number;
 }) {
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   const truncateHash = (hash: string) => {
     return `${hash.slice(0, 12)}...${hash.slice(-12)}`;
   };
@@ -60,7 +50,7 @@ export function ProofConfirmation({
             </div>
             <div className="flex justify-between">
               <dt className="text-slate-400">Date:</dt>
-              <dd className="text-slate-200">{formatDate(payment.occurredAt)}</dd>
+              <dd className="text-slate-200">{formatDateTime(payment.occurredAt)}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-slate-400">Transaction:</dt>

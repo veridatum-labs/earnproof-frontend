@@ -6,6 +6,7 @@ import { PageHeading } from "@/components/common/page-heading";
 import { pageContainer } from "@/components/common/production-ui";
 import { PublicShell } from "@/components/layout/public-shell";
 import { apiClient } from "@/lib/api/client";
+import { formatDateRange, formatDateTime, formatMessage } from "@/lib/i18n";
 import type { VerifyProofResponse } from "@/lib/api/generated/v1";
 
 type VerificationState = {
@@ -13,13 +14,6 @@ type VerificationState = {
   result: VerifyProofResponse | null;
   error: string | null;
 };
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
 
 function ResultItem({ label, value }: { label: string; value: string }) {
   return (
@@ -135,7 +129,10 @@ function VerificationResult({ result }: { result: VerifyProofResponse }) {
             />
             <ResultItem
               label="Threshold"
-              value={`≥ ${result.credential.claim.thresholdAmount} ${result.credential.claim.assetCode}`}
+              value={formatMessage(">= {amount} {asset}", {
+                amount: result.credential.claim.thresholdAmount,
+                asset: result.credential.claim.assetCode,
+              })}
             />
             <ResultItem
               label="Qualifying payments"
@@ -143,20 +140,23 @@ function VerificationResult({ result }: { result: VerifyProofResponse }) {
             />
             <ResultItem
               label="Verification period"
-              value={`${formatDate(result.credential.claim.periodStart)} to ${formatDate(result.credential.claim.periodEnd)}`}
+              value={formatDateRange(
+                result.credential.claim.periodStart,
+                result.credential.claim.periodEnd,
+              )}
             />
             <ResultItem 
               label="Issued" 
-              value={formatDate(result.credential.issuedAt)} 
+              value={formatDateTime(result.credential.issuedAt)}
             />
             <ResultItem 
               label="Expires" 
-              value={formatDate(result.credential.expiresAt)} 
+              value={formatDateTime(result.credential.expiresAt)}
             />
             {result.proof.revokedAt && (
               <ResultItem 
                 label="Revoked" 
-                value={formatDate(result.proof.revokedAt)} 
+                value={formatDateTime(result.proof.revokedAt)}
               />
             )}
             <ResultItem
@@ -202,7 +202,7 @@ function VerificationResult({ result }: { result: VerifyProofResponse }) {
           Verify another proof
         </Link>
         <Link
-          href="/proofs/create"
+          href="/proofs"
           className="inline-flex h-10 items-center justify-center rounded-lg border border-cyan-300/50 bg-cyan-300 px-6 text-sm font-medium text-slate-950 transition hover:bg-cyan-200"
         >
           Create your own proof
@@ -293,8 +293,10 @@ export default function VerifyProofPage({ params }: { params: { proofId: string 
     <PublicShell>
       <div className={pageContainer}>
         <PageHeading
-          title={`Proof verification`}
-          description={`Verification result for proof ${params.proofId}`}
+          title="Proof verification"
+          description={formatMessage("Verification result for proof {proofId}", {
+            proofId: params.proofId,
+          })}
         />
 
         {state.loading && <LoadingState />}

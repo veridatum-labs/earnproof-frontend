@@ -16,7 +16,7 @@ export class ProofCreationPage {
   constructor(private readonly page: Page) {}
 
   async goto() {
-    await this.page.goto("/proofs/create");
+    await this.page.goto("/proofs");
   }
 
   get connectButton(): Locator {

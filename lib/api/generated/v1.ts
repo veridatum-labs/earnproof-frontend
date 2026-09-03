@@ -50,10 +50,7 @@ export interface AuthVerifyResponse {
   session: AuthSession;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface PaymentClassification {
-
-}
+export type PaymentClassification = "INCOME" | "REIMBURSEMENT" | "PERSONAL_TRANSFER" | "UNKNOWN" | "EXCLUDED";
 
 export interface Payment {
   id: string;
@@ -136,6 +133,13 @@ export interface VerifyProofResponse {
 }
 
 export interface ProofCreated {
+  proofId: string;
+  status: string;
+  verificationUrl: string;
+  credential: SignedCredential;
+}
+
+export interface RecurringIncomeProof {
   proofId: string;
   status: string;
   verificationUrl: string;

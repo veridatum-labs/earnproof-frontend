@@ -36,15 +36,16 @@ function readStoredSession(): SessionData | null {
 }
 
 export function IssuerManagement() {
-  const [session, setSession] = useState<SessionData | null>(() => readStoredSession());
+  const [session] = useState<SessionData | null>(() => readStoredSession());
   const [issuers, setIssuers] = useState<Issuer[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const sessionToken = session?.token ?? null;
 
   const loadData = useCallback(async () => {
-    if (!session?.token) {
+    if (!sessionToken) {
       return;
     }
 
@@ -61,15 +62,15 @@ export function IssuerManagement() {
 
     try {
       const [issuersData, orgsData] = await Promise.all([
-        getIssuers(session.token, controller.signal),
-        getOrganizations(session.token, controller.signal),
+        getIssuers(sessionToken, controller.signal),
+        getOrganizations(sessionToken, controller.signal),
       ]);
       
       if (!controller.signal.aborted) {
         setIssuers(issuersData);
         setOrganizations(orgsData);
       }
-    } catch (err) {
+    } catch {
       if (!controller.signal.aborted) {
         setError("Failed to load issuers and organizations. Please try again.");
       }
@@ -78,13 +79,20 @@ export function IssuerManagement() {
         setLoading(false);
       }
     }
-  }, [session?.token]);
+  }, [sessionToken]);
 
   useEffect(() => {
-    loadData();
+    let active = true;
+
+    void Promise.resolve().then(() => {
+      if (active) {
+        void loadData();
+      }
+    });
     
     // Cleanup on unmount
     return () => {
+      active = false;
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -113,7 +121,7 @@ export function IssuerManagement() {
         </p>
         <a
           className="mt-4 inline-flex h-10 items-center justify-center rounded-md bg-cyan-300 px-4 text-xs font-semibold text-slate-950 transition hover:bg-cyan-200"
-          href="/proofs/create"
+          href="/proofs"
         >
           Connect Wallet
         </a>

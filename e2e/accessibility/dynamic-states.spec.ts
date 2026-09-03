@@ -9,12 +9,12 @@ import { mockFreighterWallet } from "./fixtures/mock-freighter";
  * Wallet + API calls are mocked (see fixtures/) so these states are
  * reproducible without a live backend or a real Freighter extension.
  */
-test.describe("proofs/create dynamic states", () => {
+test.describe("proofs dynamic states", () => {
   test("wallet connected + payments loaded (success state)", async ({ page }, testInfo) => {
     await mockEarnProofApi(page);
     await mockFreighterWallet(page);
 
-    await page.goto("/proofs/create");
+    await page.goto("/proofs");
     await page.getByRole("button", { name: "Connect Freighter" }).click();
     await expect(page.getByText(/Connected as/)).toBeVisible();
 
@@ -28,7 +28,7 @@ test.describe("proofs/create dynamic states", () => {
     await mockEarnProofApi(page, { delayMs: 800 });
     await mockFreighterWallet(page);
 
-    await page.goto("/proofs/create");
+    await page.goto("/proofs");
     await page.getByRole("button", { name: "Connect Freighter" }).click();
     await expect(page.getByText(/Connected as/)).toBeVisible();
     await page.getByRole("button", { name: "Sync" }).click();
@@ -45,7 +45,7 @@ test.describe("proofs/create dynamic states", () => {
     await mockEarnProofApi(page, { failProofCreation: true });
     await mockFreighterWallet(page);
 
-    await page.goto("/proofs/create");
+    await page.goto("/proofs");
     await page.getByRole("button", { name: "Connect Freighter" }).click();
     await expect(page.getByText(/Connected as/)).toBeVisible();
     await page.getByRole("button", { name: "Sync" }).click();
@@ -62,7 +62,7 @@ test.describe("proofs/create dynamic states", () => {
     await mockEarnProofApi(page);
     await mockFreighterWallet(page);
 
-    await page.goto("/proofs/create");
+    await page.goto("/proofs");
     await page.getByRole("button", { name: "Connect Freighter" }).click();
     await expect(page.getByText(/Connected as/)).toBeVisible();
     await page.getByRole("button", { name: "Sync" }).click();
@@ -78,7 +78,7 @@ test.describe("proofs/create dynamic states", () => {
   test("initial state (no wallet connected yet)", async ({ page }, testInfo) => {
     await mockEarnProofApi(page);
 
-    await page.goto("/proofs/create");
+    await page.goto("/proofs");
     // The submit button is disabled until a wallet is connected and a
     // qualifying payment is selected. Assert that disabled affordance
     // itself renders accessibly (accessible name, disabled state exposed).

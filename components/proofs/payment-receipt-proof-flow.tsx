@@ -1,11 +1,11 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { PaymentSelection } from "./payment-selection";
 import { PrivacyControls } from "./privacy-controls";
 import { ProofConfirmation } from "./proof-confirmation";
 import { ArtifactExport } from "./artifact-export";
-import { createPaymentReceiptProof, getPrivacyImpactMessage, type PaymentReceiptProof } from "@/lib/api/payment-receipt-proofs";
+import { createPaymentReceiptProof, type PaymentReceiptProof } from "@/lib/api/payment-receipt-proofs";
 import { apiClient, bearer } from "@/lib/api/client";
 import { appConfig } from "@/config/app";
 import { buildCredentialExport, buildVerificationLinkExport } from "@/lib/credentials/export";
@@ -404,11 +404,7 @@ function readStoredSession() {
 }
 
 // Import Freighter wallet functions (same as in create-proof-flow.tsx)
-async function loadFreighter(): Promise<{
-  getAddress: any;
-  requestAccess: any;
-  signMessage: any;
-}> {
+async function loadFreighter(): Promise<typeof import("@stellar/freighter-api")> {
   return import("@stellar/freighter-api");
 }
 

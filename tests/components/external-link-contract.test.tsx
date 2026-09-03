@@ -19,7 +19,7 @@ describe("ExternalLink contract", () => {
 
   it("renders a safe trusted external link", () => {
     render(
-      <ExternalLink href="https://stellar.expert/explorer">
+      <ExternalLink href="https://help.earnproof.com">
         Stellar Explorer
       </ExternalLink>,
     );
@@ -30,7 +30,7 @@ describe("ExternalLink contract", () => {
 
     expect(link).toHaveAttribute(
       "href",
-      "https://stellar.expert/explorer",
+      "https://help.earnproof.com/",
     );
 
     expect(link).toHaveAttribute(

@@ -7,9 +7,10 @@ import { PageHeading } from "@/components/common/page-heading";
 describe("shared common UI contracts", () => {
   it("renders PageHeading with its accessible heading semantics", () => {
     render(
-      <PageHeading>
-        Proof verification
-      </PageHeading>,
+      <PageHeading
+        title="Proof verification"
+        description="Verify a credential without exposing extra proof data."
+      />,
     );
 
     expect(
@@ -21,19 +22,17 @@ describe("shared common UI contracts", () => {
 
   it("renders NetworkBadge with the supplied network label", () => {
     render(
-      <NetworkBadge network="testnet" />,
+      <NetworkBadge />,
     );
 
     expect(
-      screen.getByText("testnet"),
+      screen.getByText("Testnet"),
     ).toBeInTheDocument();
   });
 
   it("renders InfoSection content without relying on DOM order", () => {
     render(
-      <InfoSection title="Proof details">
-        <p>Verification information</p>
-      </InfoSection>,
+      <InfoSection title="Proof details" items={["Verification information"]} />,
     );
 
     expect(

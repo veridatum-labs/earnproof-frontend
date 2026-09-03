@@ -10,7 +10,7 @@ const mockApiKey = {
   name: "Test API Key",
   prefix: "ep_test_abc123",
   scopes: ["verification:read", "proofs:create"],
-  expiresAt: "2026-12-31T23:59:59.000Z",
+  expiresAt: "2026-12-31T12:00:00.000Z",
 };
 
 const mockSecret = "ep_test_abc123def456ghi789";
@@ -73,7 +73,7 @@ describe("OneTimeSecret", () => {
       />
     );
 
-    const secretInput = screen.getByDisplayValue(mockSecret);
+    const secretInput = screen.getByDisplayValue(mockSecret) as HTMLInputElement;
     const selectSpy = jest.spyOn(secretInput, "select");
     
     fireEvent.click(secretInput);
@@ -149,7 +149,7 @@ describe("OneTimeSecret", () => {
       />
     );
 
-    expect(screen.getByText("12/31/2026")).toBeInTheDocument();
+    expect(screen.getByText("Dec 31, 2026")).toBeInTheDocument();
   });
 
   it("does not display expiry when not provided", () => {

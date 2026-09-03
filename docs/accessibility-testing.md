@@ -22,7 +22,7 @@ Every route currently shipped in `app/` is scanned (see
 - `/privacy`
 - `/terms`
 - `/status`
-- `/proofs/create` — the closest current analog to an authenticated
+- `/proofs` — the closest current analog to an authenticated
   flow: wallet connect (Freighter) + income payment selection + proof
   creation
 - `/verify` — public proof verification by ID
@@ -55,7 +55,7 @@ the axe rule id, the impact level, and the specific DOM node(s) involved.
 (mocked wallet via `fixtures/mock-freighter.ts`, mocked API via
 `fixtures/mock-api.ts`) to scan states beyond the initial HTML:
 
-- `/proofs/create`: wallet-connected state, payment-sync success, the
+- `/proofs`: wallet-connected state, payment-sync success, the
   in-progress "Creating signed minimum-income proof..." loading state, a
   failed proof-creation error state, and the completed success state.
 - `/verify` and `/verify/credential`: the loading state, a valid-result
@@ -76,7 +76,7 @@ the axe rule id, the impact level, and the specific DOM node(s) involved.
   `role="alert"` region and the submitting control's `aria-describedby`
   points at it.
 - **Focus restoration**: clearing the FAQ search restores focus to the
-  search field, and disconnecting the wallet on `/proofs/create` restores
+  search field, and disconnecting the wallet on `/proofs` restores
   focus to "Connect Freighter" — both fixed as part of this change, since
   neither previously restored focus and would otherwise drop keyboard
   users' focus to `<body>`.
@@ -133,7 +133,7 @@ Run with at least one of NVDA (Windows/Firefox or Chrome), VoiceOver
    - The FAQ accordion announces expanded/collapsed state and the
      question/answer relationship clearly when toggled.
 2. **Reading order vs. DOM order.** Confirm the order content is
-   announced in on `/proofs/create` (wallet → payments → proof form →
+   announced in on `/proofs` (wallet → payments → proof form →
    feedback) and `/verify` (form → privacy notice → result panel)
    matches the visual reading order at both viewport sizes, especially
    after the CSS grid reflows on mobile.

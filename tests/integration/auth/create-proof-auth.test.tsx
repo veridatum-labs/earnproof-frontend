@@ -71,7 +71,10 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockedRequestAccess.mockResolvedValue({ address: WALLET_ADDRESS });
   mockedGetAddress.mockResolvedValue({ address: WALLET_ADDRESS });
-  mockedSignMessage.mockResolvedValue({ signedMessage: "signed-challenge" });
+  mockedSignMessage.mockResolvedValue({
+    signedMessage: "signed-challenge",
+    signerAddress: WALLET_ADDRESS,
+  });
 });
 
 describe("CreateProofFlow wallet authentication", () => {

@@ -9,24 +9,37 @@ import type { Page, Route } from "@playwright/test";
  */
 
 const API_URL = "http://localhost:4000/api/v1";
+const MOTION_STABILIZER_CSS = `
+  *, *::before, *::after {
+    animation-duration: 0ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+    caret-color: transparent !important;
+  }
+`;
 
 /** Disable CSS animations/transitions/caret blinking so a mid-transition
  * frame is never captured. Playwright's `animations: "disabled"` screenshot
  * option already finishes CSS animations/transitions before the shot, this
  * adds a belt-and-braces global override for anything driven by JS timers. */
 export async function disableMotion(page: Page) {
-  await page.addStyleTag({
-    content: `
-      *, *::before, *::after {
-        animation-duration: 0ms !important;
-        animation-delay: 0ms !important;
-        transition-duration: 0ms !important;
-        transition-delay: 0ms !important;
-        scroll-behavior: auto !important;
-        caret-color: transparent !important;
-      }
-    `,
-  });
+  await page.evaluate((content) => {
+    const nonceSource = document.querySelector<HTMLScriptElement | HTMLStyleElement>(
+      "script[nonce], style[nonce]",
+    );
+    const nonce = nonceSource?.nonce || nonceSource?.getAttribute("nonce");
+    const style = document.createElement("style");
+
+    if (nonce) {
+      style.nonce = nonce;
+      style.setAttribute("nonce", nonce);
+    }
+
+    style.appendChild(document.createTextNode(content));
+    document.head.appendChild(style);
+  }, MOTION_STABILIZER_CSS);
 }
 
 /** Seed a fake authenticated wallet session in localStorage before any app

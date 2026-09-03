@@ -119,7 +119,7 @@ export default function MinimumIncomeProofTypePage() {
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Link
-            href="/proofs/create"
+            href="/proofs"
             className="inline-flex h-10 items-center justify-center rounded-lg border border-cyan-300/50 bg-cyan-300 px-6 text-sm font-medium text-slate-950 transition hover:bg-cyan-200"
           >
             Create a minimum income proof

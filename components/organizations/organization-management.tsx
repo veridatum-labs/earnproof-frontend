@@ -35,14 +35,15 @@ function readStoredSession(): SessionData | null {
 }
 
 export function OrganizationManagement() {
-  const [session, setSession] = useState<SessionData | null>(() => readStoredSession());
+  const [session] = useState<SessionData | null>(() => readStoredSession());
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const sessionToken = session?.token ?? null;
 
   const loadOrganizations = useCallback(async () => {
-    if (!session?.token) {
+    if (!sessionToken) {
       return;
     }
 
@@ -58,11 +59,11 @@ export function OrganizationManagement() {
     setError(null);
 
     try {
-      const orgs = await getOrganizations(session.token, controller.signal);
+      const orgs = await getOrganizations(sessionToken, controller.signal);
       if (!controller.signal.aborted) {
         setOrganizations(orgs);
       }
-    } catch (err) {
+    } catch {
       if (!controller.signal.aborted) {
         setError("Failed to load organizations. Please try again.");
       }
@@ -71,13 +72,20 @@ export function OrganizationManagement() {
         setLoading(false);
       }
     }
-  }, [session?.token]);
+  }, [sessionToken]);
 
   useEffect(() => {
-    loadOrganizations();
+    let active = true;
+
+    void Promise.resolve().then(() => {
+      if (active) {
+        void loadOrganizations();
+      }
+    });
     
     // Cleanup on unmount
     return () => {
+      active = false;
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -106,7 +114,7 @@ export function OrganizationManagement() {
         </p>
         <a
           className="mt-4 inline-flex h-10 items-center justify-center rounded-md bg-cyan-300 px-4 text-xs font-semibold text-slate-950 transition hover:bg-cyan-200"
-          href="/proofs/create"
+          href="/proofs"
         >
           Connect Wallet
         </a>

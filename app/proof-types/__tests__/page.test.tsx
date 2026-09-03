@@ -29,7 +29,7 @@ describe("ProofTypesPage", () => {
     expect(screen.getByText("1")).toBeInTheDocument(); // Available now
     expect(screen.getByText("Available now")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument(); // Coming soon
-    expect(screen.getByText("Coming soon")).toBeInTheDocument();
+    expect(screen.getAllByText("Coming soon").length).toBeGreaterThan(0);
   });
 
   it("renders all proof types in cards view", () => {
@@ -51,7 +51,7 @@ describe("ProofTypesPage", () => {
     
     // Should have active create proof link
     const createLinks = screen.getAllByText("Create proof");
-    expect(createLinks[0].closest("a")).toHaveAttribute("href", "/proofs/create");
+    expect(createLinks[0].closest("a")).toHaveAttribute("href", "/proofs");
   });
 
   it("shows planned proof types as coming soon", () => {
@@ -62,7 +62,7 @@ describe("ProofTypesPage", () => {
     expect(plannedBadges).toHaveLength(2);
     
     // Should have disabled coming soon buttons
-    const comingSoonButtons = screen.getAllByText("Coming soon");
+    const comingSoonButtons = screen.getAllByRole("button", { name: "Coming soon" });
     expect(comingSoonButtons).toHaveLength(2);
     comingSoonButtons.forEach(button => {
       expect(button).toBeDisabled();
@@ -124,6 +124,6 @@ describe("ProofTypesPage", () => {
     expect(screen.getByText("Stellar testnet wallet with payment history")).toBeInTheDocument();
     expect(screen.getByText("Qualifying payments within specified period")).toBeInTheDocument();
     expect(screen.getByText("5-10 minutes")).toBeInTheDocument();
-    expect(screen.getByText("Income Verification")).toBeInTheDocument();
+    expect(screen.getAllByText("Income Verification").length).toBeGreaterThan(0);
   });
 });

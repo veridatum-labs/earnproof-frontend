@@ -106,11 +106,10 @@ test.describe("payment sync, classification, and minimum-income proof creation",
     await expect(proofPage.createProofButton).toBeEnabled();
 
     await proofPage.createProofButton.scrollIntoViewIfNeeded();
-    // Two rapid clicks on the same button, before the first response can
-    // possibly land (the mock is delayed above) or the button's disabled
-    // state can re-render.
-    await proofPage.createProofButton.click({ force: true });
-    await proofPage.createProofButton.click({ force: true });
+    // One real browser double-click gesture. Awaiting two separate click()
+    // calls serializes them and can turn the second click into a legitimate
+    // post-success submission if the delayed response wins the race.
+    await proofPage.createProofButton.dblclick({ force: true });
 
     await expect(page.getByText("Proof created.")).toBeVisible();
     await expect(proofPage.proofIdText).toContainText(SYNTHETIC_PROOF_ID);

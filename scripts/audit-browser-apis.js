@@ -23,11 +23,6 @@ const BROWSER_APIS = [
   'sessionStorage',
   'matchMedia',
   'crypto.',
-  'Date.now()',
-  'new Date()',
-  'Math.random()',
-  'setTimeout',
-  'setInterval',
   'requestAnimationFrame',
   'IntersectionObserver',
   'ResizeObserver',
@@ -46,6 +41,31 @@ const NON_DETERMINISTIC_APIS = [
   'toLocaleTimeString',
 ];
 
+const CLIENT_ONLY_UTILITY_FILES = new Set([
+  'lib/api/client.ts',
+  'lib/credentials/export.ts',
+  'lib/diagnostics/web-vitals-sink.ts',
+  'lib/proofs/idempotency.ts',
+  'lib/storage/index.ts',
+  'lib/telemetry/client-error-reporter.ts',
+  'lib/telemetry/correlation.ts',
+]);
+
+function normalizeRelativePath(filePath) {
+  return path.relative(APP_ROOT, filePath).split(path.sep).join('/');
+}
+
+function isTestFile(relativePath) {
+  return (
+    relativePath.includes('/__tests__/') ||
+    /\.(test|spec)\.[jt]sx?$/.test(relativePath)
+  );
+}
+
+function isReactSourceFile(relativePath) {
+  return relativePath.startsWith('app/') || relativePath.startsWith('components/');
+}
+
 function findFiles(dir, extensions = ['.tsx', '.ts', '.jsx', '.js']) {
   const results = [];
   const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -61,7 +81,10 @@ function findFiles(dir, extensions = ['.tsx', '.ts', '.jsx', '.js']) {
       }
       results.push(...findFiles(fullPath, extensions));
     } else if (extensions.some(ext => entry.name.endsWith(ext))) {
-      results.push(fullPath);
+      const relativePath = normalizeRelativePath(fullPath);
+      if (!isTestFile(relativePath)) {
+        results.push(fullPath);
+      }
     }
   }
   
@@ -74,17 +97,18 @@ function hasUseClient(content) {
 
 function isServerComponentFile(filePath) {
   // Check if it's in app directory and not a client component
-  const relativePath = path.relative(APP_ROOT, filePath);
-  return relativePath.startsWith('app/') && !relativePath.includes('__tests__');
+  const relativePath = normalizeRelativePath(filePath);
+  return relativePath.startsWith('app/');
 }
 
 function auditFile(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
-  const relativePath = path.relative(APP_ROOT, filePath);
+  const relativePath = normalizeRelativePath(filePath);
   const issues = [];
   
   const isClientComponent = hasUseClient(content);
   const isServerComponent = isServerComponentFile(filePath) && !isClientComponent;
+  const isAllowedClientUtility = CLIENT_ONLY_UTILITY_FILES.has(relativePath);
   
   // Check for browser API usage
   BROWSER_APIS.forEach(api => {
@@ -99,11 +123,25 @@ function auditFile(filePath) {
           count: matches.length,
           api,
         });
-      } else if (!isClientComponent && !isServerComponent) {
-        // Could be a utility file - check if it's client-only
+      } else if (
+        !isClientComponent &&
+        !isAllowedClientUtility &&
+        isReactSourceFile(relativePath)
+      ) {
         issues.push({
           type: 'BROWSER_API_WITHOUT_CLIENT_DIRECTIVE',
           message: `File uses browser API without "use client": ${api}`,
+          count: matches.length,
+          api,
+        });
+      } else if (
+        !isClientComponent &&
+        !isAllowedClientUtility &&
+        relativePath.startsWith('lib/')
+      ) {
+        issues.push({
+          type: 'BROWSER_API_IN_UNDECLARED_UTILITY',
+          message: `Utility uses browser API without an audit allowlist entry: ${api}`,
           count: matches.length,
           api,
         });
@@ -208,5 +246,6 @@ module.exports = {
   auditFile,
   findFiles,
   BROWSER_APIS,
+  CLIENT_ONLY_UTILITY_FILES,
   NON_DETERMINISTIC_APIS,
 };

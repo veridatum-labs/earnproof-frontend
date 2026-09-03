@@ -14,7 +14,7 @@ not just described here.
 | Public static | Everything not listed below (`/`, `/how-it-works`, `/privacy`, `/developers`, `/faq`, `/about`, `/contact`, `/terms`, `/issuers`) | `public, max-age=0, must-revalidate` | Non-sensitive marketing/education content. Safe for a shared cache or browser to store, but must always revalidate rather than serve indefinitely, since these pages ship over normal deploys, not a CDN-fingerprinted build. |
 | Health | `/status` | `no-store, private` | This app's own health/monitoring surface (the actual `GET /health` endpoint lives on `earnproof-backend`, see [lib/health-check.ts](../lib/health-check.ts)). A cached status page defeats the point of a status page. |
 | Verification | `/verify/:path*` (`/verify`, `/verify/credential`, `/verify/scan`) | `no-store, private` | Public but privacy- and time-sensitive: a `VALID`/`EXPIRED`/`REVOKED` result must never be served stale from a shared cache, and must not linger in browser history/back-forward navigation as if it were still current. |
-| Authenticated | `/proofs/:path*` (`/proofs/create`) | `no-store, private` | Wallet-authenticated payment sync, classification, and proof creation. Never eligible for any shared caching. |
+| Authenticated | `/proofs/:path*` (`/proofs`) | `no-store, private` | Wallet-authenticated payment sync, classification, and proof creation. Never eligible for any shared caching. |
 
 The rule source of truth is [config/cache-headers.ts](../config/cache-headers.ts),
 consumed by [next.config.ts](../next.config.ts) alongside the security

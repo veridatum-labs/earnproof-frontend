@@ -46,10 +46,9 @@ function isExternalLink(href) {
 function normalizeRoute(route) {
   // Remove query strings and fragments
   const normalized = route.split('?')[0].split('#')[0];
-  // Remove leading slash for comparison with manifest
-  const withoutLeadingSlash = normalized.startsWith('/') ? normalized.substring(1) : normalized;
   // Convert to forward slashes for consistency (Windows paths use backslashes)
-  return withoutLeadingSlash.replace(/\\/g, '/');
+  const normalizedSlashes = normalized.replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '');
+  return normalizedSlashes === '' ? '/' : `/${normalizedSlashes}`;
 }
 
 function findFiles(dir, extensions = ['.tsx', '.ts', '.jsx', '.js']) {
@@ -121,7 +120,7 @@ function validateLinks() {
   for (const link of allLinks) {
     const { href, file, line } = link;
     
-    if (href === '' || href === '/') {
+    if (href === '/') {
       continue; // Root path is always valid
     }
     
@@ -156,7 +155,7 @@ function main() {
     // Print summary of valid routes for reference
     console.log('\nValid routes (normalized):');
     Array.from(validRoutes).sort().forEach(route => {
-      console.log(`  /${route}`);
+      console.log(`  ${route}`);
     });
     
     process.exit(1);

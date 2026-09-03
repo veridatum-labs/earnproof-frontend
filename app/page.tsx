@@ -13,7 +13,7 @@ export default function Home() {
     <PublicShell>
       <div className={pageContainer}>
         <PageHeading title="EarnProof" description="Prove qualifying income without exposing your full financial history." />
-        <MarketingHero title="EarnProof" description="Prove qualifying income without exposing your full financial history." action="Create a proof" href="/proofs/create" />
+        <MarketingHero title="EarnProof" description="Prove qualifying income without exposing your full financial history." action="Create a proof" href="/proofs" />
         <FeatureGrid items={features} />
       </div>
     </PublicShell>

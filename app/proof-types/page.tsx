@@ -64,7 +64,7 @@ function ProofTypeCard({ proofType }: { proofType: ProofType }) {
       
       {isAvailable ? (
         <Link 
-          href="/proofs/create"
+          href="/proofs"
           className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-cyan-300/50 bg-cyan-300 px-6 text-sm font-medium text-slate-950 transition hover:bg-cyan-200"
         >
           Create proof
@@ -98,7 +98,7 @@ function ProofTypeRow({ proofType }: { proofType: ProofType }) {
         </StatusBadge>
         {isAvailable ? (
           <Link 
-            href="/proofs/create"
+            href="/proofs"
             className="text-sm text-cyan-300 hover:text-cyan-200 underline md:no-underline md:hover:underline"
           >
             Create

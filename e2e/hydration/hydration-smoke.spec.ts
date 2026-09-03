@@ -5,7 +5,7 @@
  * console errors or hydration mismatches.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures/test';
 
 // Routes to test for hydration issues
 const ROUTES_TO_TEST = [
@@ -68,7 +68,7 @@ test.describe('Hydration Smoke Tests', () => {
       test.info().attachments.push({
         name: `hydration-${route.replace(/\//g, '-')}`,
         contentType: 'image/png',
-        path: await page.screenshot({ fullPage: true }),
+        body: await page.screenshot({ fullPage: true }),
       });
       
       // Check for hydration errors
@@ -84,13 +84,12 @@ test.describe('Hydration Smoke Tests', () => {
       
       // Check for common hydration problem indicators
       const html = await page.content();
-      
-      // Should not have React hydration warning comments
-      expect(html).not.toContain('<!--$-->');
+
       expect(html).not.toContain('hydration mismatch');
-      
-      // Should have proper React root
-      expect(html).toContain('data-reactroot');
+
+      // React 18+/Next app-router output no longer includes data-reactroot, and
+      // suspense boundary comments can appear in valid production markup.
+      await expect(page.locator('#main-content')).toBeVisible();
     });
   }
 
@@ -129,7 +128,7 @@ test.describe('Hydration Smoke Tests', () => {
     await page.waitForLoadState('networkidle');
     
     // Click any interactive element to trigger potential dynamic imports
-    const link = page.locator('a').first();
+    const link = page.locator('main a[href]').first();
     if (await link.isVisible()) {
       await link.click();
       await page.waitForTimeout(500); // Allow time for any dynamic imports
@@ -193,7 +192,7 @@ test.describe('Production Build Hydration', () => {
     });
     
     // Trigger a navigation to test client-side routing
-    await page.locator('a[href="/about"]').first().click();
+    await page.getByRole('link', { name: 'Create a proof' }).click();
     await page.waitForLoadState('networkidle');
     
     expect(hydrationErrors).toHaveLength(0);

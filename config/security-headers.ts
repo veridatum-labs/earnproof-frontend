@@ -38,9 +38,10 @@ function cspValue(parts: string[]): string {
 /**
  * Build the browser security policy for a deployment profile.
  *
- * Script and style sources use a per-request nonce. `'unsafe-inline'` and
- * `*` wildcards are not emitted. See SECURITY.md for the nonce justification
- * (Next.js requires a nonce to attach to its own runtime scripts).
+ * Script and style element sources use a per-request nonce. `'unsafe-inline'`
+ * is limited to style attributes because Next/Image and progress indicators
+ * emit reviewed inline style attributes; script sources and style elements
+ * still do not permit inline execution.
  */
 export function buildSecurityPolicy(
   options: BuildSecurityPolicyOptions = {},
@@ -76,6 +77,8 @@ export function buildSecurityPolicy(
     `default-src ${cspValue(["'self'"])}`,
     `script-src ${cspValue(scriptSrc)}`,
     `style-src ${cspValue(styleSrc)}`,
+    `style-src-elem ${cspValue(styleSrc)}`,
+    `style-src-attr ${cspValue(["'unsafe-inline'"])}`,
     `img-src ${cspValue(["'self'", "data:", "blob:"])}`,
     `font-src ${cspValue(["'self'"])}`,
     `connect-src ${cspValue(connectSrc)}`,

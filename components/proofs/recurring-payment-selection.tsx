@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { formatDate } from "@/lib/i18n";
 
 type PaymentClassification = "INCOME" | "REIMBURSEMENT" | "PERSONAL_TRANSFER" | "UNKNOWN" | "EXCLUDED";
 
@@ -183,7 +183,7 @@ function PaymentCard({
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-white">{payment.assetCode} Income</h3>
             <time className="text-xs text-slate-400">
-              {new Date(payment.occurredAt).toLocaleDateString()}
+              {formatDate(payment.occurredAt)}
             </time>
           </div>
           <p className="mt-1 text-xs font-mono text-slate-400 break-all">

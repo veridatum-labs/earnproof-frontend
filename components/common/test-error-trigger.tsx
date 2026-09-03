@@ -15,8 +15,8 @@ export function TestErrorTrigger() {
     throw new Error("Test error boundary trigger - this is expected behavior for testing");
   }
 
-  // Only render in development environment
-  if (process.env.NODE_ENV !== "development") {
+  // Only hide in production; Jest compiles components under NODE_ENV=test.
+  if (process.env.NODE_ENV === "production") {
     return null;
   }
 

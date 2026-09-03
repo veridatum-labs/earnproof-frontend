@@ -4,7 +4,18 @@ import { useCallback, useState } from "react";
 import { formatApiKeyPrefix, rotateApiKey, revokeApiKey } from "@/lib/api/keys";
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 import { OneTimeSecret } from "./one-time-secret";
+import { formatDate, formatMessage } from "@/lib/i18n";
 import type { ApiKey } from "@/lib/api/generated/v1";
+
+const apiKeyActionTitles = {
+  rotate: "Rotate API Key",
+  revoke: "Revoke API Key",
+} as const;
+
+const apiKeyConfirmText = {
+  rotate: "Rotate Key",
+  revoke: "Revoke Key",
+} as const;
 
 export function ApiKeyList({
   apiKeys,
@@ -40,7 +51,7 @@ export function ApiKeyList({
       const response = await rotateApiKey(token, keyId, controller.signal);
       onKeyUpdated(response.apiKey);
       setRotatedKey(response);
-    } catch (err) {
+    } catch {
       setError("Failed to rotate API key. Please try again.");
     } finally {
       setActionLoading(null);
@@ -56,22 +67,13 @@ export function ApiKeyList({
       const controller = new AbortController();
       await revokeApiKey(token, keyId, controller.signal);
       onKeyRevoked(keyId);
-    } catch (err) {
+    } catch {
       setError("Failed to revoke API key. Please try again.");
     } finally {
       setActionLoading(null);
       setConfirmAction(null);
     }
   }, [token, onKeyRevoked]);
-
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return "Never";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
 
   if (loading && apiKeys.length === 0) {
     return (
@@ -142,13 +144,19 @@ export function ApiKeyList({
 
       {confirmAction && (
         <ConfirmationDialog
-          title={confirmAction.type === "rotate" ? "Rotate API Key" : "Revoke API Key"}
+          title={apiKeyActionTitles[confirmAction.type]}
           message={
             confirmAction.type === "rotate"
-              ? `Are you sure you want to rotate "${confirmAction.keyName}"? The current secret will become invalid immediately and a new secret will be generated.`
-              : `Are you sure you want to revoke "${confirmAction.keyName}"? This action cannot be undone and will immediately invalidate the API key.`
+              ? formatMessage(
+                  'Are you sure you want to rotate "{keyName}"? The current secret will become invalid immediately and a new secret will be generated.',
+                  { keyName: confirmAction.keyName },
+                )
+              : formatMessage(
+                  'Are you sure you want to revoke "{keyName}"? This action cannot be undone and will immediately invalidate the API key.',
+                  { keyName: confirmAction.keyName },
+                )
           }
-          confirmText={confirmAction.type === "rotate" ? "Rotate Key" : "Revoke Key"}
+          confirmText={apiKeyConfirmText[confirmAction.type]}
           confirmVariant={confirmAction.type === "rotate" ? "primary" : "danger"}
           onConfirm={() => {
             if (confirmAction.type === "rotate") {
@@ -176,13 +184,9 @@ function ApiKeyRow({
   onRotate: () => void;
   onRevoke: () => void;
 }) {
-  const formatDate = (dateString: string | null | undefined) => {
+  const formatOptionalDate = (dateString: string | null | undefined) => {
     if (!dateString) return "Never";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+    return formatDate(dateString);
   };
 
   const isExpired = apiKey.expiresAt && new Date(apiKey.expiresAt) < new Date();
@@ -228,7 +232,7 @@ function ApiKeyRow({
       <div>
         <div className="text-slate-300 md:hidden font-semibold">Expires:</div>
         <div className={`${isExpired ? "text-rose-300" : "text-slate-400"}`}>
-          {formatDate(apiKey.expiresAt)}
+          {formatOptionalDate(apiKey.expiresAt)}
         </div>
       </div>
 

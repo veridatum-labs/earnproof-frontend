@@ -4,7 +4,14 @@ import { useCallback, useState } from "react";
 import { updateOrganization, formatOrganizationStatus, getStatusTone } from "@/lib/api/organizations";
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 import { StatusBadge } from "@/components/common/production-ui";
+import { formatMessage } from "@/lib/i18n";
 import type { Organization } from "@/lib/api/generated/v1";
+
+const organizationActionLabels = {
+  suspend: "Suspend",
+  activate: "Activate",
+  revoke: "Revoke",
+} as const;
 
 export function OrganizationList({
   organizations,
@@ -41,22 +48,13 @@ export function OrganizationList({
         controller.signal
       );
       onOrganizationUpdated(updated);
-    } catch (err) {
+    } catch {
       setError("Failed to update organization status. Please try again.");
     } finally {
       setActionLoading(null);
       setConfirmAction(null);
     }
   }, [token, onOrganizationUpdated]);
-
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return "Unknown";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
 
   if (loading && organizations.length === 0) {
     return (
@@ -125,15 +123,26 @@ export function OrganizationList({
 
       {confirmAction && (
         <ConfirmationDialog
-          title={`${confirmAction.type.charAt(0).toUpperCase() + confirmAction.type.slice(1)} Organization`}
+          title={formatMessage("{action} Organization", {
+            action: organizationActionLabels[confirmAction.type],
+          })}
           message={
             confirmAction.type === "revoke"
-              ? `Are you sure you want to revoke "${confirmAction.organizationName}"? This action cannot be undone and will permanently disable the organization.`
+              ? formatMessage(
+                  'Are you sure you want to revoke "{organizationName}"? This action cannot be undone and will permanently disable the organization.',
+                  { organizationName: confirmAction.organizationName },
+                )
               : confirmAction.type === "suspend"
-              ? `Are you sure you want to suspend "${confirmAction.organizationName}"? This will temporarily disable organization operations.`
-              : `Are you sure you want to activate "${confirmAction.organizationName}"? This will enable organization operations.`
+              ? formatMessage(
+                  'Are you sure you want to suspend "{organizationName}"? This will temporarily disable organization operations.',
+                  { organizationName: confirmAction.organizationName },
+                )
+              : formatMessage(
+                  'Are you sure you want to activate "{organizationName}"? This will enable organization operations.',
+                  { organizationName: confirmAction.organizationName },
+                )
           }
-          confirmText={confirmAction.type.charAt(0).toUpperCase() + confirmAction.type.slice(1)}
+          confirmText={organizationActionLabels[confirmAction.type]}
           confirmVariant={confirmAction.type === "revoke" ? "danger" : "primary"}
           onConfirm={() => {
             const statusMap = {

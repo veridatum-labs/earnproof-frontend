@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { createApiKey, AVAILABLE_SCOPES, type CreateApiKeyResponse } from "@/lib/api/keys";
 import { SCOPE_DESCRIPTIONS, type CreateApiKeyInput } from "@/lib/validation/api-keys";
 
@@ -18,7 +18,7 @@ export function CreateApiKeyForm({
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     reset,
     formState: { errors },
   } = useForm<CreateApiKeyInput>({
@@ -29,7 +29,7 @@ export function CreateApiKeyForm({
     },
   });
 
-  const selectedScopes = watch("scopes") || [];
+  const selectedScopes = useWatch({ control, name: "scopes" }) || [];
 
   const onSubmit = useCallback(async (data: CreateApiKeyInput) => {
     setIsSubmitting(true);
@@ -40,21 +40,12 @@ export function CreateApiKeyForm({
       const response = await createApiKey(token, data, controller.signal);
       onKeyCreated(response);
       reset(); // Clear form after successful creation
-    } catch (err) {
+    } catch {
       setError("Failed to create API key. Please check your input and try again.");
     } finally {
       setIsSubmitting(false);
     }
   }, [token, onKeyCreated, reset]);
-
-  const toggleScope = useCallback((scope: string) => {
-    const currentScopes = selectedScopes;
-    const isSelected = currentScopes.includes(scope);
-    
-    return isSelected
-      ? currentScopes.filter(s => s !== scope)
-      : [...currentScopes, scope];
-  }, [selectedScopes]);
 
   return (
     <section className="grid gap-4 rounded-lg border border-white/10 bg-white/[0.04] p-5">
@@ -160,13 +151,6 @@ export function CreateApiKeyForm({
                       {...register("scopes", {
                         required: "At least one scope is required"
                       })}
-                      onChange={(e) => {
-                        const newScopes = e.target.checked
-                          ? [...selectedScopes, scope]
-                          : selectedScopes.filter(s => s !== scope);
-                        // Update the form value
-                        handleSubmit(() => {})(); // Trigger validation
-                      }}
                       className="mt-1 h-4 w-4"
                     />
                     <div className="flex-1 min-w-0">

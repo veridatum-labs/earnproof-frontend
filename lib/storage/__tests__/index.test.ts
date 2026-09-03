@@ -10,7 +10,7 @@ import {
   removeStorageValue,
   clearAllStorage,
   getStorageStats,
-  localStorageDriver,
+  type StorageKey,
   type StorageDriver,
 } from '..';
 
@@ -18,16 +18,16 @@ import {
 class MockStorageDriver implements StorageDriver {
   private store: Record<string, string> = {};
   
-  getItem(key: string): string | null {
-    return this.store[key] || null;
+  getItem(key: StorageKey): string | null {
+    return this.store[STORAGE_KEYS[key]] || null;
   }
   
-  setItem(key: string, value: string): void {
-    this.store[key] = value;
+  setItem(key: StorageKey, value: string): void {
+    this.store[STORAGE_KEYS[key]] = value;
   }
   
-  removeItem(key: string): void {
-    delete this.store[key];
+  removeItem(key: StorageKey): void {
+    delete this.store[STORAGE_KEYS[key]];
   }
   
   clear(): void {
@@ -118,7 +118,7 @@ describe('Storage Utilities', () => {
         },
       };
       
-      mockDriver.setItem(STORAGE_KEYS.SESSION, JSON.stringify(legacySession));
+      mockDriver.setItem('SESSION', JSON.stringify(legacySession));
       
       const migrated = getStorageValue('SESSION', mockDriver);
       expect(migrated).toBeTruthy();
@@ -132,7 +132,7 @@ describe('Storage Utilities', () => {
     });
     
     it('should reject corrupted data', () => {
-      mockDriver.setItem(STORAGE_KEYS.SESSION, 'not json at all');
+      mockDriver.setItem('SESSION', 'not json at all');
       
       const result = getStorageValue('SESSION', mockDriver);
       expect(result).toBeNull();
@@ -149,7 +149,7 @@ describe('Storage Utilities', () => {
         data: { token: 'test', user: { id: '1', walletAddress: 'G...' } },
       };
       
-      mockDriver.setItem(STORAGE_KEYS.SESSION, JSON.stringify(unknownVersion));
+      mockDriver.setItem('SESSION', JSON.stringify(unknownVersion));
       
       const result = getStorageValue('SESSION', mockDriver);
       expect(result).toBeNull();
@@ -206,7 +206,7 @@ describe('Storage Utilities', () => {
   
   describe('Storage statistics', () => {
     it('should provide storage statistics', () => {
-      const stats1 = getStorageStats();
+      const stats1 = getStorageStats(mockDriver);
       expect(stats1[STORAGE_KEYS.SESSION].exists).toBe(false);
       
       setStorageValue('SESSION', {
@@ -216,7 +216,7 @@ describe('Storage Utilities', () => {
         },
       }, mockDriver);
       
-      const stats2 = getStorageStats();
+      const stats2 = getStorageStats(mockDriver);
       expect(stats2[STORAGE_KEYS.SESSION].exists).toBe(true);
       expect(stats2[STORAGE_KEYS.SESSION].version).toBe(1);
       expect(stats2[STORAGE_KEYS.SESSION].size).toBeGreaterThan(0);

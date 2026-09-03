@@ -15,7 +15,7 @@ type ProofErrorBoundaryState = {
 
 /**
  * Granular error boundary for the proof-creation flow
- * (app/proofs/create/page.tsx and the /proofs/* wizard routes).
+ * (app/proofs/page.tsx and the /proofs/* wizard routes).
  *
  * Scoped narrower than the route-level app/error.tsx: a crash inside
  * CreateProofFlow's wallet/payment/proof-submission logic is caught here

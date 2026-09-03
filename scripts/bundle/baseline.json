@@ -1,164 +1,340 @@
 {
-  "budgetsHash": "dd0aa45de1793919a65fb190bcf92edc1460481f8c0dc5abd416d15607754c04",
+  "budgetsHash": "194048749153cff3e156484bdc98434f060f09fa62c0024db54e117f5127808c",
   "routes": {
     "/": {
-      "clientJsBytes": 598746,
+      "clientJsBytes": 608606,
       "owners": {
-        "next": 473172,
+        "next": 474825,
         "next (polyfills)": 112594,
         "[turbopack-runtime]": 9695,
-        "lib": 1806,
-        "components": 814,
-        "@swc/helpers": 665
+        "components": 5551,
+        "app": 3470,
+        "lib": 1810,
+        "@swc/helpers": 661
       }
     },
     "/about": {
-      "clientJsBytes": 598746,
+      "clientJsBytes": 608606,
       "owners": {
-        "next": 473172,
+        "next": 474825,
         "next (polyfills)": 112594,
         "[turbopack-runtime]": 9695,
-        "lib": 1806,
-        "components": 814,
-        "@swc/helpers": 665
+        "components": 5551,
+        "app": 3470,
+        "lib": 1810,
+        "@swc/helpers": 661
+      }
+    },
+    "/accessibility": {
+      "clientJsBytes": 608606,
+      "owners": {
+        "next": 474825,
+        "next (polyfills)": 112594,
+        "[turbopack-runtime]": 9695,
+        "components": 5551,
+        "app": 3470,
+        "lib": 1810,
+        "@swc/helpers": 661
       }
     },
     "/contact": {
-      "clientJsBytes": 605120,
+      "clientJsBytes": 616607,
       "owners": {
-        "next": 473172,
+        "next": 474825,
         "next (polyfills)": 112594,
         "[turbopack-runtime]": 9695,
-        "components": 7188,
-        "lib": 1806,
-        "@swc/helpers": 665
+        "components": 9624,
+        "lib": 5738,
+        "app": 3470,
+        "@swc/helpers": 661
       }
     },
     "/developers": {
-      "clientJsBytes": 598746,
+      "clientJsBytes": 608606,
       "owners": {
-        "next": 473172,
+        "next": 474825,
         "next (polyfills)": 112594,
         "[turbopack-runtime]": 9695,
-        "lib": 1806,
-        "components": 814,
-        "@swc/helpers": 665
+        "components": 5551,
+        "app": 3470,
+        "lib": 1810,
+        "@swc/helpers": 661
+      }
+    },
+    "/developers/api-keys": {
+      "clientJsBytes": 946792,
+      "owners": {
+        "next": 474825,
+        "zod": 283448,
+        "next (polyfills)": 112594,
+        "react-hook-form": 28742,
+        "lib": 18133,
+        "components": 15003,
+        "[turbopack-runtime]": 9695,
+        "app": 3470,
+        "@swc/helpers": 661,
+        "config": 221
       }
     },
     "/faq": {
-      "clientJsBytes": 610129,
+      "clientJsBytes": 619991,
       "owners": {
-        "next": 473172,
+        "next": 474825,
         "next (polyfills)": 112594,
         "[turbopack-runtime]": 9695,
-        "app": 5439,
-        "components": 4532,
-        "lib": 4032,
-        "@swc/helpers": 665
+        "components": 9174,
+        "app": 9056,
+        "lib": 3986,
+        "@swc/helpers": 661
       }
     },
     "/how-it-works": {
-      "clientJsBytes": 598746,
+      "clientJsBytes": 608606,
       "owners": {
-        "next": 473172,
+        "next": 474825,
         "next (polyfills)": 112594,
         "[turbopack-runtime]": 9695,
-        "lib": 1806,
-        "components": 814,
-        "@swc/helpers": 665
+        "components": 5551,
+        "app": 3470,
+        "lib": 1810,
+        "@swc/helpers": 661
       }
     },
     "/issuers": {
-      "clientJsBytes": 598746,
+      "clientJsBytes": 608606,
       "owners": {
-        "next": 473172,
+        "next": 474825,
         "next (polyfills)": 112594,
         "[turbopack-runtime]": 9695,
-        "lib": 1806,
-        "components": 814,
-        "@swc/helpers": 665
+        "components": 5551,
+        "app": 3470,
+        "lib": 1810,
+        "@swc/helpers": 661
+      }
+    },
+    "/issuers/veridatum-labs": {
+      "clientJsBytes": 608606,
+      "owners": {
+        "next": 474825,
+        "next (polyfills)": 112594,
+        "[turbopack-runtime]": 9695,
+        "components": 5551,
+        "app": 3470,
+        "lib": 1810,
+        "@swc/helpers": 661
       }
     },
     "/privacy": {
-      "clientJsBytes": 598746,
+      "clientJsBytes": 608606,
       "owners": {
-        "next": 473172,
+        "next": 474825,
         "next (polyfills)": 112594,
         "[turbopack-runtime]": 9695,
-        "lib": 1806,
-        "components": 814,
-        "@swc/helpers": 665
+        "components": 5551,
+        "app": 3470,
+        "lib": 1810,
+        "@swc/helpers": 661
       }
     },
-    "/proofs/create": {
-      "clientJsBytes": 615614,
+    "/proof-types": {
+      "clientJsBytes": 620370,
       "owners": {
-        "next": 473172,
+        "next": 474825,
         "next (polyfills)": 112594,
-        "components": 11775,
         "[turbopack-runtime]": 9695,
-        "lib": 7390,
-        "@swc/helpers": 665,
-        "config": 323
+        "components": 9655,
+        "app": 9499,
+        "lib": 1810,
+        "data": 1631,
+        "@swc/helpers": 661
+      }
+    },
+    "/proof-types/minimum-income": {
+      "clientJsBytes": 608606,
+      "owners": {
+        "next": 474825,
+        "next (polyfills)": 112594,
+        "[turbopack-runtime]": 9695,
+        "components": 5551,
+        "app": 3470,
+        "lib": 1810,
+        "@swc/helpers": 661
+      }
+    },
+    "/proofs": {
+      "clientJsBytes": 636309,
+      "owners": {
+        "next": 474825,
+        "next (polyfills)": 112594,
+        "lib": 17530,
+        "components": 17060,
+        "[turbopack-runtime]": 9695,
+        "app": 3470,
+        "@swc/helpers": 661,
+        "undefined": 258,
+        "config": 216
+      }
+    },
+    "/proofs/minimum-income": {
+      "clientJsBytes": 636309,
+      "owners": {
+        "next": 474825,
+        "next (polyfills)": 112594,
+        "lib": 17530,
+        "components": 17060,
+        "[turbopack-runtime]": 9695,
+        "app": 3470,
+        "@swc/helpers": 661,
+        "undefined": 258,
+        "config": 216
+      }
+    },
+    "/proofs/payment-receipt": {
+      "clientJsBytes": 929629,
+      "owners": {
+        "next": 474825,
+        "zod": 283448,
+        "next (polyfills)": 112594,
+        "components": 22810,
+        "lib": 21591,
+        "[turbopack-runtime]": 9695,
+        "app": 3470,
+        "@swc/helpers": 661,
+        "config": 277,
+        "undefined": 258
+      }
+    },
+    "/proofs/recurring-income": {
+      "clientJsBytes": 939149,
+      "owners": {
+        "next": 474825,
+        "zod": 283448,
+        "next (polyfills)": 112594,
+        "components": 30384,
+        "lib": 23537,
+        "[turbopack-runtime]": 9695,
+        "app": 3470,
+        "@swc/helpers": 661,
+        "config": 277,
+        "undefined": 258
+      }
+    },
+    "/settings": {
+      "clientJsBytes": 610926,
+      "owners": {
+        "next": 474825,
+        "next (polyfills)": 112594,
+        "[turbopack-runtime]": 9695,
+        "components": 7871,
+        "app": 3470,
+        "lib": 1810,
+        "@swc/helpers": 661
+      }
+    },
+    "/settings/issuers": {
+      "clientJsBytes": 942974,
+      "owners": {
+        "next": 474825,
+        "zod": 283448,
+        "next (polyfills)": 112594,
+        "react-hook-form": 28742,
+        "lib": 15859,
+        "components": 13468,
+        "[turbopack-runtime]": 9695,
+        "app": 3470,
+        "@swc/helpers": 661,
+        "config": 212
+      }
+    },
+    "/settings/organizations": {
+      "clientJsBytes": 944219,
+      "owners": {
+        "next": 474825,
+        "zod": 283448,
+        "next (polyfills)": 112594,
+        "react-hook-form": 28742,
+        "lib": 15822,
+        "components": 14741,
+        "[turbopack-runtime]": 9695,
+        "app": 3470,
+        "@swc/helpers": 661,
+        "config": 221
       }
     },
     "/status": {
-      "clientJsBytes": 607034,
+      "clientJsBytes": 622952,
       "owners": {
-        "next": 473172,
+        "next": 474825,
         "next (polyfills)": 112594,
+        "lib": 10264,
         "[turbopack-runtime]": 9695,
-        "components": 4176,
-        "lib": 3768,
-        "app": 2595,
-        "@swc/helpers": 665,
-        "config": 369
+        "components": 8932,
+        "app": 5746,
+        "@swc/helpers": 661,
+        "config": 235
       }
     },
     "/terms": {
-      "clientJsBytes": 598746,
+      "clientJsBytes": 608606,
       "owners": {
-        "next": 473172,
+        "next": 474825,
         "next (polyfills)": 112594,
         "[turbopack-runtime]": 9695,
-        "lib": 1806,
-        "components": 814,
-        "@swc/helpers": 665
+        "components": 5551,
+        "app": 3470,
+        "lib": 1810,
+        "@swc/helpers": 661
       }
     },
     "/verify": {
-      "clientJsBytes": 613454,
+      "clientJsBytes": 634179,
       "owners": {
-        "next": 473172,
+        "next": 474825,
         "next (polyfills)": 112594,
-        "lib": 10486,
+        "lib": 20330,
+        "components": 12398,
         "[turbopack-runtime]": 9695,
-        "components": 6545,
-        "@swc/helpers": 665,
-        "config": 297
+        "app": 3470,
+        "@swc/helpers": 661,
+        "config": 206
+      }
+    },
+    "/verify/[proofId]": {
+      "clientJsBytes": 628446,
+      "owners": {
+        "next": 474825,
+        "next (polyfills)": 112594,
+        "lib": 15924,
+        "[turbopack-runtime]": 9695,
+        "components": 7465,
+        "app": 7071,
+        "@swc/helpers": 661,
+        "config": 211
       }
     },
     "/verify/credential": {
-      "clientJsBytes": 612134,
+      "clientJsBytes": 630591,
       "owners": {
-        "next": 473172,
+        "next": 474825,
         "next (polyfills)": 112594,
+        "lib": 17610,
+        "components": 11534,
         "[turbopack-runtime]": 9695,
-        "components": 8286,
-        "lib": 7399,
-        "@swc/helpers": 665,
-        "config": 323
+        "app": 3470,
+        "@swc/helpers": 661,
+        "config": 202
       }
     },
     "/verify/scan": {
-      "clientJsBytes": 610430,
+      "clientJsBytes": 620290,
       "owners": {
-        "next": 473172,
+        "next": 474825,
         "next (polyfills)": 112594,
+        "components": 12728,
         "[turbopack-runtime]": 9695,
-        "components": 7991,
-        "lib": 5963,
-        "@swc/helpers": 665,
+        "lib": 5967,
+        "app": 3470,
+        "@swc/helpers": 661,
         "config": 350
       }
     }
@@ -175,6 +351,14 @@
     {
       "name": "next",
       "version": "16.3.0"
+    },
+    {
+      "name": "react-hook-form",
+      "version": "7.81.0"
+    },
+    {
+      "name": "zod",
+      "version": "4.4.3"
     }
   ]
 }

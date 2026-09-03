@@ -1,6 +1,7 @@
 "use client";
 
 import { formatInterval, getCoverageStatus, getCoverageStatusColor, formatCoveragePercentage, type IntervalUnit, type IntervalCoverageAnalysis } from "@/lib/api/recurring-income-proofs";
+import { formatDateRange } from "@/lib/i18n";
 
 type Asset = {
   code: string;
@@ -55,7 +56,7 @@ export function RecurringProofConfirmation({
             <div className="flex justify-between">
               <dt className="text-slate-400">Time Period:</dt>
               <dd className="text-slate-200">
-                {new Date(periodStart).toLocaleDateString()} - {new Date(periodEnd).toLocaleDateString()}
+                {formatDateRange(periodStart, periodEnd)}
               </dd>
             </div>
             <div className="flex justify-between">

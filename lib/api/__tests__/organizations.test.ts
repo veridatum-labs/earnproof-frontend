@@ -121,7 +121,7 @@ describe("Organization Utilities", () => {
     });
 
     it("returns original value for unknown status", () => {
-      expect(formatOrganizationStatus("UNKNOWN" as any)).toBe("UNKNOWN");
+      expect(formatOrganizationStatus("UNKNOWN" as unknown as Parameters<typeof formatOrganizationStatus>[0])).toBe("UNKNOWN");
     });
   });
 
@@ -135,7 +135,7 @@ describe("Organization Utilities", () => {
     });
 
     it("returns accent for unknown status", () => {
-      expect(getStatusTone("UNKNOWN" as any)).toBe("accent");
+      expect(getStatusTone("UNKNOWN" as unknown as Parameters<typeof getStatusTone>[0])).toBe("accent");
     });
   });
 });
