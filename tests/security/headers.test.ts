@@ -125,10 +125,27 @@ describe("deployment origin requirements", () => {
     expect(loadPublicEnv({}).NEXT_PUBLIC_APP_URL).toBe("http://localhost:3000");
   });
 
-  it("fails clearly when preview origins are missing", () => {
+  it("uses Vercel preview URLs with documented testnet defaults", () => {
+    const env = loadPublicEnv({
+      VERCEL_ENV: "preview",
+      VERCEL_BRANCH_URL: "earnproof-git-fix-codebase-hallabs-projects.vercel.app",
+    });
+
+    expect(resolveDeploymentProfile({ VERCEL_ENV: "preview" })).toBe("preview");
+    expect(env.NEXT_PUBLIC_APP_URL).toBe(
+      "https://earnproof-git-fix-codebase-hallabs-projects.vercel.app",
+    );
+    expect(env.NEXT_PUBLIC_API_URL).toBe("http://localhost:4000/api/v1");
+    expect(env.NEXT_PUBLIC_STELLAR_HORIZON_URL).toBe(
+      "https://horizon-testnet.stellar.org",
+    );
+  });
+
+  it("fails clearly when preview origins are explicitly required", () => {
     expect(() =>
       loadPublicEnv({
         VERCEL_ENV: "preview",
+        EARNPROOF_REQUIRE_SECURITY_ORIGINS: "true",
       }),
     ).toThrow(/preview policy/);
   });

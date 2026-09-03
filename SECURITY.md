@@ -38,7 +38,7 @@ The Next.js app ships an explicit Content Security Policy and related headers fr
 
 ### Required origins
 
-Preview (`VERCEL_ENV=preview`) and production (`VERCEL_ENV=production`) fail to boot when `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_STELLAR_NETWORK`, `NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE`, or `NEXT_PUBLIC_STELLAR_HORIZON_URL` are missing or invalid.
+Production (`VERCEL_ENV=production`) fails to boot when `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_STELLAR_NETWORK`, `NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE`, or `NEXT_PUBLIC_STELLAR_HORIZON_URL` are missing or invalid. Preview deployments use Vercel's generated preview URL plus the documented testnet defaults when project environment variables are not configured.
 
 Local development and CI `next build` (no Vercel env) use the defaults in `.env.example`. Set `EARNPROOF_REQUIRE_SECURITY_ORIGINS=true` to force the fail-closed check.
 

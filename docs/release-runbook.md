@@ -35,10 +35,12 @@ preview build of the same branch.
 
 - [ ] `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_STELLAR_NETWORK`,
       `NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE`, and `NEXT_PUBLIC_STELLAR_HORIZON_URL`
-      are all set in the target Vercel environment. Production and preview both
-      fail closed (build throws) if any are missing — see
-      [`loadPublicEnv`](../lib/validation/env.ts). A successful build is
-      itself evidence this passed; attach the build log link as evidence.
+      are all set in the target production Vercel environment. Production fails
+      closed (build throws) if any are missing — see
+      [`loadPublicEnv`](../lib/validation/env.ts). Preview builds may use
+      Vercel's generated preview URL plus documented testnet defaults when
+      project variables are not configured, so a passing preview build is not
+      evidence that production configuration is complete.
 - [ ] `NEXT_PUBLIC_STELLAR_NETWORK` is `testnet` (the only supported value
       today). If a release intends to change this, treat it as a breaking
       change requiring its own sign-off, not a routine release.
