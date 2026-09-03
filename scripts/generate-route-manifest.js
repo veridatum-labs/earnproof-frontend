@@ -13,9 +13,13 @@ const path = require('path');
 const APP_ROOT = path.join(__dirname, '..');
 const APP_DIR = path.join(APP_ROOT, 'app');
 
-// Configuration from app.ts
-const appConfig = require(path.join(APP_ROOT, 'config/app.ts')).appConfig;
-const APP_URL = appConfig.appUrl.replace(/\/+$/, '');
+const DEFAULT_APP_URL = 'http://localhost:3000';
+
+function getAppUrl(env = process.env) {
+  return (env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL).replace(/\/+$/, '');
+}
+
+const APP_URL = getAppUrl();
 
 // Route classification
 const ROUTE_TYPES = {
@@ -266,6 +270,7 @@ module.exports = {
   validateManifest,
   normalizeRoutePath,
   buildCanonicalUrl,
+  getAppUrl,
   ROUTE_TYPES,
   ROUTE_CLASSIFICATION
 };
