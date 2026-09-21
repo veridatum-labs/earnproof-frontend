@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import VerifyProofPage from "../page";
 import { apiClient } from "@/lib/api/client";
 
@@ -185,10 +185,13 @@ describe("VerifyProofPage", () => {
     render(<VerifyProofPage params={{ proofId: specialProofId }} />);
     
     await waitFor(() => {
-      expect(mockApiClient).toHaveBeenCalledWith({
-        path: `/proofs/${encodeURIComponent(specialProofId)}/verify`,
-        method: "GET"
-      });
+      expect(mockApiClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: `/proofs/${encodeURIComponent(specialProofId)}/verify`,
+          method: "GET",
+          signal: expect.any(AbortSignal),
+        }),
+      );
     });
   });
 
@@ -242,5 +245,110 @@ describe("VerifyProofPage", () => {
       const statusLink = screen.getByText("Check system status");
       expect(statusLink.closest("a")).toHaveAttribute("href", "/status");
     });
+  });
+
+  it("refreshes and reflects a revocation while the page stays open", async () => {
+    jest.useFakeTimers();
+    try {
+      mockApiClient.mockResolvedValueOnce(mockValidResponse);
+      mockApiClient.mockResolvedValueOnce(mockRevokedResponse);
+
+      render(<VerifyProofPage params={mockParams} />);
+
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(screen.getByText("valid")).toBeInTheDocument();
+
+      await act(async () => {
+        jest.advanceTimersByTime(15_000);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(screen.getByText("revoked")).toBeInTheDocument();
+      expect(
+        screen.getByText("This proof has been revoked and is no longer valid."),
+      ).toBeInTheDocument();
+      expect(mockApiClient).toHaveBeenCalledTimes(2);
+    } finally {
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    }
+  });
+
+  it("keeps the last confirmed result when a background refresh fails", async () => {
+    jest.useFakeTimers();
+    try {
+      mockApiClient.mockResolvedValueOnce(mockValidResponse);
+      mockApiClient.mockRejectedValueOnce(new Error("network"));
+
+      render(<VerifyProofPage params={mockParams} />);
+
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(screen.getByText("valid")).toBeInTheDocument();
+
+      await act(async () => {
+        jest.advanceTimersByTime(15_000);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      // The confirmed result survives; the freshness notice explains the gap.
+      expect(screen.getByText("valid")).toBeInTheDocument();
+      expect(screen.queryByText("Verification failed")).not.toBeInTheDocument();
+      expect(
+        screen.getByText(/Showing the last confirmed status/),
+      ).toBeInTheDocument();
+    } finally {
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    }
+  });
+
+  it("does not poll while the tab is hidden and refreshes when visible again", async () => {
+    jest.useFakeTimers();
+    Object.defineProperty(document, "hidden", {
+      configurable: true,
+      get: () => true,
+    });
+    try {
+      mockApiClient.mockResolvedValue(mockValidResponse);
+
+      render(<VerifyProofPage params={mockParams} />);
+
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(60_000);
+      });
+
+      expect(mockApiClient).not.toHaveBeenCalled();
+
+      await act(async () => {
+        Object.defineProperty(document, "hidden", {
+          configurable: true,
+          get: () => false,
+        });
+        document.dispatchEvent(new Event("visibilitychange"));
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(screen.getByText("valid")).toBeInTheDocument();
+      expect(mockApiClient).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.clearAllTimers();
+      jest.useRealTimers();
+      Object.defineProperty(document, "hidden", {
+        configurable: true,
+        get: () => false,
+      });
+    }
   });
 });

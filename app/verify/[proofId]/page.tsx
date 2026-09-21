@@ -1,19 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { PageHeading } from "@/components/common/page-heading";
 import { pageContainer } from "@/components/common/production-ui";
 import { PublicShell } from "@/components/layout/public-shell";
-import { apiClient } from "@/lib/api/client";
+import { ProofStatusFreshness } from "@/components/proofs/proof-status-freshness";
+import { useProofStatusRefresh } from "@/lib/api/use-proof-status-refresh";
 import { formatDateRange, formatDateTime, formatMessage } from "@/lib/i18n";
 import type { VerifyProofResponse } from "@/lib/api/generated/v1";
-
-type VerificationState = {
-  loading: boolean;
-  result: VerifyProofResponse | null;
-  error: string | null;
-};
 
 function ResultItem({ label, value }: { label: string; value: string }) {
   return (
@@ -69,6 +63,25 @@ function getStatusMessage(result: VerifyProofResponse["result"]): string {
     default:
       return "The verification status could not be determined.";
   }
+}
+
+function getVerificationErrorMessage(error: unknown): string {
+  const fallback =
+    "Unable to verify proof. Please check your connection and try again.";
+
+  if (error instanceof Error) {
+    if (error.message.includes("404")) {
+      return "Proof not found. Please check the proof identifier and try again.";
+    }
+    if (error.message.includes("500")) {
+      return "Server error occurred during verification. Please try again later.";
+    }
+    if (error.message.toLowerCase().includes("timeout")) {
+      return "Request timed out. Please check your connection and try again.";
+    }
+  }
+
+  return fallback;
 }
 
 function LoadingState() {
@@ -213,81 +226,23 @@ function VerificationResult({ result }: { result: VerifyProofResponse }) {
 }
 
 export default function VerifyProofPage({ params }: { params: { proofId: string } }) {
-  const [state, setState] = useState<VerificationState>({
-    loading: true,
-    result: null,
-    error: null
-  });
+  const {
+    snapshot,
+    isRefreshing,
+    isLive,
+    isPolling,
+    lastUpdated,
+    error,
+    refresh,
+  } = useProofStatusRefresh({ proofId: params.proofId });
 
-  const verifyProof = useCallback(async () => {
-    setState({ loading: true, result: null, error: null });
-
-    try {
-      const encodedProofId = encodeURIComponent(params.proofId);
-      const result = await apiClient<VerifyProofResponse>({
-        path: `/proofs/${encodedProofId}/verify`,
-        method: "GET"
-      });
-
-      setState({ loading: false, result, error: null });
-    } catch (err) {
-      let errorMessage = "Unable to verify proof. Please check your connection and try again.";
-      
-      if (err instanceof Error) {
-        if (err.message.includes("404")) {
-          errorMessage = "Proof not found. Please check the proof identifier and try again.";
-        } else if (err.message.includes("500")) {
-          errorMessage = "Server error occurred during verification. Please try again later.";
-        } else if (err.message.includes("timeout")) {
-          errorMessage = "Request timed out. Please check your connection and try again.";
-        }
-      }
-
-      setState({ loading: false, result: null, error: errorMessage });
-    }
-  }, [params.proofId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    
-    const loadProof = async () => {
-      setState({ loading: true, result: null, error: null });
-
-      try {
-        const encodedProofId = encodeURIComponent(params.proofId);
-        const result = await apiClient<VerifyProofResponse>({
-          path: `/proofs/${encodedProofId}/verify`,
-          method: "GET"
-        });
-
-        if (!cancelled) {
-          setState({ loading: false, result, error: null });
-        }
-      } catch (err) {
-        if (!cancelled) {
-          let errorMessage = "Unable to verify proof. Please check your connection and try again.";
-          
-          if (err instanceof Error) {
-            if (err.message.includes("404")) {
-              errorMessage = "Proof not found. Please check the proof identifier and try again.";
-            } else if (err.message.includes("500")) {
-              errorMessage = "Server error occurred during verification. Please try again later.";
-            } else if (err.message.includes("timeout")) {
-              errorMessage = "Request timed out. Please check your connection and try again.";
-            }
-          }
-
-          setState({ loading: false, result: null, error: errorMessage });
-        }
-      }
-    };
-
-    loadProof();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [params.proofId]);
+  const result = snapshot?.raw ?? null;
+  const errorMessage = error ? getVerificationErrorMessage(error) : null;
+  const showInitialLoading = result === null && errorMessage === null;
+  // Only replace the page with the error state when there is nothing
+  // confirmed to show. A failed background refresh keeps the last known
+  // result (flagged by ProofStatusFreshness instead).
+  const showErrorState = result === null && errorMessage !== null;
 
   return (
     <PublicShell>
@@ -299,13 +254,23 @@ export default function VerifyProofPage({ params }: { params: { proofId: string 
           })}
         />
 
-        {state.loading && <LoadingState />}
+        {showInitialLoading && <LoadingState />}
 
-        {state.error && (
-          <ErrorState error={state.error} onRetry={verifyProof} />
+        {showErrorState && errorMessage !== null && (
+          <ErrorState error={errorMessage} onRetry={refresh} />
         )}
 
-        {state.result && <VerificationResult result={state.result} />}
+        {result && <VerificationResult result={result} />}
+
+        {result && (
+          <ProofStatusFreshness
+            error={error}
+            isLive={isLive}
+            isPolling={isPolling}
+            isRefreshing={isRefreshing}
+            lastUpdated={lastUpdated}
+          />
+        )}
       </div>
     </PublicShell>
   );

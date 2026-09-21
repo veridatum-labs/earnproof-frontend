@@ -14,6 +14,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "test": "jest",
     "generate:api-types": "node scripts/generate-api-types/index.js",
     "test:contracts": "node scripts/check-api-drift.js && node scripts/generate-api-types/index.js --check",
