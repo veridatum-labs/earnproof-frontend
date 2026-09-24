@@ -1,7 +1,6 @@
 import { apiClient, bearer, retryRead, retryMutation } from "./client";
 import type { AuthUser, Issuer } from "./generated/v1";
 import { captureRevision } from "./revision-tracking";
-import type { Issuer } from "./generated/v1";
 import type { IssuerWithRevision, UpdateIssuerRequestWithRevision } from "./revision-tracking";
 
 export type CreateIssuerRequest = {
@@ -21,7 +20,6 @@ export type PaginatedIssuersResponse = {
   previousCursor: string | null;
 };
 
-export async function getIssuers(token: string, signal: AbortSignal): Promise<Issuer[]> {
 // Re-export revision-aware types for use in forms
 export type { IssuerWithRevision, UpdateIssuerRequestWithRevision };
 

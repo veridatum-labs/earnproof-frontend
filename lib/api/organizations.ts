@@ -22,7 +22,6 @@ export type PaginatedOrganizationsResponse = {
   previousCursor: string | null;
 };
 
-export async function getOrganizations(token: string, signal: AbortSignal): Promise<Organization[]> {
 // Re-export revision-aware types for use in forms
 export type { OrganizationWithRevision, UpdateOrganizationRequestWithRevision };
 
