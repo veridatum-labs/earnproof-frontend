@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { updateOrganization, formatOrganizationStatus, getStatusTone } from "@/lib/api/organizations";
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 import { StatusBadge } from "@/components/common/production-ui";
+import { OrganizationMembers } from "@/components/organizations/organization-members";
 import { formatMessage } from "@/lib/i18n";
 import type { Organization } from "@/lib/api/generated/v1";
 
@@ -26,6 +27,7 @@ export function OrganizationList({
 }) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [expandedMembersId, setExpandedMembersId] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{
     type: "suspend" | "activate" | "revoke";
     organizationId: string;
@@ -92,32 +94,44 @@ export function OrganizationList({
         </div>
 
         {organizations.map((org) => (
-          <OrganizationRow
-            key={org.id}
-            organization={org}
-            isLoading={actionLoading === org.id}
-            onSuspend={() => 
-              setConfirmAction({
-                type: "suspend",
-                organizationId: org.id,
-                organizationName: org.name,
-              })
-            }
-            onActivate={() => 
-              setConfirmAction({
-                type: "activate",
-                organizationId: org.id,
-                organizationName: org.name,
-              })
-            }
-            onRevoke={() =>
-              setConfirmAction({
-                type: "revoke",
-                organizationId: org.id,
-                organizationName: org.name,
-              })
-            }
-          />
+          <div key={org.id} className="grid gap-3">
+            <OrganizationRow
+              organization={org}
+              isLoading={actionLoading === org.id}
+              isMembersExpanded={expandedMembersId === org.id}
+              onSuspend={() =>
+                setConfirmAction({
+                  type: "suspend",
+                  organizationId: org.id,
+                  organizationName: org.name,
+                })
+              }
+              onActivate={() =>
+                setConfirmAction({
+                  type: "activate",
+                  organizationId: org.id,
+                  organizationName: org.name,
+                })
+              }
+              onRevoke={() =>
+                setConfirmAction({
+                  type: "revoke",
+                  organizationId: org.id,
+                  organizationName: org.name,
+                })
+              }
+              onToggleMembers={() =>
+                setExpandedMembersId((current) => (current === org.id ? null : org.id))
+              }
+            />
+            {expandedMembersId === org.id && (
+              <OrganizationMembers
+                organizationId={org.id}
+                organizationName={org.name}
+                token={token}
+              />
+            )}
+          </div>
         ))}
       </div>
 
@@ -163,15 +177,19 @@ export function OrganizationList({
 function OrganizationRow({
   organization,
   isLoading,
+  isMembersExpanded,
   onSuspend,
   onActivate,
   onRevoke,
+  onToggleMembers,
 }: {
   organization: Organization;
   isLoading: boolean;
+  isMembersExpanded: boolean;
   onSuspend: () => void;
   onActivate: () => void;
   onRevoke: () => void;
+  onToggleMembers: () => void;
 }) {
   const canSuspend = organization.status === "ACTIVE";
   const canActivate = organization.status === "SUSPENDED" || organization.status === "PENDING";
@@ -218,6 +236,14 @@ function OrganizationRow({
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2">
+        <button
+          aria-expanded={isMembersExpanded}
+          className="h-8 rounded border border-white/15 px-3 text-xs font-medium text-white hover:bg-white/5 transition"
+          onClick={onToggleMembers}
+          type="button"
+        >
+          {isMembersExpanded ? "Hide Members" : "Manage Members"}
+        </button>
         {canActivate && (
           <button
             onClick={onActivate}

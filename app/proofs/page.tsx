@@ -15,7 +15,7 @@ export default function CreateProofPage() {
           title="Create Proofs"
         />
         
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <Link
             href="/proofs/minimum-income"
             className="block rounded-lg border border-white/10 bg-white/[0.04] p-6 hover:bg-white/[0.06] transition"
@@ -52,6 +52,19 @@ export default function CreateProofPage() {
             </p>
             <div className="mt-4 text-xs font-semibold text-cyan-300">
               Create Recurring Proof →
+            </div>
+          </Link>
+
+          <Link
+            href="/proofs/employer-payment"
+            className="block rounded-lg border border-white/10 bg-white/[0.04] p-6 hover:bg-white/[0.06] transition"
+          >
+            <h2 className="text-xl font-semibold text-white">Employer Payment Proof</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              Prove payment from a specific, trusted employer source over a bounded period without disclosing exact amounts.
+            </p>
+            <div className="mt-4 text-xs font-semibold text-cyan-300">
+              Create Employer Proof →
             </div>
           </Link>
         </div>
