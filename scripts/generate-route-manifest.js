@@ -52,6 +52,7 @@ const ROUTE_CLASSIFICATION = {
   '/proofs/minimum-income': ROUTE_TYPES.PRIVATE,
   '/proofs/payment-receipt': ROUTE_TYPES.PRIVATE,
   '/proofs/recurring-income': ROUTE_TYPES.PRIVATE,
+  '/proofs/employer-payment': ROUTE_TYPES.PRIVATE,
   
   // Verification routes - public but non-indexable (user-generated content)
   '/verify': ROUTE_TYPES.PUBLIC_NON_INDEXABLE,

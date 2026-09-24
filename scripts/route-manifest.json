@@ -247,6 +247,25 @@
     }
   },
   {
+    "route": "/proofs/employer-payment",
+    "type": "private",
+    "filePath": "app/proofs/employer-payment/page.tsx",
+    "metadata": {
+      "hasTitle": false,
+      "hasDescription": false,
+      "hasCustomMetadata": false,
+      "usesLayoutMetadata": true
+    },
+    "canonicalUrl": "http://localhost:3000/proofs/employer-payment",
+    "validationRequirements": {
+      "needsTitle": false,
+      "needsDescription": false,
+      "needsCanonical": false,
+      "shouldBeIndexable": false,
+      "shouldNotBeIndexable": true
+    }
+  },
+  {
     "route": "/proofs/minimum-income",
     "type": "private",
     "filePath": "app/proofs/minimum-income/page.tsx",
