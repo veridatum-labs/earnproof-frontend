@@ -11,8 +11,13 @@ const navigationItems = [
   },
   {
     name: "Issuers",
-    href: "/settings/issuers", 
+    href: "/settings/issuers",
     description: "Manage issuers and their organizational relationships",
+  },
+  {
+    name: "Usage & Quotas",
+    href: "/settings/usage",
+    description: "Track quota usage and request rate limits",
   },
 ];
 

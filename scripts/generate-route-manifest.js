@@ -63,6 +63,7 @@ const ROUTE_CLASSIFICATION = {
   '/settings': ROUTE_TYPES.PRIVATE,
   '/settings/issuers': ROUTE_TYPES.PRIVATE,
   '/settings/organizations': ROUTE_TYPES.PRIVATE,
+  '/settings/usage': ROUTE_TYPES.PRIVATE,
 };
 
 // Helper to check if file exists

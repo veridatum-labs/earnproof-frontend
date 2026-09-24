@@ -16,8 +16,9 @@ import { apiClient, bearer, retryRead, retryMutation } from "./client";
  * Privacy: the list response never includes the signed payload/credential
  * material for an attestation — only status metadata (subject hash, type,
  * status, timestamps). Anywhere a signed payload IS returned (creation
- * response), the UI must never persist it to localStorage/sessionStorage;
- * see `components/issuers/issuer-attestations.tsx`.
+ * response), the UI must never persist it to browser storage (no local
+ * storage, no session storage); see
+ * `components/issuers/issuer-attestations.tsx`.
  */
 
 export const ATTESTATION_TYPES = [
@@ -54,8 +55,9 @@ export type CreateAttestationRequest = {
 
 /**
  * The one-time signed payload returned at creation. Callers must never
- * write `signedPayload` to localStorage/sessionStorage/IndexedDB — display
- * it for the session only, or let the user export/copy it explicitly.
+ * write `signedPayload` to any browser storage (local storage, session
+ * storage, or IndexedDB) — display it in memory only, or let the user
+ * export/copy it explicitly.
  */
 export type CreateAttestationResponse = {
   attestation: IssuerAttestation;

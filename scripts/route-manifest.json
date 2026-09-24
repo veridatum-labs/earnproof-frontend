@@ -2,7 +2,7 @@
   {
     "route": "/about",
     "type": "public/indexable",
-    "filePath": "app\\about\\page.tsx",
+    "filePath": "app/about/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -21,7 +21,7 @@
   {
     "route": "/accessibility",
     "type": "public/indexable",
-    "filePath": "app\\accessibility\\page.tsx",
+    "filePath": "app/accessibility/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -40,7 +40,7 @@
   {
     "route": "/contact",
     "type": "public/indexable",
-    "filePath": "app\\contact\\page.tsx",
+    "filePath": "app/contact/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -59,7 +59,7 @@
   {
     "route": "/developers/api-keys",
     "type": "private",
-    "filePath": "app\\developers\\api-keys\\page.tsx",
+    "filePath": "app/developers/api-keys/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -78,7 +78,7 @@
   {
     "route": "/developers",
     "type": "public/indexable",
-    "filePath": "app\\developers\\page.tsx",
+    "filePath": "app/developers/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -97,7 +97,7 @@
   {
     "route": "/faq",
     "type": "public/indexable",
-    "filePath": "app\\faq\\page.tsx",
+    "filePath": "app/faq/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -116,7 +116,7 @@
   {
     "route": "/how-it-works",
     "type": "public/indexable",
-    "filePath": "app\\how-it-works\\page.tsx",
+    "filePath": "app/how-it-works/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -135,7 +135,7 @@
   {
     "route": "/issuers",
     "type": "public/indexable",
-    "filePath": "app\\issuers\\page.tsx",
+    "filePath": "app/issuers/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -154,7 +154,7 @@
   {
     "route": "/issuers/veridatum-labs",
     "type": "public/indexable",
-    "filePath": "app\\issuers\\veridatum-labs\\page.tsx",
+    "filePath": "app/issuers/veridatum-labs/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -173,7 +173,7 @@
   {
     "route": "/",
     "type": "public/indexable",
-    "filePath": "app\\page.tsx",
+    "filePath": "app/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -192,7 +192,7 @@
   {
     "route": "/privacy",
     "type": "public/indexable",
-    "filePath": "app\\privacy\\page.tsx",
+    "filePath": "app/privacy/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -211,7 +211,7 @@
   {
     "route": "/proof-types/minimum-income",
     "type": "public/indexable",
-    "filePath": "app\\proof-types\\minimum-income\\page.tsx",
+    "filePath": "app/proof-types/minimum-income/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -230,7 +230,7 @@
   {
     "route": "/proof-types",
     "type": "public/indexable",
-    "filePath": "app\\proof-types\\page.tsx",
+    "filePath": "app/proof-types/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -249,7 +249,7 @@
   {
     "route": "/proofs/minimum-income",
     "type": "private",
-    "filePath": "app\\proofs\\minimum-income\\page.tsx",
+    "filePath": "app/proofs/minimum-income/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -268,7 +268,7 @@
   {
     "route": "/proofs",
     "type": "workflow-only",
-    "filePath": "app\\proofs\\page.tsx",
+    "filePath": "app/proofs/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -287,7 +287,7 @@
   {
     "route": "/proofs/payment-receipt",
     "type": "private",
-    "filePath": "app\\proofs\\payment-receipt\\page.tsx",
+    "filePath": "app/proofs/payment-receipt/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -306,7 +306,7 @@
   {
     "route": "/proofs/recurring-income",
     "type": "private",
-    "filePath": "app\\proofs\\recurring-income\\page.tsx",
+    "filePath": "app/proofs/recurring-income/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -325,7 +325,7 @@
   {
     "route": "/settings/issuers",
     "type": "private",
-    "filePath": "app\\settings\\issuers\\page.tsx",
+    "filePath": "app/settings/issuers/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -344,7 +344,7 @@
   {
     "route": "/settings/organizations",
     "type": "private",
-    "filePath": "app\\settings\\organizations\\page.tsx",
+    "filePath": "app/settings/organizations/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -363,7 +363,7 @@
   {
     "route": "/settings",
     "type": "private",
-    "filePath": "app\\settings\\page.tsx",
+    "filePath": "app/settings/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -380,9 +380,28 @@
     }
   },
   {
+    "route": "/settings/usage",
+    "type": "private",
+    "filePath": "app/settings/usage/page.tsx",
+    "metadata": {
+      "hasTitle": false,
+      "hasDescription": false,
+      "hasCustomMetadata": false,
+      "usesLayoutMetadata": true
+    },
+    "canonicalUrl": "http://localhost:3000/settings/usage",
+    "validationRequirements": {
+      "needsTitle": false,
+      "needsDescription": false,
+      "needsCanonical": false,
+      "shouldBeIndexable": false,
+      "shouldNotBeIndexable": true
+    }
+  },
+  {
     "route": "/status",
     "type": "public/indexable",
-    "filePath": "app\\status\\page.tsx",
+    "filePath": "app/status/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -401,7 +420,7 @@
   {
     "route": "/terms",
     "type": "public/indexable",
-    "filePath": "app\\terms\\page.tsx",
+    "filePath": "app/terms/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -418,9 +437,28 @@
     }
   },
   {
+    "route": "/verify/[proofId]",
+    "type": "public/non-indexable",
+    "filePath": "app/verify/[proofId]/page.tsx",
+    "metadata": {
+      "hasTitle": false,
+      "hasDescription": false,
+      "hasCustomMetadata": false,
+      "usesLayoutMetadata": true
+    },
+    "canonicalUrl": "http://localhost:3000/verify/[proofId]",
+    "validationRequirements": {
+      "needsTitle": true,
+      "needsDescription": true,
+      "needsCanonical": true,
+      "shouldBeIndexable": false,
+      "shouldNotBeIndexable": true
+    }
+  },
+  {
     "route": "/verify/credential",
     "type": "public/non-indexable",
-    "filePath": "app\\verify\\credential\\page.tsx",
+    "filePath": "app/verify/credential/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -439,7 +477,7 @@
   {
     "route": "/verify",
     "type": "public/non-indexable",
-    "filePath": "app\\verify\\page.tsx",
+    "filePath": "app/verify/page.tsx",
     "metadata": {
       "hasTitle": false,
       "hasDescription": false,
@@ -458,33 +496,14 @@
   {
     "route": "/verify/scan",
     "type": "public/non-indexable",
-    "filePath": "app\\verify\\scan\\page.tsx",
+    "filePath": "app/verify/scan/page.tsx",
     "metadata": {
       "hasTitle": true,
       "hasDescription": true,
       "hasCustomMetadata": true,
-      "rawContent": "import { PageHeading } from \"@/components/common/page-heading\";\r\nimport { pageContainer } from \"@/components/common/production-ui\";\r\nimport { PublicShell } from \"@/components/layout/public-shell\";\r\nimport { VerifyScan } from \"@/components/verification/verify-scan\";\r\n\r\nexport const metadata = {\r\n    title: \"Scan proof | EarnProof\",\r\n    description: \"Scan or enter an EarnProof QR proof to verify it publicly.\",\r\n};\r\n\r\nexport default function VerifyScanPage() {\r\n    return (\r\n        <PublicShell>\r"
+      "rawContent": "import { PageHeading } from \"@/components/common/page-heading\";\nimport { pageContainer } from \"@/components/common/production-ui\";\nimport { PublicShell } from \"@/components/layout/public-shell\";\nimport { VerifyScan } from \"@/components/verification/verify-scan\";\n\nexport const metadata = {\n    title: \"Scan proof | EarnProof\",\n    description: \"Scan or enter an EarnProof QR proof to verify it publicly.\",\n};\n\nexport default function VerifyScanPage() {\n    return (\n        <PublicShell>\n            "
     },
     "canonicalUrl": "http://localhost:3000/verify/scan",
-    "validationRequirements": {
-      "needsTitle": true,
-      "needsDescription": true,
-      "needsCanonical": true,
-      "shouldBeIndexable": false,
-      "shouldNotBeIndexable": true
-    }
-  },
-  {
-    "route": "/verify/[proofId]",
-    "type": "public/non-indexable",
-    "filePath": "app\\verify\\[proofId]\\page.tsx",
-    "metadata": {
-      "hasTitle": false,
-      "hasDescription": false,
-      "hasCustomMetadata": false,
-      "usesLayoutMetadata": true
-    },
-    "canonicalUrl": "http://localhost:3000/verify/[proofId]",
     "validationRequirements": {
       "needsTitle": true,
       "needsDescription": true,
