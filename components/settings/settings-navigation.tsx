@@ -11,8 +11,23 @@ const navigationItems = [
   },
   {
     name: "Issuers",
-    href: "/settings/issuers", 
+    href: "/settings/issuers",
     description: "Manage issuers and their organizational relationships",
+  },
+  {
+    name: "Trusted Sources",
+    href: "/settings/trusted-sources",
+    description: "Manage trusted sources and their linked issuer identities",
+  },
+  {
+    name: "Supported Assets",
+    href: "/settings/assets",
+    description: "Manage which Stellar assets can be indexed and used for proofs",
+  },
+  {
+    name: "Sessions",
+    href: "/settings/sessions",
+    description: "View and revoke active sessions on other devices",
   },
 ];
 

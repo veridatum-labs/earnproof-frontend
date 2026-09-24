@@ -1,9 +1,14 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import VerifyProofPage from "../page";
 import { apiClient } from "@/lib/api/client";
 
-// Mock the API client
-jest.mock("@/lib/api/client");
+// Mock only apiClient; retryRead/bearer/fetchWithTimeout keep their real
+// implementations so useProofStatusPolling's retry-on-failure path (which
+// calls retryRead, not apiClient, directly) behaves the same as production.
+jest.mock("@/lib/api/client", () => ({
+  ...jest.requireActual("@/lib/api/client"),
+  apiClient: jest.fn(),
+}));
 const mockApiClient = apiClient as jest.MockedFunction<typeof apiClient>;
 
 // Mock Next.js navigation
@@ -181,14 +186,16 @@ describe("VerifyProofPage", () => {
   it("safely encodes proof ID in API request", async () => {
     const specialProofId = "ep_test/with%special&chars";
     mockApiClient.mockResolvedValue(mockValidResponse);
-    
+
     render(<VerifyProofPage params={{ proofId: specialProofId }} />);
-    
+
     await waitFor(() => {
-      expect(mockApiClient).toHaveBeenCalledWith({
-        path: `/proofs/${encodeURIComponent(specialProofId)}/verify`,
-        method: "GET"
-      });
+      expect(mockApiClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: `/proofs/${encodeURIComponent(specialProofId)}/verify`,
+          method: "GET",
+        }),
+      );
     });
   });
 
@@ -235,12 +242,62 @@ describe("VerifyProofPage", () => {
   it("includes system status link in error state", async () => {
     const networkError = new Error("Network error");
     mockApiClient.mockRejectedValue(networkError);
-    
+
     render(<VerifyProofPage params={mockParams} />);
-    
+
     await waitFor(() => {
       const statusLink = screen.getByText("Check system status");
       expect(statusLink.closest("a")).toHaveAttribute("href", "/status");
+    });
+  });
+
+  describe("visibility-aware polling (#154)", () => {
+    it("shows a live-watching indicator for a non-terminal status", async () => {
+      mockApiClient.mockResolvedValue(mockValidResponse);
+
+      render(<VerifyProofPage params={mockParams} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("valid")).toBeInTheDocument();
+      });
+
+      expect(screen.getByText("Watching for updates")).toBeInTheDocument();
+    });
+
+    it("does not show the live-watching indicator once a terminal status is reached", async () => {
+      mockApiClient.mockResolvedValue(mockRevokedResponse);
+
+      render(<VerifyProofPage params={mockParams} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("revoked")).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText("Watching for updates")).not.toBeInTheDocument();
+    });
+
+    it("does not poll while the tab is hidden", async () => {
+      jest.useFakeTimers();
+      try {
+        mockApiClient.mockResolvedValue(mockValidResponse);
+
+        render(<VerifyProofPage params={mockParams} />);
+        await waitFor(() => expect(mockApiClient).toHaveBeenCalledTimes(1));
+
+        Object.defineProperty(document, "hidden", {
+          configurable: true,
+          get: () => true,
+        });
+        document.dispatchEvent(new Event("visibilitychange"));
+
+        await act(async () => {
+          await jest.advanceTimersByTimeAsync(30_000);
+        });
+
+        expect(mockApiClient).toHaveBeenCalledTimes(1);
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 });
