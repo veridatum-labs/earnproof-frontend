@@ -99,6 +99,7 @@ export function useProofHistoryState() {
       limit: validated.limit ?? 20,
     };
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHydratedState(state);
   }, [searchParams]);
 

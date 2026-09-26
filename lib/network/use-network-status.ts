@@ -29,7 +29,7 @@ const FAILURE_WINDOW_MS = 60_000; // 1 minute window to detect failure patterns
  * Global network status state shared across hook instances.
  * This prevents multiple listeners on the same events.
  */
-let globalNetworkStatus: NetworkStatus = {
+const globalNetworkStatus: NetworkStatus = {
   isOnline: typeof navigator !== "undefined" && navigator.onLine,
   isDegraded: false,
 };
@@ -85,6 +85,7 @@ export function useNetworkStatus(): NetworkStatus {
 
   useEffect(() => {
     // Update component with current global state
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatus({ ...globalNetworkStatus });
 
     // Subscribe to future updates

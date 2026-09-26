@@ -1,4 +1,5 @@
 import { appConfig } from "@/config/app";
+import { ApiError, extractSafeErrorReference } from "@/lib/errors";
 import { categorizeError, reportClientError } from "@/lib/telemetry";
 import { ApiNetworkError, recordNetworkFailure, recordNetworkSuccess } from "@/lib/network";
 
@@ -163,39 +164,45 @@ export async function apiClient<TResponse>({
 
   if (!response.ok) {
     recordNetworkFailure();
-    // Handle 409 Conflict errors specially for stale-write detection
-    if (response.status === 409) {
-      try {
-        const conflictData = await response.json() as {
-          message?: string;
-          currentEntity?: unknown;
-          submittedData?: unknown;
-        };
-        throw new ApiConflictError(
-          conflictData.currentEntity,
-          conflictData.submittedData as Record<string, unknown> | undefined,
-          conflictData.message || "A stale write conflict occurred. The resource was modified after you loaded this form.",
-        );
-      } catch (parseError) {
-        // If response body doesn't parse, throw generic conflict error
-        if (parseError instanceof ApiConflictError) {
-          throw parseError;
-        }
-        throw new ApiConflictError(
-          undefined,
-          undefined,
-          "A stale write conflict occurred. The resource was modified after you loaded this form.",
-        );
-      }
+    
+    // Extract safe error reference (request IDs, correlation IDs)
+    let errorBody: unknown;
+    try {
+      errorBody = await response.json();
+    } catch {
+      errorBody = {};
     }
 
-    const error = new Error(`EarnProof API request failed with ${response.status}`);
+    const errorResponse = extractSafeErrorReference(errorBody, response.status);
+
+    // Handle 409 Conflict errors specially for stale-write detection
+    if (response.status === 409) {
+      const conflictData = errorBody as {
+        message?: string;
+        currentEntity?: unknown;
+        submittedData?: unknown;
+      };
+      const apiConflictError = new ApiConflictError(
+        conflictData.currentEntity,
+        conflictData.submittedData as Record<string, unknown> | undefined,
+        errorResponse.message || "A stale write conflict occurred. The resource was modified after you loaded this form.",
+      );
+      reportClientError({
+        error: apiConflictError,
+        category: categorizeError(apiConflictError, response),
+        pathname: currentPathname(),
+      });
+      throw apiConflictError;
+    }
+
+    // Throw ApiError with safe error reference
+    const apiError = new ApiError(errorResponse);
     reportClientError({
-      error,
-      category: categorizeError(error, response),
+      error: apiError,
+      category: categorizeError(apiError, response),
       pathname: currentPathname(),
     });
-    throw new ApiNetworkError(error, response);
+    throw apiError;
   }
 
   recordNetworkSuccess();

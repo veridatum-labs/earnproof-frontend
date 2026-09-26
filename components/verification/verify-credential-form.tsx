@@ -15,7 +15,9 @@ import {
   VerifyProofResponse,
 } from "@/components/verification/verification-panel";
 import { VerifyResultSkeleton } from "@/components/common/skeleton/verify-result-skeleton";
+import { KeyLifecyclePanel } from "@/components/verification/key-lifecycle-panel";
 import { checkCredentialFile, parseCredentialJson } from "@/lib/validation/credential-import";
+import { discoverSigningKey } from "@/lib/key-lifecycle/registry";
 
 import { defineMessages, formatMessage, formatNumber } from "@/lib/i18n";
 
@@ -312,6 +314,9 @@ export function VerifyCredentialForm() {
       </form>
 
       {isLoading ? <VerifyResultSkeleton /> : <VerificationPanel result={result} />}
+      {!isLoading && result?.proof && (
+        <KeyLifecyclePanel outcome={discoverSigningKey(result.proof.type)} />
+      )}
     </div>
   );
 }

@@ -110,6 +110,7 @@ describe("error-types", () => {
 
   describe("canRetry", () => {
     const createFailure = (type: string): NetworkFailure => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       type: type as any,
       message: "test",
       originalError: new Error("test"),
