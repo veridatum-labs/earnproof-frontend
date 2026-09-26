@@ -1,4 +1,5 @@
 import { apiClient, bearer, retryMutation } from "./client";
+import { parseAssetAmount, formatStroops } from "@/lib/i18n";
 
 export type CreateIncomeRangeProofRequest = {
   selectedPaymentIds: string[];
@@ -101,6 +102,21 @@ export function validateIncomeRange(
   return null;
 }
 
+/**
+ * Formats an income range for display, e.g. "1,250 - 3,000 USDC". Uses the
+ * shared asset-aware formatter (lib/i18n/amount.ts) so the bounds are
+ * grouped and decimal-safe rather than shown as raw API strings; falls back
+ * to the raw bounds if either fails to parse, rather than crashing the
+ * render (this is API display data, per this file's other functions'
+ * error-tolerant conventions).
+ */
 export function formatIncomeRange(lowerBound: string, upperBound: string, assetCode: string): string {
-  return `${lowerBound} - ${upperBound} ${assetCode}`;
+  const lower = parseAssetAmount(lowerBound);
+  const upper = parseAssetAmount(upperBound);
+
+  if (!lower.ok || !upper.ok) {
+    return `${lowerBound} - ${upperBound} ${assetCode}`;
+  }
+
+  return `${formatStroops(lower.stroops)} - ${formatStroops(upper.stroops)} ${assetCode}`;
 }
