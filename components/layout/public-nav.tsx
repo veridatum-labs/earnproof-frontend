@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { NetworkBadge } from "@/components/common/network-badge";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { usePrivacy } from "@/contexts/privacy-context";
 
 const navItems = [
   { href: "/how-it-works", label: "Product" },
@@ -16,6 +17,7 @@ const navItems = [
 
 export function PublicNav() {
   const pathname = usePathname() ?? "/";
+  const { isRedacted, toggleRedaction } = usePrivacy();
   const isActive = (href: string) =>
     pathname === href ||
     (href === "/proofs" && pathname.startsWith("/proofs")) ||
@@ -54,7 +56,18 @@ export function PublicNav() {
 
         <MobileNav isActive={isActive} items={navItems} />
 
-        <div className="shrink-0">
+        <div className="flex shrink-0 items-center gap-4">
+          <button
+            onClick={toggleRedaction}
+            className={`flex h-7 items-center rounded-lg border px-2.5 text-xs font-semibold uppercase leading-4 transition-colors ${
+              isRedacted
+                ? "border-cyan-300/50 bg-cyan-300/20 text-cyan-200"
+                : "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700"
+            }`}
+            title="Toggle Privacy Redaction Mode"
+          >
+            {isRedacted ? "Hide Details" : "Show Details"}
+          </button>
           <NetworkBadge />
         </div>
       </div>

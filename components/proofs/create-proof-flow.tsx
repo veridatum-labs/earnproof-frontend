@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { getAddress, requestAccess, signMessage } from "@stellar/freighter-api";
 import { ArtifactExport } from "@/components/proofs/artifact-export";
 import { PaymentListSkeleton } from "@/components/common/skeleton/payment-list-skeleton";
+import { Redacted } from "@/components/common/redacted";
+import { usePrivacy } from "@/contexts/privacy-context";
 import { Timestamp } from "@/components/common/timestamp";
 import { WalletConsentScreen } from "@/components/auth/wallet-consent-screen";
 import { NetworkMismatchAlert } from "@/components/wallet/network-mismatch-alert";
@@ -71,6 +73,7 @@ type ProofResponse = {
 };
 
 export function CreateProofFlow() {
+  const { isRedacted } = usePrivacy();
   const initialSession = useMemo(() => readStoredSession(), []);
   const [token, setToken] = useState<string | null>(
     () => initialSession?.token ?? null,
@@ -502,7 +505,7 @@ export function CreateProofFlow() {
               does reduce it, which is what an opaque identifier needs.
             */}
             <p className="break-all">
-              Connected as <span className="text-cyan-200">{user.walletAddress}</span>
+              Connected as <span className="text-cyan-200"><Redacted>{user.walletAddress}</Redacted></span>
             </p>
             {networkCompatibility && !networkCompatibility.isValid && (
               <NetworkMismatchAlert
@@ -666,32 +669,36 @@ export function CreateProofFlow() {
           {proof ? (
             <div className="mt-4 grid gap-2 text-slate-300">
               <p>
-                Proof ID: <span className="text-cyan-200">{proof.proofId}</span>
+                Proof ID: <span className="text-cyan-200"><Redacted>{proof.proofId}</Redacted></span>
               </p>
               <p className="break-words">
                 Credential hash:{" "}
                 <span className="text-cyan-200">
-                  {proof.credential.proof.credentialHash}
+                  <Redacted>{proof.credential.proof.credentialHash}</Redacted>
                 </span>
               </p>
-              <a
-                className="w-fit text-cyan-200 underline underline-offset-4"
-                href={`/verify?proof=${encodeURIComponent(proof.proofId)}`}
-              >
-                Open public verification
-              </a>
-              <ArtifactExport
-                plan={buildVerificationLinkExport(
-                  `${appConfig.appUrl}/verify?proof=${encodeURIComponent(proof.proofId)}`,
-                )}
-                title="Export verification link"
-              />
-              <ArtifactExport
-                plan={buildCredentialExport({
-                  credential: proof.credential,
-                })}
-                title="Export credential JSON"
-              />
+              {!isRedacted && (
+                <>
+                  <a
+                    className="w-fit text-cyan-200 underline underline-offset-4"
+                    href={`/verify?proof=${encodeURIComponent(proof.proofId)}`}
+                  >
+                    Open public verification
+                  </a>
+                  <ArtifactExport
+                    plan={buildVerificationLinkExport(
+                      `${appConfig.appUrl}/verify?proof=${encodeURIComponent(proof.proofId)}`,
+                    )}
+                    title="Export verification link"
+                  />
+                  <ArtifactExport
+                    plan={buildCredentialExport({
+                      credential: proof.credential,
+                    })}
+                    title="Export credential JSON"
+                  />
+                </>
+              )}
             </div>
           ) : null}
         </section>
@@ -729,7 +736,7 @@ function PaymentRow({
         {/* Same reason as the wallet address above: an opaque hash needs
             word-break, not overflow-wrap, to stop forcing a minimum width. */}
         <p className="mt-1 break-all text-xs text-slate-400">
-          {payment.stellarTransactionHash}
+          <Redacted>{payment.stellarTransactionHash}</Redacted>
         </p>
         <Timestamp className="mt-1 block text-xs text-slate-400" value={payment.occurredAt} />
       </div>

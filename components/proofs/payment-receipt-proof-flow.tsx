@@ -5,6 +5,8 @@ import { PaymentSelection } from "./payment-selection";
 import { PrivacyControls } from "./privacy-controls";
 import { ProofConfirmation } from "./proof-confirmation";
 import { ArtifactExport } from "./artifact-export";
+import { Redacted } from "@/components/common/redacted";
+import { usePrivacy } from "@/contexts/privacy-context";
 import { createPaymentReceiptProof, type PaymentReceiptProof } from "@/lib/api/payment-receipt-proofs";
 import { apiClient, bearer } from "@/lib/api/client";
 import { appConfig } from "@/config/app";
@@ -65,6 +67,7 @@ export function PaymentReceiptProofFlow() {
   const networkAlertRef = useRef<HTMLDivElement>(null);
   const connectButtonRef = useRef<HTMLButtonElement>(null);
   const wasConnectedRef = useRef(Boolean(initialSession?.user));
+  const { isRedacted } = usePrivacy();
 
   useEffect(() => {
     if (error) {
@@ -280,7 +283,7 @@ export function PaymentReceiptProofFlow() {
         {user ? (
           <div className="grid gap-3 text-sm text-slate-300">
             <p className="break-words">
-              Connected as <span className="text-cyan-200">{user.walletAddress}</span>
+              Connected as <span className="text-cyan-200"><Redacted>{user.walletAddress}</Redacted></span>
             </p>
             {networkCompatibility && !networkCompatibility.isValid && (
               <NetworkMismatchAlert
@@ -398,30 +401,34 @@ export function PaymentReceiptProofFlow() {
           {proof ? (
             <div className="mt-4 grid gap-2 text-slate-300">
               <p>
-                Proof ID: <span className="text-cyan-200">{proof.proofId}</span>
+                Proof ID: <span className="text-cyan-200"><Redacted>{proof.proofId}</Redacted></span>
               </p>
               <p className="break-words">
                 Credential hash:{" "}
                 <span className="text-cyan-200">
-                  {proof.credential.proof.credentialHash}
+                  <Redacted>{proof.credential.proof.credentialHash}</Redacted>
                 </span>
               </p>
-              <a
-                className="w-fit text-cyan-200 underline underline-offset-4"
-                href={`/verify?proof=${encodeURIComponent(proof.proofId)}`}
-              >
-                Open public verification
-              </a>
-              <ArtifactExport
-                plan={buildVerificationLinkExport(proof.verificationUrl)}
-                title="Export verification link"
-              />
-              <ArtifactExport
-                plan={buildCredentialExport({
-                  credential: proof.credential,
-                })}
-                title="Export credential JSON"
-              />
+              {!isRedacted && (
+                <>
+                  <a
+                    className="w-fit text-cyan-200 underline underline-offset-4"
+                    href={`/verify?proof=${encodeURIComponent(proof.proofId)}`}
+                  >
+                    Open public verification
+                  </a>
+                  <ArtifactExport
+                    plan={buildVerificationLinkExport(proof.verificationUrl)}
+                    title="Export verification link"
+                  />
+                  <ArtifactExport
+                    plan={buildCredentialExport({
+                      credential: proof.credential,
+                    })}
+                    title="Export credential JSON"
+                  />
+                </>
+              )}
             </div>
           ) : null}
         </section>

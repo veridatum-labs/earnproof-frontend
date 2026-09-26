@@ -13,8 +13,9 @@ import { StatusBadge } from "@/components/common/production-ui";
 import { formatMessage } from "@/lib/i18n";
 import { ApiConflictError } from "@/lib/api/client";
 import { useConflictResolution } from "@/hooks/use-conflict-resolution";
+import { Redacted } from "@/components/common/redacted";
 import type { IssuerWithRevision } from "@/lib/api/issuers";
-import type { Organization } from "@/lib/api/generated/v1";
+import type { OrganizationWithRevision } from "@/lib/api/organizations";
 
 const issuerActionLabels = {
   suspend: "Suspend",
@@ -35,7 +36,7 @@ export function IssuerList({
   onIssuerUpdated,
 }: {
   issuers: IssuerWithRevision[];
-  organizations: Organization[];
+  organizations: OrganizationWithRevision[];
   loading: boolean;
   token: string;
   role: string | undefined;
@@ -43,7 +44,6 @@ export function IssuerList({
   onPreviousPage: () => void;
   onNextPage: () => void;
   focusResults: boolean;
-  onIssuerUpdated: (issuer: Issuer) => void;
   onIssuerUpdated: (issuer: IssuerWithRevision) => void;
 }) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -343,7 +343,7 @@ function IssuerRow({
       <div className="min-w-0">
         <div className="font-medium text-white">{issuer.name}</div>
         <div className="mt-1 font-mono text-xs text-slate-400">
-          ID: {issuer.id}
+          ID: <Redacted>{issuer.id}</Redacted>
         </div>
       </div>
 

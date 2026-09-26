@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ApiKey } from "@/lib/api/generated/v1";
 import { Timestamp } from "@/components/common/timestamp";
 
+import { usePrivacy } from "@/contexts/privacy-context";
+
 export function OneTimeSecret({
   apiKey,
   secret,
@@ -13,6 +15,7 @@ export function OneTimeSecret({
   secret: string;
   onDismiss: () => void;
 }) {
+  const { isRedacted } = usePrivacy();
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [copyError, setCopyError] = useState<string | null>(null);
   const secretRef = useRef<HTMLInputElement>(null);
@@ -34,6 +37,7 @@ export function OneTimeSecret({
   }, []);
 
   const handleCopy = useCallback(async () => {
+    if (isRedacted) return;
     setCopyError(null);
     setCopyStatus(null);
 
@@ -46,13 +50,14 @@ export function OneTimeSecret({
     } catch {
       setCopyError("Failed to copy to clipboard. Please copy manually.");
     }
-  }, [secret]);
+  }, [secret, isRedacted]);
 
   const handleSelectAll = useCallback(() => {
+    if (isRedacted) return;
     if (secretRef.current) {
       secretRef.current.select();
     }
-  }, []);
+  }, [isRedacted]);
 
   return (
     <section 
@@ -89,12 +94,13 @@ export function OneTimeSecret({
                   ref={secretRef}
                   className="flex-1 h-10 rounded-md border border-emerald-300/30 bg-emerald-900/20 px-3 text-sm font-mono text-emerald-100 selection:bg-emerald-300/30"
                   readOnly
-                  value={secret}
+                  value={isRedacted ? "••••••••••••••••••••••••••••••••" : secret}
                   onClick={handleSelectAll}
                 />
                 <button
-                  className="h-10 rounded-md border border-emerald-300/30 bg-emerald-300 px-4 text-xs font-semibold text-slate-950 hover:bg-emerald-200 transition"
+                  className="h-10 rounded-md border border-emerald-300/30 bg-emerald-300 px-4 text-xs font-semibold text-slate-950 hover:bg-emerald-200 transition disabled:opacity-50"
                   onClick={handleCopy}
+                  disabled={isRedacted}
                   type="button"
                 >
                   Copy

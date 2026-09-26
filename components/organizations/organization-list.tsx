@@ -42,7 +42,6 @@ export function OrganizationList({
   onPreviousPage: () => void;
   onNextPage: () => void;
   focusResults: boolean;
-  onOrganizationUpdated: (organization: Organization) => void;
   onOrganizationUpdated: (organization: OrganizationWithRevision) => void;
   onEditOrganization: (organizationId: string) => void;
   onLifecycleAction: (action: LifecycleAction, organizationId: string, organizationName: string) => void;
@@ -247,27 +246,15 @@ export function OrganizationList({
           <OrganizationRow
             key={org.id}
             organization={org}
-            isLoading={actionLoading === org.id}
+            onEdit={() => onEditOrganization(org.id)}
             onSuspend={() => 
-              setConfirmAction({
-                type: "suspend",
-                organizationId: org.id,
-                organizationName: org.name,
-              })
+              onLifecycleAction("suspend", org.id, org.name)
             }
             onActivate={() => 
-              setConfirmAction({
-                type: "activate",
-                organizationId: org.id,
-                organizationName: org.name,
-              })
+              onLifecycleAction("activate", org.id, org.name)
             }
             onRevoke={() =>
-              setConfirmAction({
-                type: "revoke",
-                organizationId: org.id,
-                organizationName: org.name,
-              })
+              onLifecycleAction("revoke", org.id, org.name)
             }
           />
         ))}
@@ -286,52 +273,6 @@ export function OrganizationList({
         />
       </div>
 
-      {confirmAction && (
-        <ConfirmationDialog
-          title={formatMessage("{action} Organization", {
-            action: organizationActionLabels[confirmAction.type],
-          })}
-          message={
-            confirmAction.type === "revoke"
-              ? formatMessage(
-                  'Are you sure you want to revoke "{organizationName}"? This action cannot be undone and will permanently disable the organization.',
-                  { organizationName: confirmAction.organizationName },
-                )
-              : confirmAction.type === "suspend"
-              ? formatMessage(
-                  'Are you sure you want to suspend "{organizationName}"? This will temporarily disable organization operations.',
-                  { organizationName: confirmAction.organizationName },
-                )
-              : formatMessage(
-                  'Are you sure you want to activate "{organizationName}"? This will enable organization operations.',
-                  { organizationName: confirmAction.organizationName },
-                )
-    <div className="grid gap-3">
-      {/* Desktop header */}
-      <div className="hidden grid-cols-[2fr_1fr_1fr_auto] gap-4 border-b border-white/10 pb-2 text-xs font-semibold uppercase text-slate-400 md:grid">
-        <div>Organization</div>
-        <div>Status</div>
-        <div>Created</div>
-        <div>Actions</div>
-      </div>
-
-      {organizations.map((org) => (
-        <OrganizationRow
-          key={org.id}
-          organization={org}
-          onEdit={() => onEditOrganization(org.id)}
-          onSuspend={() => 
-            onLifecycleAction("suspend", org.id, org.name)
-          }
-          onActivate={() => 
-            onLifecycleAction("activate", org.id, org.name)
-          }
-          onRevoke={() =>
-            onLifecycleAction("revoke", org.id, org.name)
-          }
-        />
-      ))}
-
       {conflict.isActive && (
         <ResolveConflictDialog
           entityType="Organization"
@@ -344,7 +285,7 @@ export function OrganizationList({
           isRetrying={isRetrying || isReloading}
         />
       )}
-    </div>
+    </>
   );
 }
 

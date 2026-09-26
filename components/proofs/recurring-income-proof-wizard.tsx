@@ -8,6 +8,8 @@ import { RecurringPaymentSelection } from "./recurring-payment-selection";
 import { CoverageAnalysisStep } from "./coverage-analysis-step";
 import { RecurringProofConfirmation } from "./recurring-proof-confirmation";
 import { ArtifactExport } from "./artifact-export";
+import { Redacted } from "@/components/common/redacted";
+import { usePrivacy } from "@/contexts/privacy-context";
 import { createRecurringIncomeProof, analyzeIntervalCoverage, type RecurringIncomeProof, type IntervalUnit, type IntervalCoverageAnalysis } from "@/lib/api/recurring-income-proofs";
 import { apiClient, bearer } from "@/lib/api/client";
 import { appConfig } from "@/config/app";
@@ -80,11 +82,7 @@ export function RecurringIncomeProofWizard() {
   const networkAlertRef = useRef<HTMLDivElement>(null);
   const connectButtonRef = useRef<HTMLButtonElement>(null);
   const wasConnectedRef = useRef(Boolean(initialSession?.user));
-  // Guards against duplicate proof-creation mutations: at most one active
-  // submission, and only the response belonging to that submission may
-  // update state. See lib/proofs/submission-guard.ts.
-  const submissionGuardRef = useRef(createSubmissionGuard());
-  const idempotencyRef = useRef<IdempotencyState | null>(null);
+  const { isRedacted } = usePrivacy();
 
   useEffect(() => {
     if (error) {
@@ -480,7 +478,7 @@ export function RecurringIncomeProofWizard() {
             <div className="flex items-center gap-3">
               <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
               <span className="text-sm text-slate-300">
-                Connected as <span className="text-cyan-200 font-mono">{user.walletAddress.slice(0, 8)}...{user.walletAddress.slice(-8)}</span>
+                Connected as <span className="text-cyan-200 font-mono"><Redacted>{user.walletAddress.slice(0, 8)}...{user.walletAddress.slice(-8)}</Redacted></span>
               </span>
             </div>
             <button
@@ -535,30 +533,34 @@ export function RecurringIncomeProofWizard() {
           {proof && (
             <div className="mt-4 grid gap-2 text-slate-300">
               <p>
-                Proof ID: <span className="text-cyan-200">{proof.proofId}</span>
+                Proof ID: <span className="text-cyan-200"><Redacted>{proof.proofId}</Redacted></span>
               </p>
               <p className="break-words">
                 Credential hash:{" "}
                 <span className="text-cyan-200">
-                  {proof.credential.proof.credentialHash}
+                  <Redacted>{proof.credential.proof.credentialHash}</Redacted>
                 </span>
               </p>
-              <a
-                className="w-fit text-cyan-200 underline underline-offset-4"
-                href={`/verify?proof=${encodeURIComponent(proof.proofId)}`}
-              >
-                Open public verification
-              </a>
-              <ArtifactExport
-                plan={buildVerificationLinkExport(proof.verificationUrl)}
-                title="Export verification link"
-              />
-              <ArtifactExport
-                plan={buildCredentialExport({
-                  credential: proof.credential,
-                })}
-                title="Export credential JSON"
-              />
+              {!isRedacted && (
+                <>
+                  <a
+                    className="w-fit text-cyan-200 underline underline-offset-4"
+                    href={`/verify?proof=${encodeURIComponent(proof.proofId)}`}
+                  >
+                    Open public verification
+                  </a>
+                  <ArtifactExport
+                    plan={buildVerificationLinkExport(proof.verificationUrl)}
+                    title="Export verification link"
+                  />
+                  <ArtifactExport
+                    plan={buildCredentialExport({
+                      credential: proof.credential,
+                    })}
+                    title="Export credential JSON"
+                  />
+                </>
+              )}
             </div>
           )}
         </section>
