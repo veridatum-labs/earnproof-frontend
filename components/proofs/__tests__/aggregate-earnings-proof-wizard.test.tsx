@@ -57,6 +57,32 @@ describe("AggregateEarningsProofWizard", () => {
     window.localStorage.removeItem(SESSION_KEY);
   });
 
+  it("verifies deployment metadata before requesting a wallet signature, and blocks connecting when it's unavailable (#185)", async () => {
+    window.localStorage.removeItem(SESSION_KEY); // start unauthenticated, so the Connect Freighter button renders
+
+    // The gate's /deployment/metadata GET rejects; every other apiClient call
+    // in this test (there should be none, if the gate correctly blocks) would
+    // also hit this mock, so a failure here doubles as proof no auth/signing
+    // call fired either.
+    mockedApiClient.mockRejectedValue(new Error("deployment metadata unavailable"));
+
+    const user = userEvent.setup();
+    render(<AggregateEarningsProofWizard />);
+
+    await user.click(screen.getByRole("button", { name: "Connect Freighter" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/deployment configuration/i);
+    });
+
+    // Only the metadata check itself should have run - no /auth/challenge,
+    // no /auth/verify.
+    expect(mockedApiClient).toHaveBeenCalledTimes(1);
+    expect(mockedApiClient).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "/deployment/metadata" }),
+    );
+  });
+
   it("cannot select the same payment twice through client state", async () => {
     mockedApiClient.mockImplementation((options) => {
       if (options.path === "/payments/sync") {

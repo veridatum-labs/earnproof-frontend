@@ -1,11 +1,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { canPerformIssuerTransition, updateIssuer, formatIssuerStatus, getIssuerStatusTone } from "@/lib/api/issuers";
+import { canPerformIssuerTransition, updateIssuer, formatIssuerStatus, getIssuerStatusTone, getIssuer } from "@/lib/api/issuers";
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 import { EditIssuerForm } from "@/components/issuers/edit-issuer-form";
-import { updateIssuer, formatIssuerStatus, getIssuerStatusTone, getIssuer } from "@/lib/api/issuers";
-import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 import { CursorPagination, type PaginationState } from "@/components/common/cursor-pagination";
 import { ResultsHeading } from "@/components/common/results-heading";
 import { ResolveConflictDialog } from "@/components/forms/resolve-conflict-dialog";
@@ -15,6 +13,9 @@ import { ApiConflictError } from "@/lib/api/client";
 import { useConflictResolution } from "@/hooks/use-conflict-resolution";
 import type { IssuerWithRevision } from "@/lib/api/issuers";
 import type { Organization } from "@/lib/api/generated/v1";
+import { RecentAuthGate } from "@/components/common/recent-auth-gate";
+import { useRecentAuth } from "@/lib/auth/recent-auth";
+import { signWithFreighter } from "@/lib/wallet/sign-message";
 
 const issuerActionLabels = {
   suspend: "Suspend",
@@ -27,6 +28,7 @@ export function IssuerList({
   organizations,
   loading,
   token,
+  walletAddress,
   role,
   paginationState,
   onPreviousPage,
@@ -38,12 +40,12 @@ export function IssuerList({
   organizations: Organization[];
   loading: boolean;
   token: string;
+  walletAddress: string;
   role: string | undefined;
   paginationState: PaginationState;
   onPreviousPage: () => void;
   onNextPage: () => void;
   focusResults: boolean;
-  onIssuerUpdated: (issuer: Issuer) => void;
   onIssuerUpdated: (issuer: IssuerWithRevision) => void;
 }) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -54,6 +56,11 @@ export function IssuerList({
     issuerId: string;
     issuerName: string;
   } | null>(null);
+  const [pendingIssuerName, setPendingIssuerName] = useState<string | null>(null);
+  const recentAuth = useRecentAuth({
+    walletAddress,
+    signMessage: (message) => signWithFreighter(message, walletAddress),
+  });
 
   const {
     conflict,
@@ -87,9 +94,9 @@ export function IssuerList({
         const updated = await updateIssuer(
           token,
           confirmAction.issuerId,
-          { 
+          {
             status: statusMap[confirmAction.type],
-            __revision: (formState as any).__revision 
+            __revision: formState.__revision as string | undefined,
           },
           controller.signal
         );
@@ -284,10 +291,29 @@ export function IssuerList({
               activate: "ACTIVE" as const,
               revoke: "REVOKED" as const,
             };
-            handleStatusUpdate(confirmAction.issuerId, statusMap[confirmAction.type], issuer);
+            const { type, issuerId, issuerName } = confirmAction;
+            const runUpdate = () => handleStatusUpdate(issuerId, statusMap[type], issuer);
+
+            // Revocation is permanent and punitive (#141), so it requires a
+            // fresh wallet signature; suspend/activate are reversible and
+            // don't (matching api-key-list.tsx's revoke-only gating).
+            if (type === "revoke") {
+              setConfirmAction(null);
+              setPendingIssuerName(issuerName);
+              recentAuth.requestRecentAuth(runUpdate);
+            } else {
+              runUpdate();
+            }
           }}
           onCancel={() => setConfirmAction(null)}
           isProcessing={actionLoading === confirmAction.issuerId}
+        />
+      )}
+
+      {recentAuth.isPromptOpen && (
+        <RecentAuthGate
+          recentAuth={recentAuth}
+          actionDescription={`revoke the issuer${pendingIssuerName ? ` "${pendingIssuerName}"` : ""}.`}
         />
       )}
 

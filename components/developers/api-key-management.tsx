@@ -207,6 +207,7 @@ export function ApiKeyManagement() {
           apiKeys={apiKeys}
           loading={pagination.isLoading}
           token={session.token}
+          walletAddress={session.user.walletAddress}
           paginationState={{
             ...pagination.currentPage,
             isLoading: pagination.isLoading,

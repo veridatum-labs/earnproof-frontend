@@ -4,11 +4,13 @@ import { useCallback, useState } from "react";
 import { formatApiKeyPrefix, rotateApiKey, revokeApiKey } from "@/lib/api/keys";
 import { getExpirationStatus, isApiKeyValid } from "@/lib/api/api-key-expiration";
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
-import { Timestamp } from "@/components/common/timestamp";
 import { CursorPagination, type PaginationState } from "@/components/common/cursor-pagination";
 import { ResultsHeading } from "@/components/common/results-heading";
+import { RecentAuthGate } from "@/components/common/recent-auth-gate";
 import { OneTimeSecret } from "./one-time-secret";
 import { formatDate, formatMessage, formatRelativeTime } from "@/lib/i18n";
+import { useRecentAuth } from "@/lib/auth/recent-auth";
+import { signWithFreighter } from "@/lib/wallet/sign-message";
 import type { ApiKey } from "@/lib/api/generated/v1";
 
 const apiKeyActionTitles = {
@@ -25,6 +27,7 @@ export function ApiKeyList({
   apiKeys,
   loading,
   token,
+  walletAddress,
   paginationState,
   onPreviousPage,
   onNextPage,
@@ -35,6 +38,7 @@ export function ApiKeyList({
   apiKeys: ApiKey[];
   loading: boolean;
   token: string;
+  walletAddress: string;
   paginationState: PaginationState;
   onPreviousPage: () => void;
   onNextPage: () => void;
@@ -53,6 +57,11 @@ export function ApiKeyList({
     apiKey: ApiKey;
     secret: string;
   } | null>(null);
+  const [pendingRevokeName, setPendingRevokeName] = useState<string | null>(null);
+  const recentAuth = useRecentAuth({
+    walletAddress,
+    signMessage: (message) => signWithFreighter(message, walletAddress),
+  });
 
   // Separate valid and expired keys for display
   const validApiKeys = apiKeys.filter((key) => isApiKeyValid(key.expiresAt));
@@ -61,7 +70,7 @@ export function ApiKeyList({
   const handleRotate = useCallback(async (keyId: string) => {
     setActionLoading(keyId);
     setError(null);
-    
+
     try {
       const controller = new AbortController();
       const response = await rotateApiKey(token, keyId, controller.signal);
@@ -78,7 +87,7 @@ export function ApiKeyList({
   const handleRevoke = useCallback(async (keyId: string) => {
     setActionLoading(keyId);
     setError(null);
-    
+
     try {
       const controller = new AbortController();
       await revokeApiKey(token, keyId, controller.signal);
@@ -88,10 +97,10 @@ export function ApiKeyList({
     } finally {
       setActionLoading(null);
       setConfirmAction(null);
+      setPendingRevokeName(null);
     }
   }, [token, onKeyRevoked]);
 
-  if (loading && validApiKeys.length === 0) {
   const announcement = focusResults && apiKeys.length > 0
     ? formatMessage(
         apiKeys.length === 1
@@ -164,7 +173,7 @@ export function ApiKeyList({
             key={key.id}
             apiKey={key}
             isLoading={actionLoading === key.id}
-            onRotate={() => 
+            onRotate={() =>
               setConfirmAction({
                 type: "rotate",
                 keyId: key.id,
@@ -195,7 +204,7 @@ export function ApiKeyList({
                 key={key.id}
                 apiKey={key}
                 isLoading={actionLoading === key.id}
-                onRotate={() => 
+                onRotate={() =>
                   setConfirmAction({
                     type: "rotate",
                     keyId: key.id,
@@ -247,11 +256,21 @@ export function ApiKeyList({
             if (confirmAction.type === "rotate") {
               handleRotate(confirmAction.keyId);
             } else {
-              handleRevoke(confirmAction.keyId);
+              const { keyId, keyName } = confirmAction;
+              setConfirmAction(null);
+              setPendingRevokeName(keyName);
+              recentAuth.requestRecentAuth(() => handleRevoke(keyId));
             }
           }}
           onCancel={() => setConfirmAction(null)}
           isProcessing={actionLoading === confirmAction.keyId}
+        />
+      )}
+
+      {recentAuth.isPromptOpen && (
+        <RecentAuthGate
+          recentAuth={recentAuth}
+          actionDescription={`revoke the API key${pendingRevokeName ? ` "${pendingRevokeName}"` : ""}.`}
         />
       )}
     </>
@@ -337,7 +356,6 @@ function ApiKeyRow({
         return null;
     }
   };
-  const isExpired = apiKey.expiresAt && new Date(apiKey.expiresAt) < new Date();
 
   return (
     <div
@@ -389,8 +407,6 @@ function ApiKeyRow({
           aria-live={expirationStatus.tier !== "active" ? "polite" : undefined}
         >
           {getExpirationDisplay()}
-        <div className={`${isExpired ? "text-rose-300" : "text-slate-400"}`}>
-          {apiKey.expiresAt ? <Timestamp value={apiKey.expiresAt} /> : "Never"}
         </div>
       </div>
 

@@ -1,18 +1,17 @@
+"use client";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CreateIssuerForm } from "./create-issuer-form";
 import { IssuerList } from "./issuer-list";
 import { getIssuersPaginated } from "@/lib/api/issuers";
 import { getOrganizations } from "@/lib/api/organizations";
 import { usePagination } from "@/lib/hooks/use-pagination";
-import type { Issuer, Organization } from "@/lib/api/generated/v1";
 import type { IssuerWithRevision } from "@/lib/api/issuers";
 import type { OrganizationWithRevision } from "@/lib/api/organizations";
 import { readStoredSession, type Session as SessionData } from "@/lib/session";
 
 export function IssuerManagement() {
   const [session] = useState<SessionData | null>(() => readStoredSession());
-  const [issuers, setIssuers] = useState<Issuer[]>([]);
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [issuers, setIssuers] = useState<IssuerWithRevision[]>([]);
   const [organizations, setOrganizations] = useState<OrganizationWithRevision[]>([]);
   const [loading, setLoading] = useState(false);
@@ -199,6 +198,7 @@ export function IssuerManagement() {
           organizations={organizations}
           loading={pagination.isLoading}
           token={session.token}
+          walletAddress={session.user.walletAddress}
           role={session.user.role}
           paginationState={{
             ...pagination.currentPage,

@@ -33,7 +33,7 @@ export type OrganizationStatus = Organization["status"];
 /**
  * Lifecycle action results with error normalization
  */
-export type ApiResult<T> = 
+export type ApiResult<T> =
   | { success: true; data: T }
   | { success: false; error: NormalizedError };
 

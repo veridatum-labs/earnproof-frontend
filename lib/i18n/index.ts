@@ -30,6 +30,15 @@ export {
 } from "./format";
 
 export {
+  formatAssetAmount,
+  formatStroops,
+  parseAssetAmount,
+  validateAssetAmountInput,
+  type FormatAssetAmountResult,
+  type ParsedAmount,
+} from "./amount";
+
+export {
   clearLocalePreference,
   clearTimeZonePreference,
   detectBrowserTimeZone,

@@ -35,6 +35,7 @@
     "check:doc-freshness": "node scripts/check-doc-freshness.js"
   },
   "dependencies": {
+    "@noble/ed25519": "^3.2.0",
     "@stellar/freighter-api": "^6.0.1",
     "@tanstack/react-query": "^5.101.2",
     "next": "16.3.0",

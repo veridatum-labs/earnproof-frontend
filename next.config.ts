@@ -62,6 +62,12 @@ const analyzeBundle = process.env.ANALYZE_BUNDLE === "1";
 const nextConfig: NextConfig = {
   env: nextPublicEnv,
   productionBrowserSourceMaps: analyzeBundle,
+  // @noble/ed25519 (deployment-metadata signature verification, #185) ships
+  // pure ESM with no CJS build. Both the Next.js build and next/jest's
+  // generated Jest config otherwise leave all of node_modules untransformed,
+  // which breaks importing it; transpilePackages is the supported way to
+  // carve out just this package for both.
+  transpilePackages: ["@noble/ed25519"],
   async headers() {
     return [
       {

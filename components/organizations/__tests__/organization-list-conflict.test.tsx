@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { OrganizationList } from "../organization-list";
 import { ApiConflictError } from "@/lib/api/client";
 import * as organizationsApi from "@/lib/api/organizations";
@@ -21,6 +21,19 @@ describe("OrganizationList - Conflict Handling", () => {
 
   const mockToken = "test-token";
   const mockOnUpdate = jest.fn();
+  const defaultProps = {
+    token: mockToken,
+    walletAddress: "GTESTWALLETADDRESS000000000000000000000000000000000000000",
+    paginationState: {
+      nextCursor: null,
+      previousCursor: null,
+      isLoading: false,
+    },
+    onPreviousPage: jest.fn(),
+    onNextPage: jest.fn(),
+    focusResults: false,
+    onOrganizationUpdated: mockOnUpdate,
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -43,10 +56,9 @@ describe("OrganizationList - Conflict Handling", () => {
 
     render(
       <OrganizationList
+        {...defaultProps}
         organizations={mockOrganizations}
         loading={false}
-        token={mockToken}
-        onOrganizationUpdated={mockOnUpdate}
       />
     );
 
@@ -55,7 +67,7 @@ describe("OrganizationList - Conflict Handling", () => {
     fireEvent.click(suspendButtons[0]);
 
     // Confirm the action
-    const confirmButton = screen.getByText("Suspend");
+    const confirmButton = within(screen.getByRole("dialog")).getByText("Suspend");
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
@@ -82,10 +94,9 @@ describe("OrganizationList - Conflict Handling", () => {
 
     render(
       <OrganizationList
+        {...defaultProps}
         organizations={mockOrganizations}
         loading={false}
-        token={mockToken}
-        onOrganizationUpdated={mockOnUpdate}
       />
     );
 
@@ -93,7 +104,7 @@ describe("OrganizationList - Conflict Handling", () => {
     const suspendButtons = screen.getAllByText("Suspend");
     fireEvent.click(suspendButtons[0]);
 
-    const confirmButton = screen.getByText("Suspend");
+    const confirmButton = within(screen.getByRole("dialog")).getByText("Suspend");
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
@@ -132,10 +143,9 @@ describe("OrganizationList - Conflict Handling", () => {
 
     render(
       <OrganizationList
+        {...defaultProps}
         organizations={mockOrganizations}
         loading={false}
-        token={mockToken}
-        onOrganizationUpdated={mockOnUpdate}
       />
     );
 
@@ -143,7 +153,7 @@ describe("OrganizationList - Conflict Handling", () => {
     const suspendButtons = screen.getAllByText("Suspend");
     fireEvent.click(suspendButtons[0]);
 
-    const confirmButton = screen.getByText("Suspend");
+    const confirmButton = within(screen.getByRole("dialog")).getByText("Suspend");
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
@@ -185,10 +195,9 @@ describe("OrganizationList - Conflict Handling", () => {
 
     render(
       <OrganizationList
+        {...defaultProps}
         organizations={mockOrganizations}
         loading={false}
-        token={mockToken}
-        onOrganizationUpdated={mockOnUpdate}
       />
     );
 
@@ -196,7 +205,7 @@ describe("OrganizationList - Conflict Handling", () => {
     const suspendButtons = screen.getAllByText("Suspend");
     fireEvent.click(suspendButtons[0]);
 
-    const confirmButton = screen.getByText("Suspend");
+    const confirmButton = within(screen.getByRole("dialog")).getByText("Suspend");
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
@@ -227,10 +236,9 @@ describe("OrganizationList - Conflict Handling", () => {
 
     render(
       <OrganizationList
+        {...defaultProps}
         organizations={mockOrganizations}
         loading={false}
-        token={mockToken}
-        onOrganizationUpdated={mockOnUpdate}
       />
     );
 
@@ -238,7 +246,7 @@ describe("OrganizationList - Conflict Handling", () => {
     const suspendButtons = screen.getAllByText("Suspend");
     fireEvent.click(suspendButtons[0]);
 
-    const confirmButton = screen.getByText("Suspend");
+    const confirmButton = within(screen.getByRole("dialog")).getByText("Suspend");
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
@@ -270,10 +278,9 @@ describe("OrganizationList - Conflict Handling", () => {
 
     render(
       <OrganizationList
+        {...defaultProps}
         organizations={mockOrganizations}
         loading={false}
-        token={mockToken}
-        onOrganizationUpdated={mockOnUpdate}
       />
     );
 
@@ -282,7 +289,7 @@ describe("OrganizationList - Conflict Handling", () => {
     fireEvent.click(suspendButtons[0]);
 
     // Confirm action
-    const confirmButton = screen.getByText("Suspend");
+    const confirmButton = within(screen.getByRole("dialog")).getByText("Suspend");
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
@@ -302,10 +309,9 @@ describe("OrganizationList - Conflict Handling", () => {
   it("respects authorization - disables actions for non-admin users", () => {
     render(
       <OrganizationList
+        {...defaultProps}
         organizations={mockOrganizations}
         loading={false}
-        token={mockToken}
-        onOrganizationUpdated={mockOnUpdate}
       />
     );
 
@@ -346,10 +352,9 @@ describe("OrganizationList - Conflict Handling", () => {
 
     render(
       <OrganizationList
+        {...defaultProps}
         organizations={orgs}
         loading={false}
-        token={mockToken}
-        onOrganizationUpdated={mockOnUpdate}
       />
     );
 

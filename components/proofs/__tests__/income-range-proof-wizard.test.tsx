@@ -65,6 +65,33 @@ describe("IncomeRangeProofWizard", () => {
     window.localStorage.removeItem(SESSION_KEY);
   });
 
+  it("verifies deployment metadata before requesting a wallet signature, and blocks connecting when it's unavailable (#185)", async () => {
+    window.localStorage.removeItem(SESSION_KEY); // start unauthenticated, so the Connect Freighter button renders
+    mockedApiClient.mockReset();
+    mockedApiClient.mockImplementation((options) => {
+      if (options.path === "/deployment/metadata") {
+        return Promise.reject(new Error("deployment metadata unavailable"));
+      }
+      // /auth/challenge and /auth/verify would only be reached if the gate
+      // failed to block - fail the test loudly if either is hit.
+      return Promise.reject(new Error(`unexpected apiClient call: ${options.path}`));
+    });
+
+    const user = userEvent.setup();
+    render(<IncomeRangeProofWizard />);
+
+    await user.click(screen.getByRole("button", { name: "Connect Freighter" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/deployment configuration/i);
+    });
+
+    expect(mockedApiClient).toHaveBeenCalledTimes(1);
+    expect(mockedApiClient).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "/deployment/metadata" }),
+    );
+  });
+
   it("blocks advancing past range config with an inverted range", async () => {
     const user = userEvent.setup();
     render(<IncomeRangeProofWizard />);

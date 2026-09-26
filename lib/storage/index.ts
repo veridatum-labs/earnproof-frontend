@@ -33,6 +33,7 @@ export interface StorageSchema {
     // Keyed by an application-chosen form id (e.g. "create-proof-flow") so
     // multiple forms can each keep their own draft without colliding.
     data: Record<string, { savedAt: string; values: unknown }>;
+  };
   DISPLAY_PREFERENCES: {
     data: {
       reducedMotion: DisplayPreferenceMode;
@@ -111,6 +112,9 @@ export const migrations: Record<StorageKey, Record<number, StorageMigration>> = 
     1: (data) => data,
   },
   FORM_DRAFTS: {
+    // Version 1 is current - no migration needed
+    1: (data) => data,
+  },
   DISPLAY_PREFERENCES: {
     // Version 1 is current - no migration needed
     1: (data) => data,

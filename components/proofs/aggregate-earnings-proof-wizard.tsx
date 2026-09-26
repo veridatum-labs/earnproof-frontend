@@ -26,6 +26,8 @@ import {
 } from "@/lib/session";
 import { resolveIdempotencyKey, type IdempotencyState, type ProofIntent } from "@/lib/proofs/idempotency";
 import { createSubmissionGuard } from "@/lib/proofs/submission-guard";
+import { useDeploymentMetadataGate } from "@/lib/deployment/use-deployment-metadata-gate";
+import { DeploymentMetadataWarning } from "@/components/common/deployment-metadata-warning";
 
 type PaymentClassification =
   | "INCOME"
@@ -68,6 +70,7 @@ export function AggregateEarningsProofWizard() {
   const wasConnectedRef = useRef(Boolean(initialSession?.user));
   const submissionGuardRef = useRef(createSubmissionGuard());
   const idempotencyRef = useRef<IdempotencyState | null>(null);
+  const deploymentMetadataGate = useDeploymentMetadataGate();
 
   useEffect(() => {
     if (error) {
@@ -107,9 +110,14 @@ export function AggregateEarningsProofWizard() {
 
   async function connectWallet() {
     setError(null);
-    setStatus("Requesting Freighter wallet access...");
+    setStatus("Verifying deployment configuration...");
 
-    try {
+    // #185: deployment metadata must be verified before requesting a wallet
+    // signature, so a compromised or misconfigured deployment is caught
+    // before the user is ever asked to sign anything.
+    const verification = await deploymentMetadataGate.runIfVerified(async () => {
+      setStatus("Requesting Freighter wallet access...");
+
       const walletAddress = await getFreighterAddress();
       if (!walletAddress) {
         setStatus(null);
@@ -144,9 +152,14 @@ export function AggregateEarningsProofWizard() {
       setToken(verified.session.token);
       setUser(verified.user);
       setStatus("Wallet authenticated.");
-    } catch {
+    }).catch(() => {
       setStatus(null);
       setError("Wallet connection failed. Check Freighter and try again.");
+      return null;
+    });
+
+    if (verification && verification.status !== "valid") {
+      setStatus(null);
     }
   }
 
@@ -297,13 +310,17 @@ export function AggregateEarningsProofWizard() {
               Connect your Stellar testnet wallet to access the aggregate-earnings proof wizard.
             </p>
           </div>
+          {deploymentMetadataGate.state && (
+            <DeploymentMetadataWarning state={deploymentMetadataGate.state} />
+          )}
           <button
-            className="h-10 w-fit rounded-md bg-cyan-300 px-4 text-xs font-semibold text-slate-950"
+            className="h-10 w-fit rounded-md bg-cyan-300 px-4 text-xs font-semibold text-slate-950 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={connectWallet}
+            disabled={deploymentMetadataGate.isChecking}
             ref={connectButtonRef}
             type="button"
           >
-            Connect Freighter
+            {deploymentMetadataGate.isChecking ? "Verifying..." : "Connect Freighter"}
           </button>
         </section>
       );
