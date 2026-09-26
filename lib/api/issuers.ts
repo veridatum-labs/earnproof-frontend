@@ -1,7 +1,6 @@
 import { apiClient, bearer, retryRead, retryMutation } from "./client";
 import type { AuthUser, Issuer } from "./generated/v1";
 import { captureRevision } from "./revision-tracking";
-import type { Issuer } from "./generated/v1";
 import type { IssuerWithRevision, UpdateIssuerRequestWithRevision } from "./revision-tracking";
 
 export type CreateIssuerRequest = {

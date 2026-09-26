@@ -6,10 +6,10 @@ import {
 } from "../organizations";
 import * as errorNormalization from "../error-normalization";
 
-jest.mock("../organizations", {
+jest.mock("../organizations", () => ({
   ...jest.requireActual("../organizations"),
   updateOrganization: jest.fn(),
-});
+}));
 
 jest.mock("../error-normalization");
 
