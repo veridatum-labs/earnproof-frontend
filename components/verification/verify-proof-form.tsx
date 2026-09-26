@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiClient } from "@/lib/api/client";
+import { ErrorReference } from "@/components/common/error-reference";
 import {
   VerificationPanel,
   VerifyProofResponse,
@@ -14,7 +15,7 @@ export function VerifyProofForm() {
   const searchParams = useSearchParams();
   const [input, setInput] = useState(() => searchParams.get("proof") ?? "");
   const [result, setResult] = useState<VerifyProofResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const errorRef = useRef<HTMLParagraphElement>(null);
 
@@ -32,7 +33,7 @@ export function VerifyProofForm() {
     setResult(null);
 
     if (!proofId) {
-      setError("Enter a proof ID or verification URL.");
+      setError(new Error("Enter a proof ID or verification URL."));
       return;
     }
 
@@ -42,8 +43,8 @@ export function VerifyProofForm() {
         path: `/proofs/${encodeURIComponent(proofId)}/verify`,
       });
       setResult(response);
-    } catch {
-      setError("Verification request failed. Check the proof ID and API URL.");
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("Verification request failed. Check the proof ID and API URL."));
     } finally {
       setIsLoading(false);
     }
@@ -83,16 +84,9 @@ export function VerifyProofForm() {
           <p className="mt-1.5 text-slate-300">Only the fields shown in the disclosure summary can be shared.</p>
         </div>
         {error ? (
-          <p
-            aria-live="assertive"
-            className="text-sm text-rose-200 focus-visible:outline-none"
-            id="verify-proof-error"
-            ref={errorRef}
-            role="alert"
-            tabIndex={-1}
-          >
-            {error}
-          </p>
+          <div ref={errorRef} tabIndex={-1} className="focus-visible:outline-none">
+            <ErrorReference error={error} />
+          </div>
         ) : null}
         <button
           aria-describedby={error ? "verify-proof-error" : undefined}

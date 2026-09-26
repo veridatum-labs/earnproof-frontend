@@ -25,7 +25,7 @@ describe("request-dedup", () => {
     });
 
     it("deduplicates concurrent identical requests", async () => {
-      const execute = vi.fn(async (signal: AbortSignal) => {
+      const execute = vi.fn(async (_signal: AbortSignal) => {
         await new Promise((resolve) => setTimeout(resolve, 10));
         return "result";
       });
@@ -145,13 +145,16 @@ describe("request-dedup", () => {
 
     it("cancels requests matching a pattern", async () => {
       const execute1 = vi.fn(async (signal: AbortSignal) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await new Promise((resolve) => signal.addEventListener("abort", resolve as any));
         throw new DOMException("Aborted", "AbortError");
       });
 
       const execute2 = vi.fn(async () => "result");
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const promise1 = dedupRequest("GET", "/api/payments", execute1);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const promise2 = dedupRequest("GET", "/api/other", execute2);
 
       cancelPendingRequests("payments");
@@ -167,6 +170,7 @@ describe("request-dedup", () => {
       const execute2 = vi.fn(async () => "result2");
 
       await dedupRequest("GET", "/api/test1", execute1);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const promise2 = dedupRequest("GET", "/api/test2", execute2);
 
       expect(isPending("GET", "/api/test1")).toBe(false);
