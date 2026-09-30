@@ -24,6 +24,12 @@ import {
   clearStoredSession,
   type SessionUser,
 } from "@/lib/session";
+import {
+  saveProofDraft,
+  loadProofDraft,
+  deleteProofDraft,
+  type PaymentReceiptDraftData,
+} from "@/lib/storage/proof-drafts";
 import { useDeploymentMetadataGate } from "@/lib/deployment/use-deployment-metadata-gate";
 import { DeploymentMetadataWarning } from "@/components/common/deployment-metadata-warning";
 
@@ -47,6 +53,10 @@ type Payment = {
 
 export function PaymentReceiptProofFlow() {
   const initialSession = useMemo(() => readStoredSession(), []);
+  
+  // Load saved draft on mount (only non-secret fields)
+  const savedDraft = useMemo(() => loadProofDraft<PaymentReceiptDraftData>('payment-receipt'), []);
+  
   const [token, setToken] = useState<string | null>(
     () => initialSession?.token ?? null,
   );
@@ -54,10 +64,10 @@ export function PaymentReceiptProofFlow() {
     () => initialSession?.user ?? null,
   );
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
-  const [discloseSender, setDiscloseSender] = useState(false);
-  const [discloseAmount, setDiscloseAmount] = useState(false);
-  const [expiresInDays, setExpiresInDays] = useState(30);
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(() => savedDraft?.selectedPaymentId ?? null);
+  const [discloseSender, setDiscloseSender] = useState(() => savedDraft?.discloseSender ?? false);
+  const [discloseAmount, setDiscloseAmount] = useState(() => savedDraft?.discloseAmount ?? false);
+  const [expiresInDays, setExpiresInDays] = useState(() => savedDraft?.expiresInDays ?? 30);
   const [proof, setProof] = useState<PaymentReceiptProof | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -92,6 +102,19 @@ export function PaymentReceiptProofFlow() {
       connectButtonRef.current?.focus();
     }
   }, [user]);
+
+  // Save draft whenever form values change (only non-secret fields)
+  useEffect(() => {
+    if (selectedPaymentId || discloseSender || discloseAmount || expiresInDays !== 30) {
+      const draftData: PaymentReceiptDraftData = {
+        selectedPaymentId,
+        discloseSender,
+        discloseAmount,
+        expiresInDays,
+      };
+      saveProofDraft('payment-receipt', draftData);
+    }
+  }, [selectedPaymentId, discloseSender, discloseAmount, expiresInDays]);
 
   const selectedPayment = useMemo(
     () => payments.find(p => p.id === selectedPaymentId) || null,
@@ -262,6 +285,8 @@ export function PaymentReceiptProofFlow() {
 
       setProof(created);
       setStatus("Payment receipt proof created.");
+      // Clear draft after successful proof creation
+      deleteProofDraft('payment-receipt');
     } catch (err) {
       setStatus(null);
       if (err instanceof Error && err.message.includes("not eligible")) {
@@ -284,6 +309,15 @@ export function PaymentReceiptProofFlow() {
     setDiscloseSender(false);
     setDiscloseAmount(false);
     setNetworkCompatibility(null);
+  }
+
+  function discardDraft() {
+    deleteProofDraft('payment-receipt');
+    setSelectedPaymentId(null);
+    setDiscloseSender(false);
+    setDiscloseAmount(false);
+    setExpiresInDays(30);
+    setStatus("Draft discarded.");
   }
 
   return (
@@ -387,14 +421,25 @@ export function PaymentReceiptProofFlow() {
           </div>
         </div>
 
-        <button
-          aria-describedby={error ? "create-proof-feedback" : undefined}
-          className="h-10 w-fit rounded-md bg-cyan-300 px-4 text-xs font-semibold text-slate-950 disabled:opacity-50"
-          disabled={!token || !selectedPaymentId}
-          type="submit"
-        >
-          Create Payment Receipt Proof
-        </button>
+        <div className="flex gap-2">
+          <button
+            aria-describedby={error ? "create-proof-feedback" : undefined}
+            className="h-10 w-fit rounded-md bg-cyan-300 px-4 text-xs font-semibold text-slate-950 disabled:opacity-50"
+            disabled={!token || !selectedPaymentId}
+            type="submit"
+          >
+            Create Payment Receipt Proof
+          </button>
+          {savedDraft && (
+            <button
+              className="h-10 w-fit rounded-md border border-white/15 px-4 text-xs font-semibold text-white"
+              onClick={discardDraft}
+              type="button"
+            >
+              Discard Draft
+            </button>
+          )}
+        </div>
       </form>
 
       {status || error || proof ? (

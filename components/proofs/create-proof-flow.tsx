@@ -19,6 +19,13 @@ import {
 } from "@/lib/proofs/minimum-income-payload";
 import { useProofReviewGate } from "@/lib/proofs/useProofReviewGate";
 import { ProofReviewSummary } from "@/components/proofs/proof-review-summary";
+import {
+  saveProofDraft,
+  loadProofDraft,
+  deleteProofDraft,
+  type MinimumIncomeDraftData,
+} from "@/lib/storage/proof-drafts";
+import {
   isSigningAllowed,
   validateNetworkCompatibility,
 } from "@/lib/wallet/network-compatibility";
@@ -72,6 +79,10 @@ type ProofResponse = {
 
 export function CreateProofFlow() {
   const initialSession = useMemo(() => readStoredSession(), []);
+  
+  // Load saved draft on mount (only non-secret fields)
+  const savedDraft = useMemo(() => loadProofDraft<MinimumIncomeDraftData>('minimum-income'), []);
+  
   const [token, setToken] = useState<string | null>(
     () => initialSession?.token ?? null,
   );
@@ -80,10 +91,10 @@ export function CreateProofFlow() {
   );
   const [payments, setPayments] = useState<Payment[]>([]);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
-  const [selected, setSelected] = useState<string[]>([]);
-  const [thresholdAmount, setThresholdAmount] = useState("100");
-  const [periodStart, setPeriodStart] = useState("2026-08-01");
-  const [periodEnd, setPeriodEnd] = useState("2026-08-31");
+  const [selected, setSelected] = useState<string[]>(() => savedDraft?.selectedPaymentIds ?? []);
+  const [thresholdAmount, setThresholdAmount] = useState(() => savedDraft?.thresholdAmount ?? "100");
+  const [periodStart, setPeriodStart] = useState(() => savedDraft?.periodStart ?? "2026-08-01");
+  const [periodEnd, setPeriodEnd] = useState(() => savedDraft?.periodEnd ?? "2026-08-31");
   const [proof, setProof] = useState<ProofResponse | null>(null);
   const [pendingChallenge, setPendingChallenge] = useState<PendingChallenge | null>(null);
   const [isSigning, setIsSigning] = useState(false);
@@ -168,6 +179,20 @@ export function CreateProofFlow() {
     // safe to omit it here and depend only on the payload's own identity.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPayload]);
+
+  // Save draft whenever form values change (debounced via state update batching)
+  // Only persist non-secret fields - never wallet signatures, tokens, or proof artifacts
+  useEffect(() => {
+    if (selected.length > 0 || thresholdAmount !== "100" || periodStart !== "2026-08-01" || periodEnd !== "2026-08-31") {
+      const draftData: MinimumIncomeDraftData = {
+        selectedPaymentIds: selected,
+        thresholdAmount,
+        periodStart,
+        periodEnd,
+      };
+      saveProofDraft('minimum-income', draftData);
+    }
+  }, [selected, thresholdAmount, periodStart, periodEnd]);
 
   async function connectWallet() {
     setError(null);
@@ -438,6 +463,8 @@ export function CreateProofFlow() {
       // its own key rather than silently reusing a completed one.
       idempotencyRef.current = null;
       reviewGate.reset();
+      // Clear draft after successful proof creation
+      deleteProofDraft('minimum-income');
     } catch {
       if (!submissionGuardRef.current.isCurrent(submissionId)) {
         return;
@@ -468,6 +495,15 @@ export function CreateProofFlow() {
     setStatus(null);
     setError(null);
     setNetworkCompatibility(null);
+  }
+
+  function discardDraft() {
+    deleteProofDraft('minimum-income');
+    setSelected([]);
+    setThresholdAmount("100");
+    setPeriodStart("2026-08-01");
+    setPeriodEnd("2026-08-31");
+    setStatus("Draft discarded.");
   }
 
   return (
@@ -630,14 +666,25 @@ export function CreateProofFlow() {
             isSubmitting={isSubmittingProof}
           />
         ) : (
-          <button
-            aria-describedby={error ? "create-proof-feedback" : undefined}
-            className="h-10 w-fit rounded-md bg-cyan-300 px-4 text-xs font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!token || selectedIncomePayments.length === 0 || isSubmittingProof}
-            type="submit"
-          >
-            Review before creating
-          </button>
+          <div className="flex gap-2">
+            <button
+              aria-describedby={error ? "create-proof-feedback" : undefined}
+              className="h-10 w-fit rounded-md bg-cyan-300 px-4 text-xs font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={!token || selectedIncomePayments.length === 0 || isSubmittingProof}
+              type="submit"
+            >
+              Review before creating
+            </button>
+            {savedDraft && (
+              <button
+                className="h-10 w-fit rounded-md border border-white/15 px-4 text-xs font-semibold text-white"
+                onClick={discardDraft}
+                type="button"
+              >
+                Discard Draft
+              </button>
+            )}
+          </div>
         )}
       </form>
 

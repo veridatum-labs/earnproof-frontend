@@ -30,6 +30,12 @@ import {
 } from "@/lib/session";
 import { resolveIdempotencyKey, type IdempotencyState, type ProofIntent } from "@/lib/proofs/idempotency";
 import { createSubmissionGuard } from "@/lib/proofs/submission-guard";
+import {
+  saveProofDraft,
+  loadProofDraft,
+  deleteProofDraft,
+  type RecurringIncomeDraftData,
+} from "@/lib/storage/proof-drafts";
 import { useDeploymentMetadataGate } from "@/lib/deployment/use-deployment-metadata-gate";
 import { DeploymentMetadataWarning } from "@/components/common/deployment-metadata-warning";
 
@@ -53,23 +59,27 @@ type Payment = {
 
 export function RecurringIncomeProofWizard() {
   const initialSession = useMemo(() => readStoredSession(), []);
+  
+  // Load saved draft on mount (only non-secret fields)
+  const savedDraft = useMemo(() => loadProofDraft<RecurringIncomeDraftData>('recurring-income'), []);
+  
   const [token, setToken] = useState<string | null>(
     () => initialSession?.token ?? null,
   );
   const [user, setUser] = useState<SessionUser | null>(
     () => initialSession?.user ?? null,
   );
-  const [currentStep, setCurrentStep] = useState<WizardStep>(WIZARD_STEPS.INTERVAL_CONFIG);
+  const [currentStep, setCurrentStep] = useState<WizardStep>(() => (savedDraft?.currentStep as WizardStep) ?? WIZARD_STEPS.INTERVAL_CONFIG);
   const [payments, setPayments] = useState<Payment[]>([]);
   
-  // Wizard state
-  const [intervalUnit, setIntervalUnit] = useState<IntervalUnit>(DEFAULT_VALUES.intervalUnit);
-  const [intervalCount, setIntervalCount] = useState<number>(DEFAULT_VALUES.intervalCount);
-  const [periodStart, setPeriodStart] = useState("2026-08-01");
-  const [periodEnd, setPeriodEnd] = useState("2026-11-30");
-  const [selectedPaymentIds, setSelectedPaymentIds] = useState<string[]>([]);
-  const [selectedAsset, setSelectedAsset] = useState<{ code: string; issuer: string | null } | null>(null);
-  const [expiresInDays, setExpiresInDays] = useState<number>(DEFAULT_VALUES.expiresInDays);
+  // Wizard state (restored from draft if available)
+  const [intervalUnit, setIntervalUnit] = useState<IntervalUnit>(() => savedDraft?.intervalUnit ?? DEFAULT_VALUES.intervalUnit);
+  const [intervalCount, setIntervalCount] = useState<number>(() => savedDraft?.intervalCount ?? DEFAULT_VALUES.intervalCount);
+  const [periodStart, setPeriodStart] = useState(() => savedDraft?.periodStart ?? "2026-08-01");
+  const [periodEnd, setPeriodEnd] = useState(() => savedDraft?.periodEnd ?? "2026-11-30");
+  const [selectedPaymentIds, setSelectedPaymentIds] = useState<string[]>(() => savedDraft?.selectedPaymentIds ?? []);
+  const [selectedAsset, setSelectedAsset] = useState<{ code: string; issuer: string | null } | null>(() => savedDraft?.selectedAsset ?? null);
+  const [expiresInDays, setExpiresInDays] = useState<number>(() => savedDraft?.expiresInDays ?? DEFAULT_VALUES.expiresInDays);
   
   // Analysis and results
   const [coverageAnalysis, setCoverageAnalysis] = useState<IntervalCoverageAnalysis | null>(null);
@@ -112,6 +122,33 @@ export function RecurringIncomeProofWizard() {
       connectButtonRef.current?.focus();
     }
   }, [user]);
+
+  // Save draft whenever form values change (only non-secret fields)
+  useEffect(() => {
+    const hasChanges = 
+      intervalUnit !== DEFAULT_VALUES.intervalUnit ||
+      intervalCount !== DEFAULT_VALUES.intervalCount ||
+      periodStart !== "2026-08-01" ||
+      periodEnd !== "2026-11-30" ||
+      selectedPaymentIds.length > 0 ||
+      selectedAsset !== null ||
+      expiresInDays !== DEFAULT_VALUES.expiresInDays ||
+      currentStep !== WIZARD_STEPS.INTERVAL_CONFIG;
+
+    if (hasChanges) {
+      const draftData: RecurringIncomeDraftData = {
+        intervalUnit,
+        intervalCount,
+        periodStart,
+        periodEnd,
+        selectedPaymentIds,
+        selectedAsset,
+        expiresInDays,
+        currentStep,
+      };
+      saveProofDraft('recurring-income', draftData);
+    }
+  }, [intervalUnit, intervalCount, periodStart, periodEnd, selectedPaymentIds, selectedAsset, expiresInDays, currentStep]);
 
   const eligibleIncomePayments = useMemo(
     () => payments.filter(p => 
@@ -349,6 +386,8 @@ export function RecurringIncomeProofWizard() {
       // even with identical field values, is a new intent and should get
       // its own key rather than silently reusing a completed one.
       idempotencyRef.current = null;
+      // Clear draft after successful proof creation
+      deleteProofDraft('recurring-income');
     } catch {
       if (!submissionGuardRef.current.isCurrent(submissionId)) {
         return;
@@ -379,6 +418,20 @@ export function RecurringIncomeProofWizard() {
     setError(null);
     setNetworkCompatibility(null);
     setCurrentStep(WIZARD_STEPS.INTERVAL_CONFIG);
+  }
+
+  function discardDraft() {
+    deleteProofDraft('recurring-income');
+    setIntervalUnit(DEFAULT_VALUES.intervalUnit);
+    setIntervalCount(DEFAULT_VALUES.intervalCount);
+    setPeriodStart("2026-08-01");
+    setPeriodEnd("2026-11-30");
+    setSelectedPaymentIds([]);
+    setSelectedAsset(null);
+    setExpiresInDays(DEFAULT_VALUES.expiresInDays);
+    setCurrentStep(WIZARD_STEPS.INTERVAL_CONFIG);
+    setCoverageAnalysis(null);
+    setStatus("Draft discarded.");
   }
 
   const canProceedToNextStep = (step: WizardStep): boolean => {
@@ -505,13 +558,24 @@ export function RecurringIncomeProofWizard() {
                 Connected as <span className="text-cyan-200 font-mono">{user.walletAddress.slice(0, 8)}...{user.walletAddress.slice(-8)}</span>
               </span>
             </div>
-            <button
-              className="text-xs text-slate-400 hover:text-slate-300 transition"
-              onClick={disconnect}
-              type="button"
-            >
-              Disconnect
-            </button>
+            <div className="flex gap-2">
+              {savedDraft && (
+                <button
+                  className="text-xs text-slate-400 hover:text-slate-300 transition"
+                  onClick={discardDraft}
+                  type="button"
+                >
+                  Discard Draft
+                </button>
+              )}
+              <button
+                className="text-xs text-slate-400 hover:text-slate-300 transition"
+                onClick={disconnect}
+                type="button"
+              >
+                Disconnect
+              </button>
+            </div>
           </div>
           {networkCompatibility && !networkCompatibility.isValid && (
             <NetworkMismatchAlert
