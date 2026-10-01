@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { WebVitalsReporter } from "@/components/common/web-vitals-reporter";
+import { PrivacyProvider } from "@/contexts/privacy-context";
 import "./globals.css";
 
 // Mirrors lib/storage's STORAGE_KEYS.DISPLAY_PREFERENCES: a plain <script>
@@ -70,6 +71,10 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
+        <PrivacyProvider>
+          <WebVitalsReporter />
+          {children}
+        </PrivacyProvider>
         <script
           nonce={nonce}
           dangerouslySetInnerHTML={{ __html: DISPLAY_PREFERENCES_BOOTSTRAP_SCRIPT }}

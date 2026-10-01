@@ -264,6 +264,31 @@ export function OrganizationList({
         >
           Organizations
         </ResultsHeading>
+
+        {/* Desktop header */}
+        <div className="hidden grid-cols-[2fr_1fr_1fr_auto] gap-4 border-b border-white/10 pb-2 text-xs font-semibold uppercase text-slate-400 md:grid">
+          <div>Organization</div>
+          <div>Status</div>
+          <div>Created</div>
+          <div>Actions</div>
+        </div>
+
+        {organizations.map((org) => (
+          <OrganizationRow
+            key={org.id}
+            organization={org}
+            onEdit={() => onEditOrganization(org.id)}
+            onSuspend={() => 
+              onLifecycleAction("suspend", org.id, org.name)
+            }
+            onActivate={() => 
+              onLifecycleAction("activate", org.id, org.name)
+            }
+            onRevoke={() =>
+              onLifecycleAction("revoke", org.id, org.name)
+            }
+          />
+        ))}
       </div>
 
       {/* Pagination controls */}
@@ -278,64 +303,6 @@ export function OrganizationList({
           resultCount={organizations.length}
         />
       </div>
-
-      {confirmAction && (
-        <ConfirmationDialog
-          title={formatMessage("{action} Organization", {
-            action: organizationActionLabels[confirmAction.type],
-          })}
-          message={
-            confirmAction.type === "revoke"
-              ? formatMessage(
-                  'Are you sure you want to revoke "{organizationName}"? This action cannot be undone and will permanently disable the organization.',
-                  { organizationName: confirmAction.organizationName },
-                )
-              : confirmAction.type === "suspend"
-              ? formatMessage(
-                  'Are you sure you want to suspend "{organizationName}"? This will temporarily disable organization operations.',
-                  { organizationName: confirmAction.organizationName },
-                )
-              : formatMessage(
-                  'Are you sure you want to activate "{organizationName}"? This will enable organization operations.',
-                  { organizationName: confirmAction.organizationName },
-                )
-          }
-          confirmText={organizationActionLabels[confirmAction.type]}
-          confirmVariant={confirmAction.type === "revoke" ? "danger" : "primary"}
-          onConfirm={() => {
-            const org = organizations.find((o) => o.id === confirmAction.organizationId);
-            if (!org) return;
-            const statusMap: Record<LifecycleAction, OrganizationWithRevision["status"]> = {
-              suspend: "SUSPENDED",
-              activate: "ACTIVE",
-              revoke: "REVOKED",
-              archive: "REVOKED",
-            };
-            const { type, organizationId, organizationName } = confirmAction;
-            const runUpdate = () => handleStatusUpdate(organizationId, statusMap[type], org);
-
-            // Revoke/archive are permanent and irreversible, so they require a
-            // fresh wallet signature; suspend/activate are reversible operational
-            // toggles and don't (matching api-key-list.tsx's revoke-only gating).
-            if (type === "revoke" || type === "archive") {
-              setConfirmAction(null);
-              setPendingActionName({ label: organizationActionLabels[type], organizationName });
-              recentAuth.requestRecentAuth(runUpdate);
-            } else {
-              runUpdate();
-            }
-          }}
-          onCancel={() => setConfirmAction(null)}
-          isProcessing={actionLoading === confirmAction.organizationId}
-        />
-      )}
-
-      {recentAuth.isPromptOpen && (
-        <RecentAuthGate
-          recentAuth={recentAuth}
-          actionDescription={`${pendingActionName?.label.toLowerCase() ?? "revoke"} the organization${pendingActionName ? ` "${pendingActionName.organizationName}"` : ""}.`}
-        />
-      )}
 
       {conflict.isActive && (
         <ResolveConflictDialog

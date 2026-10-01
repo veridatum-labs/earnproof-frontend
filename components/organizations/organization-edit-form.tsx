@@ -46,7 +46,7 @@ export function OrganizationEditForm({
       if (!validationResult.success) {
         const formatted = formatFieldErrors(
           Object.fromEntries(
-            validationResult.error.errors.map((err) => [
+            validationResult.error.issues.map((err: any) => [
               err.path.join("."),
               err.message,
             ])

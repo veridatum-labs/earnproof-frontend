@@ -185,20 +185,42 @@ export function OrganizationManagement() {
           </div>
         )}
 
-        <OrganizationList
-          organizations={organizations}
-          loading={pagination.isLoading}
-          token={session.token}
-          walletAddress={session.user.walletAddress}
-          paginationState={{
-            ...pagination.currentPage,
-            isLoading: pagination.isLoading,
-          }}
-          onPreviousPage={handlePreviousPage}
-          onNextPage={handleNextPage}
-          focusResults={pagination.wasUserInitiated}
-          onOrganizationUpdated={handleOrganizationUpdated}
-        />
+        {editingOrgId ? (
+          <div className="grid gap-6 rounded-lg border border-white/10 bg-white/[0.04] p-5">
+            <div>
+              <h3 className="text-lg font-semibold text-white">Edit Organization</h3>
+              <p className="mt-1 text-sm text-slate-400">
+                Update organization metadata
+              </p>
+            </div>
+            {organizations.find(org => org.id === editingOrgId) && (
+              <OrganizationEditForm
+                organization={organizations.find(org => org.id === editingOrgId)!}
+                token={session.token}
+                onOrganizationUpdated={handleOrganizationUpdated}
+                onCancel={() => setEditingOrgId(null)}
+              />
+            )}
+          </div>
+        ) : (
+          <OrganizationList
+            organizations={organizations}
+            loading={pagination.isLoading}
+            token={session.token}
+            paginationState={{
+              ...pagination.currentPage,
+              isLoading: pagination.isLoading,
+            }}
+            onPreviousPage={handlePreviousPage}
+            onNextPage={handleNextPage}
+            focusResults={pagination.wasUserInitiated}
+            onOrganizationUpdated={handleOrganizationUpdated}
+            onEditOrganization={(orgId) => setEditingOrgId(orgId)}
+            onLifecycleAction={(action, orgId, orgName) =>
+              setLifecycleAction({ action, organizationId: orgId, organizationName: orgName })
+            }
+          />
+        )}
       </section>
     </div>
   );

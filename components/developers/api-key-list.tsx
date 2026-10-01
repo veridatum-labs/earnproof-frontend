@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { formatApiKeyPrefix, rotateApiKey, revokeApiKey } from "@/lib/api/keys";
-import { getExpirationStatus, isApiKeyValid } from "@/lib/api/api-key-expiration";
+import { Redacted } from "@/components/common/redacted";
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 import { CursorPagination, type PaginationState } from "@/components/common/cursor-pagination";
 import { ResultsHeading } from "@/components/common/results-heading";
@@ -365,7 +365,7 @@ function ApiKeyRow({
       <div className="min-w-0">
         <div className="font-medium text-white">{apiKey.name}</div>
         <div className="mt-1 font-mono text-xs text-slate-400">
-          {formatApiKeyPrefix(apiKey.prefix)}***
+          <Redacted>{formatApiKeyPrefix(apiKey.prefix)}***</Redacted>
         </div>
         {!expirationStatus.isActive && (
           <div className={`mt-1 text-xs font-semibold ${getExpirationTextColor()}`}>

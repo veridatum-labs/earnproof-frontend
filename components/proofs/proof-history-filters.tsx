@@ -32,14 +32,14 @@ export function ProofHistoryFilters({
   // Count active filters for badge
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
-  const handleStatusChange = (status: ProofStatus | null) => {
+  const handleStatusChange = (status: ProofStatus | undefined) => {
     onFiltersChange({
       ...filters,
       status: status === filters.status ? undefined : status,
     });
   };
 
-  const handleTypeChange = (type: ProofType | null) => {
+  const handleTypeChange = (type: ProofType | undefined) => {
     onFiltersChange({
       ...filters,
       type: type === filters.type ? undefined : type,

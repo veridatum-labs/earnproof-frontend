@@ -45,7 +45,7 @@ describe("ProofHistoryList", () => {
       type: "RECURRING_INCOME",
       status: "VALID",
       issuerId: "issuer-ghi",
-      issuerName: null,
+      issuerName: "Unknown Issuer",
       createdAt: "2024-05-15T14:30:00Z",
       expiresAt: "2025-05-15T14:30:00Z",
       revokedAt: "2024-06-10T08:00:00Z", // Revoked
