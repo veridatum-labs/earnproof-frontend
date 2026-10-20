@@ -1,0 +1,18 @@
+{
+  "default_branch": "develop",
+  "branches": [
+    "develop",
+    "origin",
+    "security/issue-289-build-configuration-rollout-and-environment"
+  ],
+  "parent": {
+    "develop": null,
+    "origin": "develop",
+    "security/issue-289-build-configuration-rollout-and-environment": "develop"
+  },
+  "order": [
+    "develop",
+    "origin",
+    "security/issue-289-build-configuration-rollout-and-environment"
+  ]
+}

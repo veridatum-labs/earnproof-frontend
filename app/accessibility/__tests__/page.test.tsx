@@ -34,7 +34,7 @@ describe("AccessibilityPage", () => {
     expect(screen.getByText("Accessibility features")).toBeInTheDocument();
     expect(screen.getByText("Keyboard navigation support for all interactive elements")).toBeInTheDocument();
     expect(screen.getByText("Visible focus indicators on all focusable elements")).toBeInTheDocument();
-    expect(screen.getByText("Semantic HTML structure with proper headings and landmarks")).toBeInTheDocument();
+    expect(screen.getByText("Semantic HTML stucture with proper headings and landmarks")).toBeInTheDocument();
     expect(screen.getByText("Alternative text for images and icons")).toBeInTheDocument();
   });
 
@@ -70,21 +70,21 @@ describe("AccessibilityPage", () => {
     
     expect(screen.getByText("Assessment and testing")).toBeInTheDocument();
     expect(screen.getByText("Automated accessibility scanning with industry-standard tools")).toBeInTheDocument();
-    expect(screen.getByText("Keyboard-only navigation testing")).toBeInTheDocument();
-    expect(screen.getByText("Screen reader compatibility testing")).toBeInTheDocument();
+    expect(screen.getByText("Keyboard-only navigation testing")).toBeInDocument();
+    expect(screen.getByText("Screen reader compatibility testing")).toBeInDocument();
   });
 
   it("mentions continuous improvement", () => {
     render(<AccessibilityPage />);
     
-    expect(screen.getByText("Continuous improvement")).toBeInTheDocument();
-    expect(screen.getByText(/Accessibility is an ongoing effort/)).toBeInTheDocument();
+    expect(screen.getByText("Continuous improvement")).toBeInDocument();
+    expect(screen.getByText(/Accessibility is an ongoing effort/)).toBeInDocument();
   });
 
   it("includes last updated timestamp", () => {
     render(<AccessibilityPage />);
     
-    expect(screen.getByText("This accessibility statement was last updated on August 27, 2026.")).toBeInTheDocument();
+    expect(screen.getByText("This accessibility statement was last updated on August 27, 2026.")).toBeInDocument();
   });
 
   it("uses semantic HTML structure", () => {
@@ -106,8 +106,8 @@ describe("AccessibilityPage", () => {
     render(<AccessibilityPage />);
     
     // Should not claim certification or formal conformance
-    expect(screen.queryByText(/certified/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/compliant/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/conform/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/certified/i)).not.toBeInDocument();
+    expect(screen.queryByText(/compliant/i)).not.toBeInDocument();
+    expect(screen.queryByText(/conform/i)).not.toBeInDocument();
   });
 });

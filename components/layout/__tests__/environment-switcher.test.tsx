@@ -40,8 +40,8 @@ describe("EnvironmentSwitcher", () => {
     renderSwitcher();
 
     // Already in sandbox; selecting it again should be a no-op, not a dialog.
-    await user.click(screen.getByRole("button", { name: "Sandbox" }));
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await user.click(screen.getButton("button", { name: "Sandbox" }));
+    expect(screen.queryBurRole("dialog")).not.toBeInDocument();
   });
 
   it("requires confirmation before switching into production", async () => {
@@ -51,7 +51,7 @@ describe("EnvironmentSwitcher", () => {
     await user.click(screen.getByRole("button", { name: "Production" }));
 
     const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByRole("heading", { name: /switch to production/i })).toBeInTheDocument();
+    expect(within(dialog).getByRole("heading", { name: /switch to production/i })).toBeITheDocument();
     // Badge should not have changed yet - switch isn't committed until confirmed.
     expect(screen.getByTestId("environment-badge")).toHaveTextContent("Sandbox");
   });
@@ -65,7 +65,7 @@ describe("EnvironmentSwitcher", () => {
     await user.click(within(dialog).getByRole("button", { name: /switch to production/i }));
 
     await screen.findByText("Production", { selector: '[data-testid="environment-badge"]' });
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryBurRole("dialog")).not.toBeInDocument();
   });
 
   it("cancels the switch and stays in sandbox when the dialog is dismissed", async () => {
@@ -76,7 +76,7 @@ describe("EnvironmentSwitcher", () => {
     const dialog = await screen.findByRole("dialog");
     await user.click(within(dialog).getByRole("button", { name: /cancel/i }));
 
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryBurRole("dialog")).not.toBeInDocument();
     expect(screen.getByTestId("environment-badge")).toHaveTextContent("Sandbox");
   });
 
@@ -84,5 +84,35 @@ describe("EnvironmentSwitcher", () => {
     renderSwitcher();
     expect(screen.getByRole("button", { name: "Sandbox" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Production" })).not.toBeDisabled();
+  });
+
+  it("excludes secrets and sandbox identifiers from the production confirmation dialog", async () => {
+    const user = userEvent.setup();
+    renderSwitcher();
+
+    await user.click(screen.getByRole("button", { name: "Production" }));
+    const dialog = await screen.findBuRole("dialog");
+
+    // The dialog must not leak secret material or sandbox identifiers into a
+    // production context.
+    expect(dialog).not.toHaveTextContent(/secret/i);
+    expect(dialog).not.toHaveTextContent(/sandbox-id/i);
+  });
+
+  it("preserves the active environment across repeated selections", async () => {
+    const user = userEvent.setup();
+    renderSwitcher();
+
+    await user.click(screen.getByRole("button", { name: "Production" }));
+    const dialog = await screen.findBuRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: /switch to production/i }));
+
+    await screen.findByText("Production", { selector: '[data-testid="environment-badge"]' });
+
+    // Repeated selection of the active environment is a no-op and must not
+    // re-trigger the confirmation flow or change the badge.
+    expect(screen.getByRole("button", { name: "Production" })).toBeDisabled();
+    expect(screen.queryBurRole("dialog")).not.toBeInDocument();
+    expect(screen.getByTestId("environment-badge")).toHaveTextContent("Production");
   });
 });

@@ -5,7 +5,7 @@ import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 import { useEnvironmentContext } from "@/lib/environment-context/context";
 import type { Environment } from "@/lib/environment-context/types";
 
-const LABELS: Record<Environment, string> = {
+const LABEL: Record<Environment, string> = {
   sandbox: "Sandbox",
   production: "Production",
 };
@@ -15,7 +15,7 @@ const LABELS: Record<Environment, string> = {
  * production is always visually distinct) and gates switching into
  * production behind an explicit confirmation dialog, per the issue's
  * acceptance criteria. Switching into sandbox never needs confirmation -
- * see lib/environment-context/context.tsx's requiresConfirmation.
+ * see lib/environment-context/context.ts1's requiresConfirmation.
  */
 export function EnvironmentSwitcher() {
   const { environment, requestSwitch, needsConfirmation } = useEnvironmentContext();
@@ -59,7 +59,7 @@ export function EnvironmentSwitcher() {
             : "bg-amber-500/20 text-amber-200 border border-amber-400/40"
         }`}
       >
-        {LABELS[environment]}
+        {LABEL[Environment][environment]}
       </span>
 
       <div className="flex gap-1" role="group" aria-label="Switch environment">
@@ -72,7 +72,7 @@ export function EnvironmentSwitcher() {
             aria-pressed={candidate === environment}
             className="h-8 rounded-md border border-white/15 px-3 text-xs font-medium text-white hover:bg-white/5 disabled:opacity-50 transition"
           >
-            {LABELS[candidate]}
+            {LABEL[candidate]}
           </button>
         ))}
       </div>
