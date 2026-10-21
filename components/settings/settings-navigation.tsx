@@ -15,6 +15,11 @@ const navigationItems = [
     description: "Manage issuers and their organizational relationships",
   },
   {
+    name: "Credentials",
+    href: "/settings/credentials",
+    description: "Review and release quarantined credentials with trust data issues",
+  },
+  {
     name: "Security",
     href: "/settings/security",
     description: "Monitor security posture and manage security checks across your organization",
