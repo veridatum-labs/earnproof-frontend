@@ -23,6 +23,7 @@ import {
   type ImportedCredentialSummary,
 } from "@/lib/credentials/public-state-comparison";
 import { CredentialPublicStateComparison } from "@/components/verification/credential-public-state-comparison";
+import { checkCredentialQuarantine } from "@/lib/validation/quarantine-check";
 
 import { defineMessages, formatMessage, formatNumber } from "@/lib/i18n";
 
@@ -161,13 +162,25 @@ export function VerifyCredentialForm() {
     } catch {
       importedCredentialJson = null;
     }
-    setImportedSummary(extractImportedCredentialSummary(importedCredentialJson));
+    const importedSummary = extractImportedCredentialSummary(importedCredentialJson);
+    setImportedSummary(importedSummary);
 
     setIsLoading(true);
     try {
       const response = await apiClient<VerifyProofResponse>({
         path: `/proofs/${encodeURIComponent(id)}/verify`,
       });
+
+      // Check if credential should be quarantined
+      const quarantineCheck = checkCredentialQuarantine(importedSummary, response);
+      if (quarantineCheck.shouldQuarantine) {
+        setError(
+          `This credential has been quarantined: ${quarantineCheck.reason}. Please review it in Settings > Credentials.`
+        );
+        setResult(null);
+        return;
+      }
+
       setResult(response);
     } catch {
       setError("Verification request failed. Check the credential and API URL.");
