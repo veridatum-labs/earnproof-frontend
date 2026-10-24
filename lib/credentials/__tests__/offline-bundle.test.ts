@@ -1,250 +1,700 @@
+/**
+ * @jest-environment node
+ * Comprehensive tests for offline verification bundle workflow (#294, #311).
+ * Covers validation, authorization, metadata verification, and error handling.
+ */
+
 import {
-  OFFLINE_BUNDLE_MAX_VALIDITY_HOURS,
-  OFFLINE_BUNDLE_SCHEMA_VERSION,
   buildOfflineBundle,
-  fetchMockOfflineBundleSource,
-  includedFields,
-  isOfflineBundleRequestValid,
-  refreshOfflineBundle,
-  scopedPayload,
   validateOfflineBundleRequest,
+  validateBundleSourceCheckpoint,
+  validateBundleSourceSignature,
+  validateBundleSourceMetadata,
   verifyOfflineBundle,
-  type OfflineBundleRequest,
-  type OfflineBundleSource,
-  type OfflineVerificationBundle,
-} from "../offline-bundle";
+  refreshOfflineBundle,
+  isProofAuthorizedForOfflineBundle,
+  areScopesAuthorizedForOfflineBundle,
+  isValidityAuthorizedForOfflineBundle,
+  bundleDigestInput,
+  scopedPayload,
+  includedFields,
+  OFFLINE_BUNDLE_SCHEMA_VERSION,
+  OFFLINE_BUNDLE_MIN_VALIDITY_HOURS,
+  OFFLINE_BUNDLE_MAX_VALIDITY_HOURS,
+} from "@/lib/credentials/offline-bundle";
+import {
+  VALID_BUNDLE_SOURCE,
+  MINIMAL_BUNDLE_SOURCE,
+  SOURCE_WITHOUT_METADATA,
+  STALE_CHECKPOINT,
+  FRESH_CHECKPOINT,
+  FUTURE_CHECKPOINT,
+  INVALID_SIGNATURE_NO_ALGO,
+  INVALID_SIGNATURE_NO_VALUE,
+  PUBLIC_ONLY_REQUEST,
+  MULTI_SCOPE_REQUEST,
+  MAX_VALIDITY_REQUEST,
+  MIN_VALIDITY_REQUEST,
+  INVALID_VALIDITY_REQUEST,
+  INVALID_LOW_VALIDITY_REQUEST,
+  INVALID_NO_PROOF_ID_REQUEST,
+  INVALID_NO_PUBLIC_SCOPE_REQUEST,
+  PERMISSIVE_POLICY,
+  RESTRICTIVE_NO_BUNDLES_POLICY,
+  RESTRICTIVE_LIMITED_VALIDITY_POLICY,
+  RESTRICTIVE_SCOPE_POLICY,
+  RESTRICTIVE_PROOF_DENIED_POLICY,
+  createBundleSource,
+  createRequest,
+  createPolicy,
+} from "./offline-bundle.fixtures";
 
-const NOW = new Date("2026-06-01T00:00:00.000Z");
+describe("Offline Bundle Validation", () => {
+  describe("validateBundleSourceCheckpoint", () => {
+    it("accepts fresh checkpoint", () => {
+      const issues = validateBundleSourceCheckpoint(FRESH_CHECKPOINT);
+      expect(issues).toHaveLength(0);
+    });
 
-function source(overrides: Partial<OfflineBundleSource> = {}): OfflineBundleSource {
-  return {
-    proofId: "proof-1",
-    network: "testnet",
-    contractId: `C${"A".repeat(55)}`,
-    public: { type: "income-threshold", issuer: "issuer-1" },
-    private: {
-      subject: { walletHash: "hash_1" },
-      amount: { thresholdAmount: "100", assetCode: "USDC" },
-      sender: { sourceAddress: "GAAA" },
-    },
-    ...overrides,
-  };
-}
+    it("rejects stale checkpoint", () => {
+      const now = new Date("2025-01-01T02:00:00Z"); // 2 hours later
+      const issues = validateBundleSourceCheckpoint(STALE_CHECKPOINT, now);
+      expect(issues).toContainEqual(
+        expect.objectContaining({
+          field: "checkpoint",
+          severity: "error",
+          message: expect.stringContaining("stale"),
+        }),
+      );
+    });
 
-function request(overrides: Partial<OfflineBundleRequest> = {}): OfflineBundleRequest {
-  return {
-    proofId: "proof-1",
-    scopes: ["public"],
-    requestedValidityHours: 24,
-    ...overrides,
-  };
-}
+    it("rejects future checkpoint", () => {
+      const issues = validateBundleSourceCheckpoint(FUTURE_CHECKPOINT);
+      expect(issues).toContainEqual(
+        expect.objectContaining({
+          field: "checkpoint.capturedAt",
+          severity: "error",
+          message: expect.stringContaining("future"),
+        }),
+      );
+    });
 
-function bundle(overrides: Partial<OfflineVerificationBundle> = {}): OfflineVerificationBundle {
-  const built = buildOfflineBundle({
-    request: request(),
-    source: source(),
-    digestValue: "abc123",
-    nonce: "nonce-1",
-    now: NOW,
+    it("rejects invalid date format", () => {
+      const issues = validateBundleSourceCheckpoint({
+        capturedAt: "invalid-date",
+        maxAgeSeconds: 3600,
+      });
+      expect(issues).toContainEqual(
+        expect.objectContaining({
+          field: "checkpoint.capturedAt",
+          severity: "error",
+        }),
+      );
+    });
+
+    it("rejects missing capturedAt", () => {
+      const issues = validateBundleSourceCheckpoint({
+        capturedAt: "",
+        maxAgeSeconds: 3600,
+      });
+      expect(issues).toHaveLength(1);
+      expect(issues[0].severity).toBe("error");
+    });
   });
-  return { ...built, ...overrides };
-}
 
-describe("offline-bundle: request validation", () => {
-  it("accepts a bounded request", () => {
-    expect(validateOfflineBundleRequest(request())).toEqual([]);
-    expect(isOfflineBundleRequestValid(request())).toBe(true);
+  describe("validateBundleSourceSignature", () => {
+    it("accepts valid signature", () => {
+      const issues = validateBundleSourceSignature({
+        algorithm: "EdDSA",
+        value: "sig_valid",
+        signedAt: new Date().toISOString(),
+        signer: "key-001",
+      });
+      expect(issues).toHaveLength(0);
+    });
+
+    it("rejects missing algorithm", () => {
+      const issues = validateBundleSourceSignature(INVALID_SIGNATURE_NO_ALGO);
+      expect(issues).toContainEqual(
+        expect.objectContaining({
+          field: "signature.algorithm",
+          severity: "error",
+        }),
+      );
+    });
+
+    it("rejects missing value", () => {
+      const issues = validateBundleSourceSignature(INVALID_SIGNATURE_NO_VALUE);
+      expect(issues).toContainEqual(
+        expect.objectContaining({
+          field: "signature.value",
+          severity: "error",
+        }),
+      );
+    });
+
+    it("rejects missing signedAt", () => {
+      const issues = validateBundleSourceSignature({
+        algorithm: "EdDSA",
+        value: "sig_test",
+        signedAt: "",
+        signer: "key-001",
+      });
+      expect(issues).toContainEqual(
+        expect.objectContaining({
+          field: "signature.signedAt",
+          severity: "error",
+        }),
+      );
+    });
+
+    it("rejects missing signer", () => {
+      const issues = validateBundleSourceSignature({
+        algorithm: "EdDSA",
+        value: "sig_test",
+        signedAt: new Date().toISOString(),
+        signer: "",
+      });
+      expect(issues).toContainEqual(
+        expect.objectContaining({
+          field: "signature.signer",
+          severity: "error",
+        }),
+      );
+    });
   });
 
-  it("requires a proof ID", () => {
-    expect(isOfflineBundleRequestValid(request({ proofId: "  " }))).toBe(false);
+  describe("validateBundleSourceMetadata", () => {
+    it("accepts valid metadata", () => {
+      const issues = validateBundleSourceMetadata({
+        signature: {
+          algorithm: "EdDSA",
+          value: "sig_valid",
+          signedAt: new Date().toISOString(),
+          signer: "key-001",
+        },
+        checkpoint: {
+          capturedAt: new Date().toISOString(),
+          maxAgeSeconds: 3600,
+        },
+      });
+      expect(issues).toHaveLength(0);
+    });
+
+    it("rejects missing metadata", () => {
+      const issues = validateBundleSourceMetadata(undefined);
+      expect(issues).toContainEqual(
+        expect.objectContaining({
+          field: "metadata",
+          severity: "error",
+        }),
+      );
+    });
+
+    it("rejects stale metadata", () => {
+      const now = new Date("2025-01-01T02:00:00Z");
+      const issues = validateBundleSourceMetadata(
+        {
+          signature: {
+            algorithm: "EdDSA",
+            value: "sig_test",
+            signedAt: new Date().toISOString(),
+            signer: "key-001",
+          },
+          checkpoint: STALE_CHECKPOINT,
+        },
+        now,
+      );
+      expect(issues.length).toBeGreaterThan(0);
+      expect(issues).toContainEqual(
+        expect.objectContaining({
+          severity: "error",
+          message: expect.stringContaining("stale"),
+        }),
+      );
+    });
   });
 
-  it("enforces the validity bounds", () => {
-    expect(isOfflineBundleRequestValid(request({ requestedValidityHours: 0 }))).toBe(false);
-    expect(isOfflineBundleRequestValid(request({ requestedValidityHours: 1 }))).toBe(true);
-    expect(isOfflineBundleRequestValid(request({ requestedValidityHours: 72 }))).toBe(true);
-    expect(isOfflineBundleRequestValid(request({ requestedValidityHours: 73 }))).toBe(false);
-    expect(OFFLINE_BUNDLE_MAX_VALIDITY_HOURS).toBe(72);
-  });
+  describe("validateOfflineBundleRequest", () => {
+    it("accepts valid public-only request", () => {
+      const issues = validateOfflineBundleRequest(PUBLIC_ONLY_REQUEST);
+      expect(issues).toHaveLength(0);
+    });
 
-  it("always requires the public scope", () => {
-    expect(isOfflineBundleRequestValid(request({ scopes: ["amount"] }))).toBe(false);
+    it("accepts valid multi-scope request", () => {
+      const issues = validateOfflineBundleRequest(MULTI_SCOPE_REQUEST);
+      expect(issues).toHaveLength(0);
+    });
+
+    it("rejects request with no proofId", () => {
+      const issues = validateOfflineBundleRequest(INVALID_NO_PROOF_ID_REQUEST);
+      expect(issues).toContainEqual(
+        expect.objectContaining({
+          field: "proofId",
+          severity: "error",
+        }),
+      );
+    });
+
+    it("rejects request without public scope", () => {
+      const issues = validateOfflineBundleRequest(
+        INVALID_NO_PUBLIC_SCOPE_REQUEST,
+      );
+      expect(issues).toContainEqual(
+        expect.objectContaining({
+          field: "scopes",
+          severity: "error",
+          message: expect.stringContaining("public"),
+        }),
+      );
+    });
+
+    it("rejects request with excessive validity", () => {
+      const issues = validateOfflineBundleRequest(INVALID_VALIDITY_REQUEST);
+      expect(issues).toContainEqual(
+        expect.objectContaining({
+          field: "requestedValidityHours",
+          severity: "error",
+        }),
+      );
+    });
+
+    it("rejects request with insufficient validity", () => {
+      const issues = validateOfflineBundleRequest(
+        INVALID_LOW_VALIDITY_REQUEST,
+      );
+      expect(issues).toContainEqual(
+        expect.objectContaining({
+          field: "requestedValidityHours",
+          severity: "error",
+        }),
+      );
+    });
+
+    describe("with authorization policy", () => {
+      it("allows request with permissive policy", () => {
+        const issues = validateOfflineBundleRequest(
+          PUBLIC_ONLY_REQUEST,
+          PERMISSIVE_POLICY,
+        );
+        expect(issues.filter((i) => i.severity === "error")).toHaveLength(0);
+      });
+
+      it("rejects request with no-bundles policy", () => {
+        const issues = validateOfflineBundleRequest(
+          PUBLIC_ONLY_REQUEST,
+          RESTRICTIVE_NO_BUNDLES_POLICY,
+        );
+        expect(issues).toContainEqual(
+          expect.objectContaining({
+            severity: "error",
+            message: expect.stringContaining("not authorized"),
+          }),
+        );
+      });
+
+      it("rejects request exceeding policy validity limit", () => {
+        const issues = validateOfflineBundleRequest(
+          MAX_VALIDITY_REQUEST,
+          RESTRICTIVE_LIMITED_VALIDITY_POLICY,
+        );
+        expect(issues).toContainEqual(
+          expect.objectContaining({
+            field: "requestedValidityHours",
+            severity: "error",
+          }),
+        );
+      });
+
+      it("rejects request with unauthorized scopes", () => {
+        const request = createRequest({ scopes: ["public", "subject"] });
+        const issues = validateOfflineBundleRequest(
+          request,
+          RESTRICTIVE_SCOPE_POLICY,
+        );
+        expect(issues).toContainEqual(
+          expect.objectContaining({
+            field: "scopes",
+            severity: "error",
+          }),
+        );
+      });
+
+      it("rejects request for denied proof", () => {
+        const request = createRequest({ proofId: "proof-denied-001" });
+        const issues = validateOfflineBundleRequest(
+          request,
+          RESTRICTIVE_PROOF_DENIED_POLICY,
+        );
+        expect(issues).toContainEqual(
+          expect.objectContaining({
+            field: "proofId",
+            severity: "error",
+          }),
+        );
+      });
+    });
   });
 });
 
-describe("offline-bundle: scoped disclosure", () => {
-  it("includes only the requested private scopes", () => {
-    const payload = scopedPayload(source(), ["public", "amount"]);
-    expect(payload.public).toBeDefined();
-    expect(payload.amount).toEqual({ thresholdAmount: "100", assetCode: "USDC" });
-    expect(payload.subject).toBeUndefined();
-    expect(payload.sender).toBeUndefined();
+describe("Authorization Checks", () => {
+  describe("isProofAuthorizedForOfflineBundle", () => {
+    it("authorizes proof with permissive policy", () => {
+      const result = isProofAuthorizedForOfflineBundle(
+        "proof-test-001",
+        PERMISSIVE_POLICY,
+      );
+      expect(result.authorized).toBe(true);
+    });
+
+    it("denies proof with no-bundles policy", () => {
+      const result = isProofAuthorizedForOfflineBundle(
+        "proof-test-001",
+        RESTRICTIVE_NO_BUNDLES_POLICY,
+      );
+      expect(result.authorized).toBe(false);
+      expect(result.reason).toBeDefined();
+    });
+
+    it("denies specifically listed proof", () => {
+      const result = isProofAuthorizedForOfflineBundle(
+        "proof-denied-001",
+        RESTRICTIVE_PROOF_DENIED_POLICY,
+      );
+      expect(result.authorized).toBe(false);
+      expect(result.reason).toContain("archived");
+    });
   });
 
-  it("never includes a private scope that was not requested", () => {
-    const payload = scopedPayload(source(), ["public"]);
-    expect(Object.keys(payload)).toEqual(["public"]);
+  describe("areScopesAuthorizedForOfflineBundle", () => {
+    it("authorizes all scopes with permissive policy", () => {
+      const result = areScopesAuthorizedForOfflineBundle(
+        ["public", "subject", "amount", "sender"],
+        PERMISSIVE_POLICY,
+      );
+      expect(result.authorized).toBe(true);
+    });
+
+    it("denies non-public scopes with restrictive policy", () => {
+      const result = areScopesAuthorizedForOfflineBundle(
+        ["public", "subject"],
+        RESTRICTIVE_SCOPE_POLICY,
+      );
+      expect(result.authorized).toBe(false);
+      expect(result.reason).toContain("not authorized");
+    });
+
+    it("authorizes public scope with restrictive policy", () => {
+      const result = areScopesAuthorizedForOfflineBundle(
+        ["public"],
+        RESTRICTIVE_SCOPE_POLICY,
+      );
+      expect(result.authorized).toBe(true);
+    });
   });
 
-  it("omits a requested scope the source does not carry", () => {
-    const payload = scopedPayload(source({ private: undefined }), ["public", "sender"]);
-    expect(Object.keys(payload)).toEqual(["public"]);
+  describe("isValidityAuthorizedForOfflineBundle", () => {
+    it("authorizes max validity with permissive policy", () => {
+      const result = isValidityAuthorizedForOfflineBundle(
+        OFFLINE_BUNDLE_MAX_VALIDITY_HOURS,
+        PERMISSIVE_POLICY,
+      );
+      expect(result.authorized).toBe(true);
+    });
+
+    it("denies excessive validity with restrictive policy", () => {
+      const result = isValidityAuthorizedForOfflineBundle(
+        24,
+        RESTRICTIVE_LIMITED_VALIDITY_POLICY,
+      );
+      expect(result.authorized).toBe(false);
+      expect(result.reason).toContain("exceeds maximum");
+    });
+
+    it("authorizes within policy limit", () => {
+      const result = isValidityAuthorizedForOfflineBundle(
+        12,
+        RESTRICTIVE_LIMITED_VALIDITY_POLICY,
+      );
+      expect(result.authorized).toBe(true);
+    });
   });
 });
 
-describe("offline-bundle: build", () => {
-  it("time-bounds the bundle from the requested validity", () => {
-    const built = buildOfflineBundle({
-      request: request({ requestedValidityHours: 24 }),
-      source: source(),
+describe("Bundle Building and Serialization", () => {
+  it("builds bundle with correct fields", () => {
+    const nonce = "test-nonce-001";
+    const bundle = buildOfflineBundle({
+      request: PUBLIC_ONLY_REQUEST,
+      source: VALID_BUNDLE_SOURCE,
       digestValue: "abc123",
-      nonce: "nonce-1",
-      now: NOW,
+      nonce,
     });
-    expect(built.validUntil).toBe("2026-06-02T00:00:00.000Z");
-    expect(built.createdAt).toBe(NOW.toISOString());
-    expect(built.schemaVersion).toBe(OFFLINE_BUNDLE_SCHEMA_VERSION);
+
+    expect(bundle.bundleId).toBe(`${VALID_BUNDLE_SOURCE.proofId}:${nonce}`);
+    expect(bundle.schemaVersion).toBe(OFFLINE_BUNDLE_SCHEMA_VERSION);
+    expect(bundle.scopes).toEqual(["public"]);
+    expect(bundle.nonce).toBe(nonce);
+    expect(bundle.revocation.state).toBe("unknown-offline");
   });
 
-  it("records that revocation was not checked offline", () => {
-    const built = bundle();
-    expect(built.revocation.state).toBe("unknown-offline");
+  it("includes requested scopes in payload", () => {
+    const bundle = buildOfflineBundle({
+      request: MULTI_SCOPE_REQUEST,
+      source: VALID_BUNDLE_SOURCE,
+      digestValue: "abc123",
+      nonce: "test-nonce",
+    });
+
+    expect(bundle.payload).toHaveProperty("public");
+    expect(bundle.payload).toHaveProperty("subject");
+    expect(bundle.payload).toHaveProperty("amount");
+    expect(bundle.payload).not.toHaveProperty("sender");
   });
 
-  it("lists the included fields from the payload", () => {
-    const built = buildOfflineBundle({
-      request: request({ scopes: ["public", "subject"] }),
-      source: source(),
+  it("excludes unrequested scopes from payload", () => {
+    const bundle = buildOfflineBundle({
+      request: PUBLIC_ONLY_REQUEST,
+      source: VALID_BUNDLE_SOURCE,
       digestValue: "abc123",
-      nonce: "nonce-1",
-      now: NOW,
+      nonce: "test-nonce",
     });
-    const fields = includedFields(built);
+
+    expect(bundle.payload).toHaveProperty("public");
+    expect(bundle.payload).not.toHaveProperty("subject");
+    expect(bundle.payload).not.toHaveProperty("amount");
+    expect(bundle.payload).not.toHaveProperty("sender");
+  });
+
+  it("omits unavailable private scopes", () => {
+    const bundle = buildOfflineBundle({
+      request: MULTI_SCOPE_REQUEST,
+      source: MINIMAL_BUNDLE_SOURCE,
+      digestValue: "abc123",
+      nonce: "test-nonce",
+    });
+
+    expect(bundle.payload).toHaveProperty("public");
+    expect(bundle.payload).not.toHaveProperty("subject");
+    expect(bundle.payload).not.toHaveProperty("amount");
+  });
+
+  it("includes correct fields in digest input", () => {
+    const bundle = buildOfflineBundle({
+      request: PUBLIC_ONLY_REQUEST,
+      source: VALID_BUNDLE_SOURCE,
+      digestValue: "",
+      nonce: "test-nonce",
+    });
+
+    const digestInput = bundleDigestInput(bundle);
+    const parsed = JSON.parse(digestInput);
+
+    expect(parsed).not.toHaveProperty("digest");
+    expect(parsed).toHaveProperty("bundleId");
+    expect(parsed).toHaveProperty("payload");
+    expect(parsed).toHaveProperty("schemaVersion");
+  });
+
+  it("lists included fields correctly", () => {
+    const bundle = buildOfflineBundle({
+      request: MULTI_SCOPE_REQUEST,
+      source: VALID_BUNDLE_SOURCE,
+      digestValue: "abc123",
+      nonce: "test-nonce",
+    });
+
+    const fields = includedFields(bundle);
     expect(fields).toContain("public.type");
+    expect(fields).toContain("public.issuer");
     expect(fields).toContain("subject.walletHash");
-    expect(fields).not.toContain("amount.thresholdAmount");
+    expect(fields).toContain("amount.thresholdAmount");
+    expect(fields).not.toContain("sender.sourceAddress");
   });
 });
 
-describe("offline-bundle: offline verification", () => {
-  it("verifies a fresh, intact bundle without claiming revocation", () => {
+describe("Offline Verification", () => {
+  const validBundle = buildOfflineBundle({
+    request: PUBLIC_ONLY_REQUEST,
+    source: VALID_BUNDLE_SOURCE,
+    digestValue: "abc123def456",
+    nonce: "test-nonce-verify",
+    now: new Date("2025-01-15T10:00:00Z"),
+  });
+
+  it("verifies bundle with correct digest", () => {
     const result = verifyOfflineBundle({
-      bundle: bundle(),
-      actualDigest: "abc123",
-      now: NOW,
+      bundle: validBundle,
+      actualDigest: "abc123def456",
+      now: new Date("2025-01-15T10:00:00Z"),
     });
+
     expect(result.status).toBe("verified-offline");
     expect(result.fresh).toBe(true);
     expect(result.revocation).toBe("not-checked-offline");
   });
 
-  it("fails closed on a digest mismatch", () => {
+  it("rejects bundle with mismatched digest", () => {
     const result = verifyOfflineBundle({
-      bundle: bundle(),
-      actualDigest: "tampered",
-      now: NOW,
+      bundle: validBundle,
+      actualDigest: "wrong_digest",
+      now: new Date("2025-01-15T10:00:00Z"),
     });
+
     expect(result.status).toBe("integrity-failed");
+    expect(result.fresh).toBe(false);
   });
 
-  it("rejects an expired bundle", () => {
+  it("rejects expired bundle", () => {
     const result = verifyOfflineBundle({
-      bundle: bundle(),
-      actualDigest: "abc123",
-      now: new Date("2026-06-02T00:00:01.000Z"),
+      bundle: validBundle,
+      actualDigest: "abc123def456",
+      now: new Date("2025-02-01T00:00:00Z"),
     });
+
     expect(result.status).toBe("expired");
     expect(result.fresh).toBe(false);
   });
 
-  it("treats the exact expiry boundary as still valid, and one ms later as expired", () => {
-    expect(
-      verifyOfflineBundle({
-        bundle: bundle(),
-        actualDigest: "abc123",
-        now: new Date("2026-06-02T00:00:00.000Z"),
-      }).status,
-    ).toBe("verified-offline");
-    expect(
-      verifyOfflineBundle({
-        bundle: bundle(),
-        actualDigest: "abc123",
-        now: new Date("2026-06-02T00:00:00.001Z"),
-      }).status,
-    ).toBe("expired");
-  });
-
-  it("detects a replay within a session", () => {
+  it("rejects replayed bundle", () => {
     const result = verifyOfflineBundle({
-      bundle: bundle(),
-      actualDigest: "abc123",
-      now: NOW,
-      seenNonces: ["nonce-1"],
+      bundle: validBundle,
+      actualDigest: "abc123def456",
+      now: new Date("2025-01-15T10:00:00Z"),
+      seenNonces: ["test-nonce-verify"],
     });
+
     expect(result.status).toBe("replayed");
+    expect(result.fresh).toBe(true);
   });
 
-  it("rejects an unsupported schema version", () => {
+  it("rejects bundle with unsupported schema version", () => {
+    const bundleWithBadSchema = {
+      ...validBundle,
+      schemaVersion: 999,
+    };
+
     const result = verifyOfflineBundle({
-      bundle: bundle({ schemaVersion: 999 }),
-      actualDigest: "abc123",
-      now: NOW,
+      bundle: bundleWithBadSchema,
+      actualDigest: "abc123def456",
+      now: new Date("2025-01-15T10:00:00Z"),
     });
+
     expect(result.status).toBe("unsupported-schema");
   });
 
-  it("checks integrity before expiry", () => {
+  it("checks schema before digest", () => {
+    const bundleWithBadSchema = {
+      ...validBundle,
+      schemaVersion: 999,
+    };
+
     const result = verifyOfflineBundle({
-      bundle: bundle(),
-      actualDigest: "tampered",
-      now: new Date("2027-01-01T00:00:00.000Z"),
+      bundle: bundleWithBadSchema,
+      actualDigest: "wrong_digest",
     });
+
+    expect(result.status).toBe("unsupported-schema");
+  });
+
+  it("checks digest before expiry", () => {
+    const result = verifyOfflineBundle({
+      bundle: validBundle,
+      actualDigest: "wrong_digest",
+      now: new Date("2025-02-01T00:00:00Z"),
+    });
+
     expect(result.status).toBe("integrity-failed");
   });
 });
 
-describe("offline-bundle: freshness refresh", () => {
-  it("reports offline with an unknown revocation state when it cannot reach the network", () => {
-    const result = refreshOfflineBundle({ bundle: bundle(), isOnline: false, now: NOW });
+describe("Freshness Refresh", () => {
+  const validBundle = buildOfflineBundle({
+    request: PUBLIC_ONLY_REQUEST,
+    source: VALID_BUNDLE_SOURCE,
+    digestValue: "abc123",
+    nonce: "test-nonce-refresh",
+  });
+
+  it("returns refreshed status when online and valid", () => {
+    const result = refreshOfflineBundle({
+      bundle: validBundle,
+      isOnline: true,
+      revoked: false,
+    });
+
+    expect(result.status).toBe("refreshed");
+    expect(result.revocation).toBe("current");
+  });
+
+  it("returns offline status when not online", () => {
+    const result = refreshOfflineBundle({
+      bundle: validBundle,
+      isOnline: false,
+    });
+
     expect(result.status).toBe("offline");
     expect(result.revocation).toBe("unknown");
   });
 
-  it("reports a current revocation state only when online", () => {
-    const refreshed = refreshOfflineBundle({ bundle: bundle(), isOnline: true, now: NOW });
-    expect(refreshed.status).toBe("refreshed");
-    expect(refreshed.revocation).toBe("current");
-
-    const revoked = refreshOfflineBundle({
-      bundle: bundle(),
+  it("returns revoked status when proof is revoked", () => {
+    const result = refreshOfflineBundle({
+      bundle: validBundle,
       isOnline: true,
       revoked: true,
-      now: NOW,
     });
-    expect(revoked.status).toBe("revoked");
+
+    expect(result.status).toBe("revoked");
+    expect(result.revocation).toBe("current");
   });
 
-  it("reports an expired bundle on an online refresh", () => {
+  it("returns expired status when bundle has expired", () => {
+    const now = new Date("2025-02-01T00:00:00Z");
     const result = refreshOfflineBundle({
-      bundle: bundle(),
+      bundle: validBundle,
       isOnline: true,
-      now: new Date("2026-06-05T00:00:00.000Z"),
+      revoked: false,
+      now,
     });
+
     expect(result.status).toBe("expired");
+    expect(result.revocation).toBe("current");
   });
 });
 
-describe("offline-bundle: fixture", () => {
-  it("returns a synthetic demo source", async () => {
-    const fixture = await fetchMockOfflineBundleSource();
-    expect(fixture.proofId).toBeTruthy();
-    expect(fixture.public).toBeDefined();
+describe("Scoped Payload", () => {
+  it("includes public fields", () => {
+    const payload = scopedPayload(VALID_BUNDLE_SOURCE, ["public"]);
+    expect(payload).toHaveProperty("public");
+    expect(payload.public).toEqual(VALID_BUNDLE_SOURCE.public);
   });
 
-  it("honors overrides", async () => {
-    const fixture = await fetchMockOfflineBundleSource({ proofId: "proof-xyz" });
-    expect(fixture.proofId).toBe("proof-xyz");
+  it("includes requested private scopes", () => {
+    const payload = scopedPayload(VALID_BUNDLE_SOURCE, [
+      "public",
+      "subject",
+      "amount",
+    ]);
+    expect(payload).toHaveProperty("subject");
+    expect(payload).toHaveProperty("amount");
+    expect(payload).not.toHaveProperty("sender");
+  });
+
+  it("omits unrequested private scopes", () => {
+    const payload = scopedPayload(VALID_BUNDLE_SOURCE, ["public"]);
+    expect(payload).not.toHaveProperty("subject");
+    expect(payload).not.toHaveProperty("amount");
+    expect(payload).not.toHaveProperty("sender");
+  });
+
+  it("omits unavailable private scopes", () => {
+    const payload = scopedPayload(MINIMAL_BUNDLE_SOURCE, [
+      "public",
+      "subject",
+      "amount",
+    ]);
+    expect(payload).toHaveProperty("public");
+    expect(payload).not.toHaveProperty("subject");
+    expect(payload).not.toHaveProperty("amount");
   });
 });

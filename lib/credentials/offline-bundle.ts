@@ -23,6 +23,22 @@
  *
  * Fail-closed: an unsupported schema version, a digest mismatch, or a replayed
  * bundle all resolve to a non-verified status rather than a pass.
+ *
+ * Live bundle source API (#311):
+ * =============================
+ *
+ * The bundle source (public and private fields) is fetched from a live API
+ * endpoint: GET /proofs/{proofId}/offline-bundle-source. The endpoint returns
+ * signed metadata with:
+ *
+ *   - Scope-based fields (public, subject, amount, sender)
+ *   - Signature proof of authorization and integrity
+ *   - Checkpoint freshness (timestamp when evidence was captured)
+ *
+ * The bundle source is fetched server-side during page load, validated for
+ * authorization and freshness, then passed to the client workflow. The client
+ * never calls the API directly — it works entirely offline after receiving
+ * the source.
  */
 
 export const OFFLINE_BUNDLE_SCHEMA_VERSION = 1;
@@ -33,6 +49,91 @@ export const OFFLINE_BUNDLE_MAX_VALIDITY_HOURS = 72;
 export const OFFLINE_DISCLOSURE_SCOPES = ["public", "subject", "amount", "sender"] as const;
 
 export type OfflineDisclosureScope = (typeof OFFLINE_DISCLOSURE_SCOPES)[number];
+
+/**
+ * Authorization and capability policy for offline bundle operations.
+ */
+export type OfflineBundlePolicy = {
+  /** Whether the user/token is authorized to create offline bundles. */
+  canCreateBundles: boolean;
+  /** Maximum validity window allowed (in hours). Defaults to OFFLINE_BUNDLE_MAX_VALIDITY_HOURS. */
+  maxValidityHours?: number;
+  /** Required scopes for authorization. Empty array means all scopes are allowed. */
+  requiredScopes?: OfflineDisclosureScope[];
+  /** Proof-specific permissions (if null, inherits policy; if defined, overrides). */
+  proofPermissions?: Record<string, { allowed: boolean; reason?: string }>;
+};
+
+/** Default authorization policy: bundles are allowed with standard constraints. */
+export const DEFAULT_OFFLINE_BUNDLE_POLICY: OfflineBundlePolicy = {
+  canCreateBundles: true,
+  maxValidityHours: OFFLINE_BUNDLE_MAX_VALIDITY_HOURS,
+  requiredScopes: [],
+};
+
+/** Unauthorized policy: bundles are not allowed. */
+export const UNAUTHORIZED_OFFLINE_BUNDLE_POLICY: OfflineBundlePolicy = {
+  canCreateBundles: false,
+  maxValidityHours: 0,
+};
+
+/** Checks if a proof is authorized for offline bundle creation under the given policy. */
+export function isProofAuthorizedForOfflineBundle(
+  proofId: string,
+  policy: OfflineBundlePolicy,
+): { authorized: boolean; reason?: string } {
+  if (!policy.canCreateBundles) {
+    return {
+      authorized: false,
+      reason: "Offline bundle creation is not enabled for your account.",
+    };
+  }
+
+  if (policy.proofPermissions?.[proofId]) {
+    const permission = policy.proofPermissions[proofId];
+    return {
+      authorized: permission.allowed,
+      reason: permission.reason,
+    };
+  }
+
+  return { authorized: true };
+}
+
+/** Checks if requested scopes are allowed under the given policy. */
+export function areScopesAuthorizedForOfflineBundle(
+  scopes: readonly OfflineDisclosureScope[],
+  policy: OfflineBundlePolicy,
+): { authorized: boolean; reason?: string } {
+  if (policy.requiredScopes && policy.requiredScopes.length > 0) {
+    const disallowed = scopes.filter((scope) => !policy.requiredScopes!.includes(scope));
+    if (disallowed.length > 0) {
+      return {
+        authorized: false,
+        reason: `Offline bundle scopes ${disallowed.join(", ")} are not authorized for your account.`,
+      };
+    }
+  }
+
+  return { authorized: true };
+}
+
+/** Checks if requested validity hours are allowed under the given policy. */
+export function isValidityAuthorizedForOfflineBundle(
+  requestedHours: number,
+  policy: OfflineBundlePolicy,
+): { authorized: boolean; reason?: string } {
+  const maxHours = policy.maxValidityHours ?? OFFLINE_BUNDLE_MAX_VALIDITY_HOURS;
+
+  if (requestedHours > maxHours) {
+    return {
+      authorized: false,
+      reason: `Requested validity window (${requestedHours}h) exceeds maximum allowed (${maxHours}h).`,
+    };
+  }
+
+  return { authorized: true };
+}
 
 export function isOfflineDisclosureScope(value: unknown): value is OfflineDisclosureScope {
   return (
@@ -55,6 +156,27 @@ export type OfflineBundleRequest = {
   reason?: string;
 };
 
+/** Metadata signature proving authorization and integrity of bundle source. */
+export type BundleSourceSignature = {
+  /** The signature algorithm used (e.g., "EdDSA", "ES256"). */
+  algorithm: string;
+  /** The signature value (hex-encoded or base64). */
+  value: string;
+  /** When the signature was created (ISO 8601). */
+  signedAt: string;
+  /** Public key or key ID used for verification. */
+  signer: string;
+};
+
+/** Checkpoint proof that evidence was captured within acceptable bounds. */
+export type BundleSourceCheckpoint = {
+  /** When the proof evidence was captured (ISO 8601). */
+  capturedAt: string;
+  /** Maximum age of evidence before it's considered stale (in seconds). */
+  maxAgeSeconds: number;
+};
+
+/** The bundle source with signed metadata and freshness proof. */
 export type OfflineBundleSource = {
   proofId: string;
   network: string;
@@ -63,6 +185,11 @@ export type OfflineBundleSource = {
   public: Record<string, unknown>;
   /** Optional private disclosures, keyed by scope. */
   private?: Partial<Record<"subject" | "amount" | "sender", Record<string, unknown>>>;
+  /** Proof that this source is authorized and fresh (required for live API). */
+  metadata?: {
+    signature: BundleSourceSignature;
+    checkpoint: BundleSourceCheckpoint;
+  };
 };
 
 export type BundleValidationSeverity = "error" | "warning";
@@ -73,10 +200,137 @@ export type BundleValidationIssue = {
   severity: BundleValidationSeverity;
 };
 
-export function validateOfflineBundleRequest(
-  request: OfflineBundleRequest,
+/** Validates that bundle source metadata is fresh and within acceptable bounds. */
+export function validateBundleSourceCheckpoint(
+  checkpoint: BundleSourceCheckpoint,
+  now?: Date,
 ): BundleValidationIssue[] {
   const issues: BundleValidationIssue[] = [];
+  const currentTime = now ?? new Date();
+
+  if (!checkpoint.capturedAt) {
+    issues.push({
+      field: "checkpoint.capturedAt",
+      message: "Checkpoint capture time is required.",
+      severity: "error",
+    });
+    return issues;
+  }
+
+  try {
+    const capturedTime = new Date(checkpoint.capturedAt);
+    if (isNaN(capturedTime.getTime())) {
+      throw new Error("Invalid date");
+    }
+
+    const ageSeconds = (currentTime.getTime() - capturedTime.getTime()) / 1000;
+
+    if (ageSeconds < 0) {
+      issues.push({
+        field: "checkpoint.capturedAt",
+        message: "Checkpoint capture time is in the future.",
+        severity: "error",
+      });
+    } else if (ageSeconds > checkpoint.maxAgeSeconds) {
+      issues.push({
+        field: "checkpoint",
+        message: `Evidence is stale: captured ${Math.round(ageSeconds)} seconds ago (max: ${checkpoint.maxAgeSeconds}s).`,
+        severity: "error",
+      });
+    }
+  } catch {
+    issues.push({
+      field: "checkpoint.capturedAt",
+      message: "Invalid checkpoint capture time format.",
+      severity: "error",
+    });
+  }
+
+  return issues;
+}
+
+/** Validates that bundle source signature is properly formed. */
+export function validateBundleSourceSignature(
+  signature: BundleSourceSignature,
+): BundleValidationIssue[] {
+  const issues: BundleValidationIssue[] = [];
+
+  if (!signature.algorithm || signature.algorithm.trim().length === 0) {
+    issues.push({
+      field: "signature.algorithm",
+      message: "Signature algorithm is required.",
+      severity: "error",
+    });
+  }
+
+  if (!signature.value || signature.value.trim().length === 0) {
+    issues.push({
+      field: "signature.value",
+      message: "Signature value is required.",
+      severity: "error",
+    });
+  }
+
+  if (!signature.signedAt) {
+    issues.push({
+      field: "signature.signedAt",
+      message: "Signature timestamp is required.",
+      severity: "error",
+    });
+  } else {
+    try {
+      const signedTime = new Date(signature.signedAt);
+      if (isNaN(signedTime.getTime())) {
+        throw new Error("Invalid date");
+      }
+    } catch {
+      issues.push({
+        field: "signature.signedAt",
+        message: "Invalid signature timestamp format.",
+        severity: "error",
+      });
+    }
+  }
+
+  if (!signature.signer || signature.signer.trim().length === 0) {
+    issues.push({
+      field: "signature.signer",
+      message: "Signer identifier is required.",
+      severity: "error",
+    });
+  }
+
+  return issues;
+}
+
+/** Validates complete bundle source metadata for production readiness. */
+export function validateBundleSourceMetadata(
+  metadata: OfflineBundleSource["metadata"],
+  now?: Date,
+): BundleValidationIssue[] {
+  const issues: BundleValidationIssue[] = [];
+
+  if (!metadata) {
+    issues.push({
+      field: "metadata",
+      message: "Bundle source metadata is required for production use.",
+      severity: "error",
+    });
+    return issues;
+  }
+
+  issues.push(...validateBundleSourceSignature(metadata.signature));
+  issues.push(...validateBundleSourceCheckpoint(metadata.checkpoint, now));
+
+  return issues;
+}
+
+export function validateOfflineBundleRequest(
+  request: OfflineBundleRequest,
+  policy?: OfflineBundlePolicy,
+): BundleValidationIssue[] {
+  const issues: BundleValidationIssue[] = [];
+  const effectivePolicy = policy ?? DEFAULT_OFFLINE_BUNDLE_POLICY;
 
   if (!request.proofId || request.proofId.trim().length === 0) {
     issues.push({
@@ -84,6 +338,21 @@ export function validateOfflineBundleRequest(
       message: "A proof ID is required to prepare a bundle.",
       severity: "error",
     });
+  } else if (!effectivePolicy.canCreateBundles) {
+    issues.push({
+      field: "proofId",
+      message: "Offline bundle creation is not authorized for your account.",
+      severity: "error",
+    });
+  } else {
+    const proofAuth = isProofAuthorizedForOfflineBundle(request.proofId, effectivePolicy);
+    if (!proofAuth.authorized) {
+      issues.push({
+        field: "proofId",
+        message: proofAuth.reason ?? "This proof is not authorized for offline bundles.",
+        severity: "error",
+      });
+    }
   }
 
   if (
@@ -95,10 +364,10 @@ export function validateOfflineBundleRequest(
       message: `Bundles must be valid for at least ${OFFLINE_BUNDLE_MIN_VALIDITY_HOURS} hour(s).`,
       severity: "error",
     });
-  } else if (request.requestedValidityHours > OFFLINE_BUNDLE_MAX_VALIDITY_HOURS) {
+  } else if (request.requestedValidityHours > (effectivePolicy.maxValidityHours ?? OFFLINE_BUNDLE_MAX_VALIDITY_HOURS)) {
     issues.push({
       field: "requestedValidityHours",
-      message: `Bundles may be valid for at most ${OFFLINE_BUNDLE_MAX_VALIDITY_HOURS} hours.`,
+      message: `Bundles may be valid for at most ${effectivePolicy.maxValidityHours ?? OFFLINE_BUNDLE_MAX_VALIDITY_HOURS} hours.`,
       severity: "error",
     });
   }
@@ -119,6 +388,15 @@ export function validateOfflineBundleRequest(
         severity: "error",
       });
     }
+  }
+
+  const scopeAuth = areScopesAuthorizedForOfflineBundle(request.scopes, effectivePolicy);
+  if (!scopeAuth.authorized) {
+    issues.push({
+      field: "scopes",
+      message: scopeAuth.reason ?? "Some requested scopes are not authorized.",
+      severity: "error",
+    });
   }
 
   return issues;
@@ -391,4 +669,48 @@ export async function fetchMockOfflineBundleSource(
     },
     ...overrides,
   };
+}
+
+/** Fetches live offline bundle source from the API with authorization and validation. */
+export async function fetchOfflineBundleSource(
+  proofId: string,
+  token?: string,
+  signal?: AbortSignal,
+): Promise<OfflineBundleSource> {
+  // Dynamic import to avoid circular dependencies with API client in SSR context
+  const { apiClient } = await import("@/lib/api/client");
+  const { bearer } = await import("@/lib/api/client");
+
+  try {
+    const headers = token ? bearer(token) : {};
+
+    const source = await apiClient<OfflineBundleSource>({
+      path: `/proofs/${encodeURIComponent(proofId)}/offline-bundle-source`,
+      method: "GET",
+      headers,
+      signal,
+    });
+
+    // Validate that live API response includes required metadata
+    const metadataIssues = validateBundleSourceMetadata(source.metadata);
+    const errors = metadataIssues.filter((issue) => issue.severity === "error");
+
+    if (errors.length > 0) {
+      const errorMessages = errors.map((e) => `${e.field}: ${e.message}`).join("; ");
+      throw new Error(`Bundle source validation failed: ${errorMessages}`);
+    }
+
+    return source;
+  } catch (error) {
+    // Re-throw API errors and validation errors as-is
+    if (error instanceof Error && error.message.includes("validation failed")) {
+      throw error;
+    }
+    // Wrap other errors in a descriptive message
+    throw new Error(
+      `Failed to fetch offline bundle source for proof "${proofId}": ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
 }
