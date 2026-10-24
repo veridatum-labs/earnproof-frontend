@@ -10,9 +10,10 @@
   "scripts": {
     "prepare": "npm run hooks:install",
     "hooks:install": "node scripts/install-git-hooks.js",
-    "dev": "node api.js && next dev",
-    "build": "node api.js && next build",
-    "start": "node api.js && next start",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "security:malware-scan": "node scripts/security/scan-malware.mjs",
     "lint": "eslint",
     "test": "jest",
     "generate:api-types": "node scripts/generate-api-types/index.js",
