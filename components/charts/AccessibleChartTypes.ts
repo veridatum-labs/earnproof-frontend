@@ -9,6 +9,10 @@
 import type {
   CapacityTrendPoint,
   CapacityTrendData,
+  CapacityForecast,
+  CapacityForecastData,
+  UsageResource,
+  RegistryType,
 } from "@/lib/api/organization-usage";
 
 /** Redundant cue for a data point: shape + text + color. */

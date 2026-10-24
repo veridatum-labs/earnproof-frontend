@@ -4,6 +4,7 @@ import { formatDate } from "@/lib/i18n";
 import type {
   BarChartProps,
   ThresholdCue,
+  LegendEntry,
   PointCue,
 } from "./AccessibleChartTypes";
 
@@ -18,6 +19,7 @@ export function BarChart({
   data,
   thresholds,
   legend,
+  onBarSelect,
 }: BarChartProps) {
   if (!data.points || data.points.length === 0) {
     return (
@@ -48,6 +50,13 @@ export function BarChart({
   // Compute bar width based on number of points, with min spacing
   const barWidth = Math.max(20, plotWidth / (points.length * 1.5));
   const barSpacing = (plotWidth - points.length * barWidth) / (points.length + 1);
+
+  // X timestamps for scaling
+  const timestamps = points.map((p) => new Date(p.timestamp).getTime());
+  const minTime = Math.min(...timestamps);
+  const maxTime = Math.max(...timestamps);
+  const timeRange = maxTime - minTime || 1;
+  const xScale = plotWidth / timeRange;
 
   // Build bar data with cues
   const barData: { x: number; y: number; width: number; height: number; cue: PointCue }[] = [];
@@ -92,6 +101,7 @@ export function BarChart({
   if (thresholds) {
     thresholds.forEach((t) => {
       const pos = t.position == null ? 0 : Math.min(Math.max(t.position, 0), 1);
+      const pixelY = padding.top + plotHeight - pos * plotHeight;
       thresholdCues.push({
         position: pos,
         label: t.label,
@@ -186,6 +196,8 @@ export function BarChart({
 
           {/* Bars with redundant cues (shape + label + color as secondary) */}
           {barData.map((bar, bi) => {
+            const point = points[bi];
+            const pct = point.percentageUsed ?? 0;
             const cue = bar.cue;
 
             return (
