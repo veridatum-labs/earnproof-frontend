@@ -28,6 +28,13 @@ export const scannedRoutes: ScannedRoute[] = [
   { name: "terms", path: "/terms", description: "Legal / terms of service" },
   { name: "status", path: "/status", description: "System status page" },
   {
+    name: "operational-metrics",
+    path: "/operational-metrics",
+    description:
+      "Page displaying accessible operational metric charts (line, bar, thresholds)",
+  },
+];
+  {
     name: "proofs",
     path: "/proofs",
     description:

@@ -1,0 +1,21 @@
+{
+  "default_branch": "develop",
+  "branches": [
+    "develop",
+    "feat/add-accessible-chart-primitives-for-operational-metrics",
+    "main",
+    "origin"
+  ],
+  "parent": {
+    "develop": null,
+    "feat/add-accessible-chart-primitives-for-operational-metrics": "develop",
+    "main": "develop",
+    "origin": "develop"
+  },
+  "order": [
+    "develop",
+    "feat/add-accessible-chart-primitives-for-operational-metrics",
+    "main",
+    "origin"
+  ]
+}
