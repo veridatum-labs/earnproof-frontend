@@ -4,13 +4,19 @@
  * A browser error message is the single most likely place for user data to
  * escape: it routinely embeds the value that caused the failure. In this app
  * that value can be a Stellar address, a pasted verifiable credential, a
- * proof ID, a bearer token, or an API URL with a query string.
+ * proof ID, a bearer token, an API URL with a query string, or a URL from
+ * browser history.
  *
  * `redactMessage` therefore does not try to decide whether a message is
  * safe. It rewrites every recognizable *shape* of sensitive data into a
  * placeholder token, drops anything URL-like wholesale, and caps the result.
  * What survives is enough to tell two different failures apart ("Failed to
  * fetch", "Unexpected token < in JSON") and nothing more.
+ *
+ * Query strings and URL fragments are particularly dangerous: a URL that
+ * entered the browser history or referrer header may contain tokens,
+ * credentials, or other sensitive data. This redaction ensures they are
+ * never exposed in error messages.
  */
 
 /** Hard cap on the redacted message. Long enough to distinguish failures. */
@@ -38,8 +44,10 @@ const REDACTION_RULES: ReadonlyArray<{ pattern: RegExp; token: string }> = [
   // containing a bracket is not swallowed. The match is greedy so a nested
   // payload is consumed whole rather than leaving a stray brace behind.
   { pattern: /[{[]\s*["'][\s\S]*[}\]]/g, token: "<object>" },
-  // Any URL, with or without a query string. Query strings are how proof
-  // IDs travel, so URLs are never partially preserved.
+  // Any URL with query string or fragment. Query strings are how tokens,
+  // credentials, and filters can leak, so URLs are never partially preserved.
+  // This pattern catches: http://example.com, https://example.com/path?query=value#fragment
+  // and similar, including case-insensitive protocols.
   { pattern: /\b[a-z][a-z0-9+.-]*:\/\/\S+/gi, token: "<url>" },
   // Stellar public keys (G...), muxed accounts (M...), secret seeds (S...)
   // and contract ids (C...): base32, 56 characters.

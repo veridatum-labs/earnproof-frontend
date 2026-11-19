@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAuthSession } from "@/lib/auth";
 import { exportSecurityPosture } from "@/lib/api/security-posture";
+import { createBlobURL, revokeBlobURL } from "@/lib/blob-url-manager";
 
 interface SecurityExportButtonProps {
   organizationId: string;
@@ -10,6 +11,7 @@ interface SecurityExportButtonProps {
 
 /**
  * Button to export security posture as JSON.
+ * Uses centralized blob URL lifecycle management (#372).
  */
 export function SecurityExportButton({ organizationId }: SecurityExportButtonProps) {
   const { token } = useAuthSession();
@@ -32,12 +34,24 @@ export function SecurityExportButton({ organizationId }: SecurityExportButtonPro
       const blob = new Blob([JSON.stringify(data, null, 2)], {
         type: "application/json",
       });
-      const url = URL.createObjectURL(blob);
+      const { url } = createBlobURL(blob, {
+        purposeLabel: "security-posture-export",
+        scopeId: organizationId,
+      });
+
       const link = document.createElement("a");
       link.href = url;
       link.download = `security-posture-${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(link);
       link.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+
+      try {
+        revokeBlobURL(url);
+      } catch (err) {
+        // Log but don't throw; download already completed
+        console.error("Failed to revoke security export URL:", err);
+      }
     } catch (err) {
       console.error("Export failed:", err);
     } finally {

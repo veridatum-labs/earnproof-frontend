@@ -1,3 +1,5 @@
+import { createBlobURL, revokeBlobURL } from "@/lib/blob-url-manager";
+
 export const CREDENTIAL_EXPORT_FILENAME = "earnproof-credential.json";
 export const VERIFICATION_LINK_EXPORT_FILENAME = "earnproof-verification-link.txt";
 export const AUDIT_LOG_EXPORT_FILENAME = "earnproof-audit-log.json";
@@ -352,7 +354,10 @@ export function downloadTextFile(plan: ArtifactExportPlan): void {
     throw new Error("Refusing to download an unsafe filename.");
   }
   const blob = new Blob([plan.body], { type: plan.mimeType });
-  const href = URL.createObjectURL(blob);
+  const { url: href } = createBlobURL(blob, {
+    purposeLabel: `credential-export-${plan.filename}`,
+  });
+
   const anchor = document.createElement("a");
   anchor.href = href;
   anchor.download = plan.filename;
@@ -360,5 +365,11 @@ export function downloadTextFile(plan: ArtifactExportPlan): void {
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
-  URL.revokeObjectURL(href);
+
+  try {
+    revokeBlobURL(href);
+  } catch (err) {
+    // Log but don't throw; download already completed
+    console.error("Failed to revoke export URL:", err);
+  }
 }

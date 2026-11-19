@@ -9,8 +9,10 @@
  * - Integrity metadata (optional digest support)
  * - Clear disclosure warnings
  * - Download and clipboard integration
+ * - Centralized object URL lifecycle management (#372)
  */
 
+import { createBlobURL, revokeBlobURL } from "@/lib/blob-url-manager";
 import {
   GovernanceApprovalIntentConfirmation,
   PUBLIC_GOVERNANCE_APPROVAL_FIELDS,
@@ -160,7 +162,10 @@ export function downloadApprovalReceipt(plan: ApprovalReceiptExportPlan): void {
   }
 
   const blob = new Blob([plan.body], { type: plan.mimeType });
-  const href = URL.createObjectURL(blob);
+  const { url: href } = createBlobURL(blob, {
+    purposeLabel: `approval-receipt-export-${plan.filename}`,
+  });
+
   const anchor = document.createElement("a");
   anchor.href = href;
   anchor.download = plan.filename;
@@ -171,8 +176,13 @@ export function downloadApprovalReceipt(plan: ApprovalReceiptExportPlan): void {
   anchor.click();
   anchor.remove();
 
-  // Clean up blob URL
-  URL.revokeObjectURL(href);
+  try {
+    // Clean up blob URL
+    revokeBlobURL(href);
+  } catch (err) {
+    // Log but don't throw; download already completed
+    console.error("Failed to revoke approval receipt URL:", err);
+  }
 }
 
 /**
