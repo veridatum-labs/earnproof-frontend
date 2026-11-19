@@ -198,6 +198,7 @@ export interface Organization {
   slug: string;
   website?: string | null;
   status: "ACTIVE" | "PENDING" | "SUSPENDED" | "REVOKED" | "DELETED";
+  createdAt?: string | null;
 }
 
 export interface ApiKey {

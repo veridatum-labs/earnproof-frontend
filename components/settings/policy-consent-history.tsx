@@ -11,6 +11,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { formatDate } from "@/lib/i18n";
+import { ExternalLink } from "@/components/common/external-link";
 import {
   fetchMockPolicyConsentState,
   hasAcceptedCurrentVersion,
@@ -84,14 +85,12 @@ export function PolicyConsentHistory({ state, onStateChange }: PolicyConsentHist
                 </p>
               ) : null}
               <div className="flex items-center gap-3">
-                <a
+                <ExternalLink
                   href={version.contentUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="text-xs font-medium underline underline-offset-2"
                 >
                   Review full policy text
-                </a>
+                </ExternalLink>
                 <button
                   type="button"
                   onClick={() => void handleAccept(version)}

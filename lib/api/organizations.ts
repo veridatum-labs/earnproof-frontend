@@ -264,3 +264,71 @@ export function getStatusTone(status: Organization["status"]): "success" | "warn
       return "accent";
   }
 }
+
+/**
+ * Validate and parse organization creation date
+ * Returns null if the date is unavailable or invalid
+ */
+export function parseCreatedAt(createdAt: string | null | undefined): Date | null {
+  if (!createdAt) {
+    return null;
+  }
+
+  try {
+    const date = new Date(createdAt);
+    // Validate that the date is a valid instant (not NaN, in reasonable range)
+    if (isNaN(date.getTime())) {
+      return null;
+    }
+    // Check that date is not in the future (reasonable sanity check)
+    if (date > new Date()) {
+      return null;
+    }
+    return date;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Format organization creation date with locale-aware formatting
+ * Returns user-friendly string or "Unavailable" if date cannot be parsed
+ */
+export function formatCreatedAt(
+  createdAt: string | null | undefined,
+  locale?: string
+): string {
+  const date = parseCreatedAt(createdAt);
+
+  if (!date) {
+    return "Unavailable";
+  }
+
+  try {
+    const formatter = new Intl.DateTimeFormat(locale || "en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+    return formatter.format(date);
+  } catch {
+    // Fallback for locale errors
+    return date.toLocaleString();
+  }
+}
+
+/**
+ * Format organization creation date for sorting/comparison
+ * Returns ISO string or empty string if unavailable for stable sorting
+ */
+export function getCreatedAtForSorting(createdAt: string | null | undefined): string {
+  const date = parseCreatedAt(createdAt);
+  if (!date) {
+    return ""; // Empty string sorts to end, allowing unavailable dates to remain at bottom
+  }
+  return date.toISOString();
+}

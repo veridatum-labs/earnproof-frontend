@@ -12,6 +12,19 @@ export const publicEnvSchema = z.object({
   NEXT_PUBLIC_HELP_URL: z.string().url().optional(),
   NEXT_PUBLIC_STELLAR_EXPLORER_URL: z.string().url().optional(),
   NEXT_PUBLIC_WEB_VITALS_ENDPOINT: z.string().url().optional(),
+  /**
+   * Comma-separated list of parent-origin URLs allowed to embed the
+   * verification widget (issue #368). Empty = widget not embeddable
+   * (only available standalone at /embed/...). Wildcard '*' = any origin
+   * (use only for fully-public deployments). Examples:
+   * - '' (default: not embeddable)
+   * - 'https://example.com,https://app.example.com'
+   * - '*' (any origin)
+   *
+   * When not set or empty, the widget still works at its public route but
+   * renders a "denied-embedding" state if accessed via iframe.
+   */
+  NEXT_PUBLIC_EMBED_ALLOWED_PARENT_ORIGINS: z.string().optional(),
 });
 
 export type PublicEnv = z.infer<typeof publicEnvSchema>;
@@ -83,6 +96,22 @@ export function originsAreRequired(env: EnvLike = process.env): boolean {
     profile === "production" ||
     env.EARNPROOF_REQUIRE_SECURITY_ORIGINS === "true"
   );
+}
+
+/**
+ * Parse the comma-separated list of allowed parent origins for the
+ * embedded verification widget. Returns an empty array if not configured
+ * (widget cannot be embedded). Trims whitespace and filters out empty entries.
+ */
+export function parseEmbedAllowedParentOrigins(env: EnvLike = process.env): string[] {
+  const raw = env.NEXT_PUBLIC_EMBED_ALLOWED_PARENT_ORIGINS?.trim();
+  if (!raw) {
+    return [];
+  }
+  return raw
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 }
 
 /**
