@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   createTrustedSourceSchema,
@@ -20,6 +20,10 @@ export function CreateTrustedSourceForm({
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [needsRefresh, setNeedsRefresh] = useState(false);
+  const lifetime = useRef<AbortController | null>(null);
+  const busy = useRef(false);
+  useEffect(() => { const controller = new AbortController(); lifetime.current = controller; return () => controller.abort(); }, [userId]);
 
   const {
     register,
@@ -29,36 +33,40 @@ export function CreateTrustedSourceForm({
   } = useForm<CreateTrustedSourceInput>();
 
   const onSubmit = useCallback(
-    (data: CreateTrustedSourceInput) => {
+    async (data: CreateTrustedSourceInput) => {
+      if (busy.current || needsRefresh) return;
+      busy.current = true;
       setIsSubmitting(true);
       setError(null);
 
+      let submitted = false;
       try {
         const validated = createTrustedSourceSchema.parse(data);
 
         // Issuer linkage must resolve against a real, currently-listed
         // issuer before the source is created (#135's own acceptance
-        // criterion), even though this store itself is client-local.
+        // criterion); the server also authorizes and validates the linkage.
         const issuer = issuers.find((i) => i.id === validated.issuerId);
         if (!issuer) {
           setError("Select a valid issuer to link this trusted source to.");
           return;
         }
 
-        const record = createTrustedSource(userId, validated);
+        const signal = lifetime.current!.signal;
+        submitted = true;
+        const record = await createTrustedSource(userId, validated, signal);
+        if (signal.aborted) return;
         onTrustedSourceCreated(record);
         reset();
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to create trusted source. Please check your input and try again.",
-        );
+      } catch {
+        setNeedsRefresh(submitted);
+        setError("Creation was not confirmed. Refresh the server list before retrying.");
       } finally {
+        busy.current = false;
         setIsSubmitting(false);
       }
     },
-    [userId, issuers, onTrustedSourceCreated, reset],
+    [userId, issuers, onTrustedSourceCreated, reset, needsRefresh],
   );
 
   return (
@@ -70,7 +78,7 @@ export function CreateTrustedSourceForm({
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 sm:grid-cols-2">
+      <form onSubmit={event => { void handleSubmit(onSubmit)(event); }} className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-1.5">
           <label htmlFor="trusted-source-name" className="text-xs font-semibold uppercase text-slate-400">
             Name
@@ -131,7 +139,7 @@ export function CreateTrustedSourceForm({
         <div className="sm:col-span-2">
           <button
             type="submit"
-            disabled={isSubmitting || issuers.length === 0}
+            disabled={isSubmitting || needsRefresh || issuers.length === 0}
             className="h-10 rounded-md bg-cyan-300 px-4 text-xs font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? "Adding..." : "Add trusted source"}

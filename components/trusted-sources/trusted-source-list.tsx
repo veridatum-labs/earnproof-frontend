@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 import {
   deleteTrustedSource,
   updateTrustedSource,
+  testTrustedSource,
+  getTrustedSourceHistory,
   type TrustedSourceRecord,
 } from "@/lib/trusted-sources/store";
 import { formatDate, formatMessage } from "@/lib/i18n";
@@ -29,9 +31,16 @@ export function TrustedSourceList({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editIssuerId, setEditIssuerId] = useState("");
+  const [editVersion, setEditVersion] = useState<number | null>(null);
+  const [pending, setPending] = useState(false);
+  const [needsRefresh, setNeedsRefresh] = useState(false);
+  const busy = useRef(false);
+  const lifetime = useRef<AbortController | null>(null);
+  useEffect(() => { const controller = new AbortController(); lifetime.current = controller; return () => controller.abort(); }, [userId]);
   const [confirmDelete, setConfirmDelete] = useState<{
     id: string;
     name: string;
+    version: number;
   } | null>(null);
 
   // Remembers which row's delete button triggered the confirmation dialog,
@@ -49,6 +58,7 @@ export function TrustedSourceList({
     setEditingId(record.id);
     setEditName(record.name);
     setEditIssuerId(record.issuerId);
+    setEditVersion(record.version);
     setError(null);
   };
 
@@ -56,21 +66,28 @@ export function TrustedSourceList({
     setEditingId(null);
   };
 
-  const saveEdit = (id: string) => {
+  const saveEdit = async (id: string) => {
+    if (busy.current || needsRefresh || editVersion === null) return;
+    busy.current = true; setPending(true);
     setError(null);
     try {
       if (!editIssuerId) {
         setError("An issuer must be selected.");
         return;
       }
-      const updated = updateTrustedSource(userId, id, {
+      const signal = lifetime.current!.signal;
+      const updated = await updateTrustedSource(userId, id, {
         name: editName,
         issuerId: editIssuerId,
-      });
+      }, editVersion, signal);
+      if (signal.aborted) return;
       onTrustedSourceUpdated(updated);
       setEditingId(null);
     } catch {
-      setError("Failed to update trusted source. Please try again.");
+      setNeedsRefresh(true);
+      setError("Update was not confirmed or the source changed. Refresh before retrying.");
+    } finally {
+      busy.current = false; setPending(false);
     }
   };
 
@@ -79,17 +96,24 @@ export function TrustedSourceList({
     trigger: HTMLButtonElement,
   ) => {
     deleteTriggerRef.current = trigger;
-    setConfirmDelete({ id: record.id, name: record.name });
+    setConfirmDelete({ id: record.id, name: record.name, version: record.version });
   };
 
-  const handleConfirmDelete = () => {
-    if (!confirmDelete) return;
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete || busy.current || needsRefresh) return;
+    busy.current = true; setPending(true);
     try {
-      deleteTrustedSource(userId, confirmDelete.id);
+      const source = trustedSources.find(item => item.id === confirmDelete.id);
+      if (!source) throw new Error("Refresh required");
+      const signal = lifetime.current!.signal;
+      await deleteTrustedSource(userId, confirmDelete.id, confirmDelete.version, signal);
+      if (signal.aborted) return;
       onTrustedSourceDeleted(confirmDelete.id);
     } catch {
-      setError("Failed to delete trusted source. Please try again.");
+      setNeedsRefresh(true);
+      setError("Disable was not confirmed. Refresh before retrying.");
     } finally {
+      busy.current = false; setPending(false);
       setConfirmDelete(null);
       deleteTriggerRef.current?.focus();
     }
@@ -120,7 +144,8 @@ export function TrustedSourceList({
 
   return (
     <>
-      <div className="grid gap-3">
+      <div className="grid gap-3" aria-busy={pending}>
+        {pending && <p role="status">Updating server source...</p>}
         {error && (
           <div className="rounded-md border border-rose-300/30 bg-rose-300/10 p-3">
             <p className="text-sm text-rose-200" role="alert">
@@ -167,6 +192,7 @@ export function TrustedSourceList({
               <div className="flex gap-2">
                 <button
                   onClick={() => saveEdit(record.id)}
+                  disabled={pending || needsRefresh}
                   className="h-8 rounded border border-emerald-300/30 px-3 text-xs font-medium text-emerald-200 hover:bg-emerald-300/10 transition"
                   type="button"
                 >
@@ -186,7 +212,7 @@ export function TrustedSourceList({
               key={record.id}
               className="grid gap-3 rounded-md border border-white/10 bg-slate-950 p-4 text-sm md:grid-cols-[2fr_1.5fr_1fr_auto] md:items-center md:gap-4"
             >
-              <div className="min-w-0 font-medium text-white">{record.name}</div>
+              <div className="min-w-0 font-medium text-white">{record.name} <span>{record.status}</span><SourceDiagnostics key={`${record.id}:${record.version}`} userId={userId} record={record} /></div>
               <div className="min-w-0 text-slate-300">{issuerName(record.issuerId)}</div>
               <div className="text-slate-400">
                 {formatDate(record.updatedAt)}
@@ -194,6 +220,7 @@ export function TrustedSourceList({
               <div className="flex gap-2">
                 <button
                   onClick={() => startEdit(record)}
+                  disabled={pending || needsRefresh || record.status !== "ACTIVE"}
                   className="h-8 rounded border border-cyan-300/30 px-3 text-xs font-medium text-cyan-200 hover:bg-cyan-300/10 transition"
                   type="button"
                 >
@@ -201,10 +228,11 @@ export function TrustedSourceList({
                 </button>
                 <button
                   onClick={(e) => handleDeleteClick(record, e.currentTarget)}
+                  disabled={pending || needsRefresh || record.status !== "ACTIVE"}
                   className="h-8 rounded border border-rose-300/30 px-3 text-xs font-medium text-rose-200 hover:bg-rose-300/10 transition"
                   type="button"
                 >
-                  Delete
+                  Disable
                 </button>
               </div>
             </div>
@@ -214,12 +242,12 @@ export function TrustedSourceList({
 
       {confirmDelete && (
         <ConfirmationDialog
-          title="Delete Trusted Source"
+          title="Disable Trusted Source"
           message={formatMessage(
-            'Are you sure you want to delete "{name}"? This action cannot be undone.',
+            'Disable "{name}"? It will no longer be eligible for trust decisions.',
             { name: confirmDelete.name },
           )}
-          confirmText="Delete"
+          confirmText="Disable"
           confirmVariant="danger"
           onConfirm={handleConfirmDelete}
           onCancel={handleCancelDelete}
@@ -227,4 +255,29 @@ export function TrustedSourceList({
       )}
     </>
   );
+}
+
+function SourceDiagnostics({ userId, record }: { userId: string; record: TrustedSourceRecord }) {
+  const [message, setMessage] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const busy = useRef(false);
+  const lifetime = useRef<AbortController | null>(null);
+  useEffect(() => { const controller = new AbortController(); lifetime.current = controller; return () => controller.abort(); }, []);
+  async function run(history: boolean) {
+    if (busy.current) return;
+    busy.current = true; setPending(true); setMessage(null);
+    const signal = lifetime.current!.signal;
+    try {
+      const message = history
+        ? (await getTrustedSourceHistory(userId, record.id, signal)).map(event => `${event.action} v${event.version} ${event.occurredAt}`).join("; ") || "No server history."
+        : (await testTrustedSource(userId, record, signal)).eligible ? "Server connection test passed." : "Server connection test failed; source is not eligible.";
+      if (!signal.aborted) setMessage(message);
+    } catch { if (!signal.aborted) setMessage("Server diagnostics unavailable. Refresh the source before retrying."); }
+    finally { busy.current = false; if (!signal.aborted) setPending(false); }
+  }
+  return <div className="grid gap-2 text-xs">
+    <button type="button" disabled={pending || record.status !== "ACTIVE"} onClick={() => void run(false)}>Test source</button>
+    <button type="button" disabled={pending} onClick={() => void run(true)}>View source history</button>
+    <p role="status">{pending ? "Loading server diagnostics..." : message}</p>
+  </div>;
 }

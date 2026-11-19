@@ -1,5 +1,7 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { CreateTrustedSourceForm } from "../create-trusted-source-form";
+import { createTrustedSource } from "@/lib/trusted-sources/store";
+jest.mock("@/lib/trusted-sources/store", () => ({ createTrustedSource: jest.fn(async (_userId: string, input: { name: string; issuerId: string }) => ({ ...input, id: "source-1", organizationId: "org-1", network: "testnet", status: "ACTIVE", version: 1, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-02T00:00:00.000Z" })) }));
 
 const USER_ID = "user-1";
 const ISSUERS = [
@@ -9,6 +11,21 @@ const ISSUERS = [
 
 beforeEach(() => {
   window.localStorage.clear();
+  jest.clearAllMocks();
+});
+
+it("blocks another creation after an ambiguous server failure until refresh remounts the form", async () => {
+  jest.mocked(createTrustedSource).mockRejectedValueOnce(new Error("Disconnected after send"));
+  const created = jest.fn();
+  render(<CreateTrustedSourceForm userId={USER_ID} issuers={ISSUERS} onTrustedSourceCreated={created} />);
+  fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Synthetic payroll" } });
+  fireEvent.change(screen.getByLabelText("Linked issuer"), { target: { value: "iss-1" } });
+  fireEvent.click(screen.getByRole("button", { name: "Add trusted source" }));
+  await screen.findByRole("alert");
+  expect(screen.getByRole("button", { name: "Add trusted source" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Add trusted source" }));
+  expect(createTrustedSource).toHaveBeenCalledTimes(1);
+  expect(created).not.toHaveBeenCalled();
 });
 
 describe("CreateTrustedSourceForm", () => {

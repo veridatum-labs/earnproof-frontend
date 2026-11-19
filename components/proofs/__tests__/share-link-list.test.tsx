@@ -5,13 +5,15 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ShareLinkList } from "../share-link-list";
 import type { ShareLinkWithStatus } from "@/lib/proof-sharing/store";
-import { recordAccessAttempt } from "@/lib/proof-sharing/access-history";
+import { getShareLinkAccessSummary } from "@/lib/proof-sharing/store";
+jest.mock("@/lib/proof-sharing/store", () => ({ getShareLinkAccessSummary: jest.fn() }));
+const emptySummary = { shareLinkId: "share-1", status: "ACTIVE" as const, totalAttempts: 0, acceptedCount: 0, expiredCount: 0, rejectedCount: 0, recent: [], flaggedAsSuspicious: false };
+beforeEach(() => { jest.clearAllMocks(); jest.mocked(getShareLinkAccessSummary).mockResolvedValue(emptySummary); });
 
 function link(overrides: Partial<ShareLinkWithStatus>): ShareLinkWithStatus {
   return {
     id: "share-1",
     proofId: "proof-1",
-    tokenHash: "hash",
     expiresInHours: 24,
     expiresAt: "2026-06-02T00:00:00.000Z",
     discloseAmount: false,
@@ -73,8 +75,10 @@ describe("ShareLinkList", () => {
   });
 
   it("never renders a raw token or its hash", () => {
-    render(<ShareLinkList links={[link({ tokenHash: "super-secret-hash-value" })]} onRevoke={jest.fn()} revokingId={null} />);
+    const record = { ...link({}), token: "super-secret-token-value", tokenHash: "super-secret-hash-value" };
+    render(<ShareLinkList links={[record]} onRevoke={jest.fn()} revokingId={null} />);
     expect(screen.queryByText("super-secret-hash-value")).not.toBeInTheDocument();
+    expect(screen.queryByText("super-secret-token-value")).not.toBeInTheDocument();
   });
 
   it("summarizes an empty disclosure policy as 'nothing extra'", () => {
@@ -99,22 +103,21 @@ describe("ShareLinkList", () => {
       expect(screen.queryByText(/No access attempts yet/i)).not.toBeInTheDocument();
     });
 
-    it("renders access insights when userId is provided", () => {
+    it("renders server access insights when userId is provided", async () => {
       render(
         <ShareLinkList links={[link({ id: "share-1" })]} onRevoke={jest.fn()} revokingId={null} userId="user-1" />,
       );
-      expect(screen.getByText(/No access attempts yet/i)).toBeInTheDocument();
+      expect(await screen.findByText(/No access attempts yet/i)).toBeInTheDocument();
     });
 
-    it("reflects recorded access attempts for the matching link", () => {
-      recordAccessAttempt("user-1", "share-1", "ACCEPTED");
-      recordAccessAttempt("user-1", "share-1", "REJECTED");
+    it("reflects server access attempts for the matching link", async () => {
+      jest.mocked(getShareLinkAccessSummary).mockResolvedValue({ ...emptySummary, totalAttempts: 2, acceptedCount: 1, rejectedCount: 1 });
 
       render(
         <ShareLinkList links={[link({ id: "share-1" })]} onRevoke={jest.fn()} revokingId={null} userId="user-1" />,
       );
 
-      expect(screen.getByText(/Accepted: 1/)).toBeInTheDocument();
+      expect(await screen.findByText(/Accepted: 1/)).toBeInTheDocument();
       expect(screen.getByText(/Rejected: 1/)).toBeInTheDocument();
     });
   });

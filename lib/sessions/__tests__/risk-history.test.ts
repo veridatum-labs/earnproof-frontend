@@ -1,3 +1,5 @@
+jest.mock("@/lib/sessions/store", () => jest.requireActual("@/tests/fixtures/session-api").sessionStoreMock);
+import { resetSessionFixture } from "@/tests/fixtures/session-api";
 import {
   computeRecentAuthExpiryStatus,
   getSessionRiskDescriptor,
@@ -20,11 +22,12 @@ const ORG_B = "org-beta";
 
 beforeEach(() => {
   window.localStorage.clear();
+  resetSessionFixture();
 });
 
 describe("session risk and reauthentication history (#244)", () => {
   describe("risk descriptors and non-overclaiming labels", () => {
-    it("returns descriptive, evidence-bounded labels for known risk codes without implying certainty", () => {
+    it("returns descriptive, evidence-bounded labels for known risk codes without implying certainty", async () => {
       const unknownDevice = getSessionRiskDescriptor("unknown-device");
       const replayAlert = getSessionRiskDescriptor("replay-alert");
       const regionShift = getSessionRiskDescriptor("coarse-region-shift");
@@ -40,7 +43,7 @@ describe("session risk and reauthentication history (#244)", () => {
       expect(regionShift?.label).toBe("Coarse network region change observed");
     });
 
-    it("falls back safely to unclassified-signal for unrecognized risk codes", () => {
+    it("falls back safely to unclassified-signal for unrecognized risk codes", async () => {
       const fallback = getSessionRiskDescriptor("totally-unknown-server-code");
       expect(fallback?.code).toBe("unclassified-signal");
       expect(fallback?.label).toBe(
@@ -51,7 +54,7 @@ describe("session risk and reauthentication history (#244)", () => {
       );
     });
 
-    it("returns null when riskReasonCode is null or empty", () => {
+    it("returns null when riskReasonCode is null or empty", async () => {
       expect(getSessionRiskDescriptor(null)).toBeNull();
       expect(getSessionRiskDescriptor(undefined)).toBeNull();
       expect(getSessionRiskDescriptor("")).toBeNull();
@@ -59,7 +62,7 @@ describe("session risk and reauthentication history (#244)", () => {
   });
 
   describe("privacy redaction for device fingerprints and precise locations", () => {
-    it("reduces raw User-Agent strings to coarse OS and browser labels", () => {
+    it("reduces raw User-Agent strings to coarse OS and browser labels", async () => {
       const result = sanitizeDeviceContext(
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.91 Safari/537.36",
       );
@@ -67,7 +70,7 @@ describe("session risk and reauthentication history (#244)", () => {
       expect(result.wasRedacted).toBe(true);
     });
 
-    it("strips precise GPS coordinates, IPv4/IPv6 addresses, and street addresses from location context", () => {
+    it("strips precise GPS coordinates, IPv4/IPv6 addresses, and street addresses from location context", async () => {
       expect(sanitizeLocationContext("37.7749, -122.4194")).toEqual({
         coarseRegion: "Coarse region (precise location redacted)",
         wasRedacted: true,
@@ -86,7 +89,7 @@ describe("session risk and reauthentication history (#244)", () => {
       });
     });
 
-    it("redacts fingerprint hashes, IP addresses, GPS coordinates, and tokens from event detail text", () => {
+    it("redacts fingerprint hashes, IP addresses, GPS coordinates, and tokens from event detail text", async () => {
       const raw =
         "Alert from 198.51.100.77 at 40.7128, -74.0060 with fp_hash=9f8e7d6c5b4a3210 and account GABCDEFGHIJKLMNOPQRSTUVWXYZ2345672345672345672345672345";
       const result = redactSessionSecurityText(raw);
@@ -100,7 +103,7 @@ describe("session risk and reauthentication history (#244)", () => {
       );
     });
 
-    it("strips rawFingerprint, ipAddress, coordinates, and rawToken fields when normalizing events", () => {
+    it("strips rawFingerprint, ipAddress, coordinates, and rawToken fields when normalizing events", async () => {
       const sanitized = sanitizeSessionSecurityEvent({
         id: "evt-raw-1",
         userId: USER_A,
@@ -134,7 +137,7 @@ describe("session risk and reauthentication history (#244)", () => {
   });
 
   describe("tenant and user authorization isolation", () => {
-    it("prevents one organization from observing another tenant's session history", () => {
+    it("prevents one organization from observing another tenant's session history", async () => {
       listSessionSecurityEvents({
         userId: USER_A,
         organizationId: ORG_A,
@@ -150,7 +153,7 @@ describe("session risk and reauthentication history (#244)", () => {
       ).toThrow(TenantSessionAccessError);
     });
 
-    it("prevents one user from observing another user's session history within the same tenant", () => {
+    it("prevents one user from observing another user's session history within the same tenant", async () => {
       expect(() =>
         listSessionSecurityEvents({
           userId: USER_A,
@@ -161,7 +164,7 @@ describe("session risk and reauthentication history (#244)", () => {
       ).toThrow(TenantSessionAccessError);
     });
 
-    it("filters out any cross-tenant event injected into localStorage (defense-in-depth)", () => {
+    it("filters out any cross-tenant event injected into localStorage (defense-in-depth)", async () => {
       window.localStorage.setItem(
         `earnproof.session-risk-history.${ORG_A}::${USER_A}`,
         JSON.stringify([
@@ -196,9 +199,13 @@ describe("session risk and reauthentication history (#244)", () => {
   });
 
   describe("linking risk events to sessions and remote sign-out", () => {
-    it("resolves active current, active remote, and revoked sessions accurately", () => {
-      const active = listActiveSessions(USER_A);
-      const revoked = listRecentlyRevokedSessions(USER_A);
+    it("honors cancellation before listing or revoking a remote session", async () => {
+      const controller = new AbortController(); controller.abort();
+      await expect(signOutSessionFromRiskEvent({ userId: USER_A, organizationId: ORG_A, sessionId: "seed-1", riskEventId: "synthetic-event", signal: controller.signal })).rejects.toMatchObject({ name: "AbortError" });
+    });
+    it("resolves active current, active remote, and revoked sessions accurately", async () => {
+      const active = await listActiveSessions(USER_A);
+      const revoked = await listRecentlyRevokedSessions(USER_A);
 
       const currentResolution = resolveLinkedSession(
         { sessionId: `current-${USER_A}`, deviceLabel: "macOS - Chrome" },
@@ -217,8 +224,8 @@ describe("session risk and reauthentication history (#244)", () => {
       expect(remoteResolution.canRemoteSignOut).toBe(true);
     });
 
-    it("signs out an affected remote session from a risk event and records a revocation event", () => {
-      const result = signOutSessionFromRiskEvent({
+    it("signs out an affected remote session from a risk event and records a revocation event", async () => {
+      const result = await signOutSessionFromRiskEvent({
         userId: USER_A,
         organizationId: ORG_A,
         sessionId: "seed-1",
@@ -242,7 +249,7 @@ describe("session risk and reauthentication history (#244)", () => {
       expect(postRevokeResolution.canRemoteSignOut).toBe(false);
     });
 
-    it("records custom reauthentication events scoped to the tenant", () => {
+    it("records custom reauthentication events scoped to the tenant", async () => {
       const recorded = recordSessionSecurityEvent(
         {
           id: "custom-step-up",
@@ -271,7 +278,7 @@ describe("session risk and reauthentication history (#244)", () => {
   describe("recent-auth expiry calculation", () => {
     const baseNow = 1_700_000_000_000;
 
-    it("reports unverified when no signature has been verified in this tab", () => {
+    it("reports unverified when no signature has been verified in this tab", async () => {
       const state = computeRecentAuthExpiryStatus({
         lastVerifiedAtMs: null,
         nowMs: baseNow,
@@ -280,7 +287,7 @@ describe("session risk and reauthentication history (#244)", () => {
       expect(state.isFresh).toBe(false);
     });
 
-    it("reports fresh when verified well within the 5-minute window", () => {
+    it("reports fresh when verified well within the 5-minute window", async () => {
       const state = computeRecentAuthExpiryStatus({
         lastVerifiedAtMs: baseNow - 60_000,
         nowMs: baseNow,
@@ -290,7 +297,7 @@ describe("session risk and reauthentication history (#244)", () => {
       expect(state.remainingMs).toBe(4 * 60_000);
     });
 
-    it("reports expiring-soon when <= 60s remain", () => {
+    it("reports expiring-soon when <= 60s remain", async () => {
       const state = computeRecentAuthExpiryStatus({
         lastVerifiedAtMs: baseNow - (4 * 60_000 + 30_000),
         nowMs: baseNow,
@@ -300,7 +307,7 @@ describe("session risk and reauthentication history (#244)", () => {
       expect(state.remainingMs).toBe(30_000);
     });
 
-    it("reports expired once the recent-auth window elapses", () => {
+    it("reports expired once the recent-auth window elapses", async () => {
       const state = computeRecentAuthExpiryStatus({
         lastVerifiedAtMs: baseNow - 5 * 60_000 - 1,
         nowMs: baseNow,

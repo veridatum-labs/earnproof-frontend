@@ -6,440 +6,2075 @@
     "description": "Versioned frontend contract fixture for EarnProof API v1. Examples are synthetic and privacy-safe."
   },
   "x-earnproof-source": "lib/api/openapi/earnproof-api.v1.json",
-  "servers": [{ "url": "http://localhost:4000/api/v1" }],
+  "servers": [
+    {
+      "url": "http://localhost:4000/api/v1"
+    }
+  ],
   "tags": [
-    { "name": "health" },
-    { "name": "auth" },
-    { "name": "payments" },
-    { "name": "proofs" },
-    { "name": "issuers" },
-    { "name": "organizations" },
-    { "name": "api-keys" },
-    { "name": "webhooks" }
+    {
+      "name": "health"
+    },
+    {
+      "name": "auth"
+    },
+    {
+      "name": "payments"
+    },
+    {
+      "name": "proofs"
+    },
+    {
+      "name": "issuers"
+    },
+    {
+      "name": "organizations"
+    },
+    {
+      "name": "api-keys"
+    },
+    {
+      "name": "webhooks"
+    }
   ],
   "paths": {
+    "/auth/sessions": {
+      "get": {
+        "operationId": "listAuthenticatedSessions",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Aligned to earnproof-backend src/auth/auth.controller.ts. Ownership is enforced by the backend. Full inventories are paginated in the UI; this backend does not accept session inventory cursors.",
+        "responses": {
+          "200": {
+            "description": "Server response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoteSessionInventory"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/revoked session"
+          },
+          "403": {
+            "description": "Denied; current session must use logout"
+          },
+          "404": {
+            "description": "Session missing"
+          }
+        }
+      }
+    },
+    "/auth/sessions/{sessionId}/revoke": {
+      "parameters": [
+        {
+          "name": "sessionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "revokeRemoteSession",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Aligned to earnproof-backend src/auth/auth.controller.ts. Ownership is enforced by the backend. Full inventories are paginated in the UI; this backend does not accept session inventory cursors.",
+        "responses": {
+          "200": {
+            "description": "Server response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionRevocation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/revoked session"
+          },
+          "403": {
+            "description": "Denied; current session must use logout"
+          },
+          "404": {
+            "description": "Session missing"
+          }
+        }
+      }
+    },
+    "/auth/sessions/revoke-all-other": {
+      "post": {
+        "operationId": "revokeOtherSessions",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Aligned to earnproof-backend src/auth/auth.controller.ts. Ownership is enforced by the backend. Full inventories are paginated in the UI; this backend does not accept session inventory cursors.",
+        "responses": {
+          "200": {
+            "description": "Server response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtherSessionsRevoked"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/revoked session"
+          },
+          "403": {
+            "description": "Denied; current session must use logout"
+          },
+          "404": {
+            "description": "Session missing"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "logoutCurrentSession",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Aligned to earnproof-backend src/auth/auth.controller.ts. Ownership is enforced by the backend. Full inventories are paginated in the UI; this backend does not accept session inventory cursors.",
+        "responses": {
+          "200": {
+            "description": "Server response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionLogout"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/revoked session"
+          },
+          "403": {
+            "description": "Denied; current session must use logout"
+          },
+          "404": {
+            "description": "Session missing"
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
-        "tags": ["health"],
+        "tags": [
+          "health"
+        ],
         "operationId": "getHealth",
         "responses": {
           "200": {
             "description": "Health",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthResponse" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
           }
         }
       }
     },
     "/auth/challenge": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "operationId": "createAuthChallenge",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateChallengeRequest" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChallengeRequest"
+              }
+            }
+          }
         },
         "responses": {
           "201": {
             "description": "Challenge",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthChallengeResponse" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthChallengeResponse"
+                }
+              }
+            }
           },
-          "400": { "$ref": "#/components/responses/Error" }
+          "400": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/auth/verify": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "operationId": "verifyAuthChallenge",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VerifyChallengeRequest" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyChallengeRequest"
+              }
+            }
+          }
         },
         "responses": {
           "201": {
             "description": "Session",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthVerifyResponse" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthVerifyResponse"
+                }
+              }
+            }
           },
-          "401": { "$ref": "#/components/responses/Error" }
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/payments": {
       "get": {
-        "tags": ["payments"],
+        "tags": [
+          "payments"
+        ],
         "operationId": "listPayments",
         "responses": {
           "200": {
             "description": "Payments",
             "content": {
               "application/json": {
-                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Payment" } }
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Payment"
+                  }
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Error" }
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/payments/sync": {
       "post": {
-        "tags": ["payments"],
+        "tags": [
+          "payments"
+        ],
         "operationId": "syncPayments",
         "responses": {
           "201": {
             "description": "Sync result",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaymentSyncResult" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentSyncResult"
+                }
+              }
+            }
           },
-          "401": { "$ref": "#/components/responses/Error" }
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/payments/{id}/classification": {
       "patch": {
-        "tags": ["payments"],
+        "tags": [
+          "payments"
+        ],
         "operationId": "updatePaymentClassification",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdatePaymentClassificationRequest" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePaymentClassificationRequest"
+              }
+            }
+          }
         },
         "responses": {
           "200": {
             "description": "Payment",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Payment" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
           },
-          "401": { "$ref": "#/components/responses/Error" }
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/proofs/minimum-income": {
       "post": {
-        "tags": ["proofs"],
+        "tags": [
+          "proofs"
+        ],
         "operationId": "createMinimumIncomeProof",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateMinimumIncomeProofRequest" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMinimumIncomeProofRequest"
+              }
+            }
+          }
         },
         "responses": {
           "201": {
             "description": "Created proof",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProofCreated" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProofCreated"
+                }
+              }
+            }
           },
-          "401": { "$ref": "#/components/responses/Error" }
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/proofs/payment-receipt": {
       "post": {
-        "tags": ["proofs"],
+        "tags": [
+          "proofs"
+        ],
         "operationId": "createPaymentReceiptProof",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "type": "object" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
         },
         "responses": {
           "201": {
             "description": "Created payment receipt proof",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProofCreated" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProofCreated"
+                }
+              }
+            }
           },
-          "401": { "$ref": "#/components/responses/Error" }
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/proofs/recurring-income": {
       "post": {
-        "tags": ["proofs"],
+        "tags": [
+          "proofs"
+        ],
         "operationId": "createRecurringIncomeProof",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "type": "object" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
         },
         "responses": {
           "201": {
             "description": "Created recurring income proof",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecurringIncomeProof" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecurringIncomeProof"
+                }
+              }
+            }
           },
-          "401": { "$ref": "#/components/responses/Error" }
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/proofs/recurring-income/analyze-coverage": {
       "post": {
-        "tags": ["proofs"],
+        "tags": [
+          "proofs"
+        ],
         "operationId": "analyzeRecurringIncomeCoverage",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "type": "object" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
         },
         "responses": {
           "200": {
             "description": "Coverage analysis",
-            "content": { "application/json": { "schema": { "type": "object" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
           },
-          "401": { "$ref": "#/components/responses/Error" }
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/proofs/{id}/verify": {
       "get": {
-        "tags": ["proofs"],
+        "tags": [
+          "proofs"
+        ],
         "operationId": "verifyProof",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Verification",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VerifyProofResponse" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyProofResponse"
+                }
+              }
+            }
           }
         }
       }
     },
     "/issuers": {
       "get": {
-        "tags": ["issuers"],
+        "tags": [
+          "issuers"
+        ],
         "operationId": "listIssuers",
         "responses": {
           "200": {
             "description": "Issuers",
             "content": {
               "application/json": {
-                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Issuer" } }
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Issuer"
+                  }
+                }
               }
             }
           }
         }
       },
       "post": {
-        "tags": ["issuers"],
+        "tags": [
+          "issuers"
+        ],
         "operationId": "createIssuer",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "type": "object" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
         },
         "responses": {
           "201": {
             "description": "Issuer",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Issuer" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Issuer"
+                }
+              }
+            }
           },
-          "401": { "$ref": "#/components/responses/Error" }
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/issuers/{id}": {
       "get": {
-        "tags": ["issuers"],
+        "tags": [
+          "issuers"
+        ],
         "operationId": "getIssuer",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Issuer",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Issuer" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Issuer"
+                }
+              }
+            }
           },
-          "404": { "$ref": "#/components/responses/Error" }
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       },
       "patch": {
-        "tags": ["issuers"],
+        "tags": [
+          "issuers"
+        ],
         "operationId": "updateIssuer",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "type": "object" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
         },
         "responses": {
           "200": {
             "description": "Issuer",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Issuer" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Issuer"
+                }
+              }
+            }
           },
-          "401": { "$ref": "#/components/responses/Error" },
-          "404": { "$ref": "#/components/responses/Error" }
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/organizations": {
       "get": {
-        "tags": ["organizations"],
+        "tags": [
+          "organizations"
+        ],
         "operationId": "listOrganizations",
         "responses": {
           "200": {
             "description": "Organizations",
             "content": {
               "application/json": {
-                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Organization" } }
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Organization"
+                  }
+                }
               }
             }
           }
         }
       },
       "post": {
-        "tags": ["organizations"],
+        "tags": [
+          "organizations"
+        ],
         "operationId": "createOrganization",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "type": "object" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
         },
         "responses": {
           "201": {
             "description": "Organization",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Organization" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
           },
-          "401": { "$ref": "#/components/responses/Error" }
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/organizations/{id}": {
       "get": {
-        "tags": ["organizations"],
+        "tags": [
+          "organizations"
+        ],
         "operationId": "getOrganization",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Organization",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Organization" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
           },
-          "401": { "$ref": "#/components/responses/Error" },
-          "404": { "$ref": "#/components/responses/Error" }
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       },
       "patch": {
-        "tags": ["organizations"],
+        "tags": [
+          "organizations"
+        ],
         "operationId": "updateOrganization",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "type": "object" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
         },
         "responses": {
           "200": {
             "description": "Organization",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Organization" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
           },
-          "401": { "$ref": "#/components/responses/Error" },
-          "404": { "$ref": "#/components/responses/Error" }
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/api-keys": {
       "get": {
-        "tags": ["api-keys"],
+        "tags": [
+          "api-keys"
+        ],
         "operationId": "listApiKeys",
         "responses": {
           "200": {
             "description": "API keys",
             "content": {
               "application/json": {
-                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ApiKey" } }
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKey"
+                  }
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Error" }
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       },
       "post": {
-        "tags": ["api-keys"],
+        "tags": [
+          "api-keys"
+        ],
         "operationId": "createApiKey",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "type": "object" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
         },
         "responses": {
           "201": {
             "description": "API key",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiKey" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKey"
+                }
+              }
+            }
           },
-          "401": { "$ref": "#/components/responses/Error" }
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/api-keys/{id}/rotate": {
       "post": {
-        "tags": ["api-keys"],
+        "tags": [
+          "api-keys"
+        ],
         "operationId": "rotateApiKey",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "201": {
             "description": "API key",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiKey" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKey"
+                }
+              }
+            }
           },
-          "401": { "$ref": "#/components/responses/Error" },
-          "404": { "$ref": "#/components/responses/Error" }
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/api-keys/{id}": {
       "delete": {
-        "tags": ["api-keys"],
+        "tags": [
+          "api-keys"
+        ],
         "operationId": "revokeApiKey",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
-          "204": { "description": "API key revoked" },
-          "401": { "$ref": "#/components/responses/Error" },
-          "404": { "$ref": "#/components/responses/Error" }
+          "204": {
+            "description": "API key revoked"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/activity": {
       "get": {
-        "tags": ["activity"],
+        "tags": [
+          "activity"
+        ],
         "operationId": "listActivity",
         "description": "Recent activity for the authenticated account, newest first, already scoped and redacted by the server. Cursors are opaque (1 to 512 characters from A-Z a-z 0-9 _ - . = : ~). A response that repeats the request cursor ends pagination. Clients send X-Request-Id, an opaque random id, for support correlation.",
         "parameters": [
-          { "name": "limit", "in": "query", "required": false, "description": "Page size.", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 } },
-          { "name": "cursor", "in": "query", "required": false, "description": "Opaque cursor from a previous page's nextCursor.", "schema": { "type": "string", "minLength": 1, "maxLength": 512 } },
-          { "name": "category", "in": "query", "required": false, "description": "Only events in this category.", "schema": { "type": "string", "enum": ["auth", "key", "session", "admin"] } },
-          { "name": "outcome", "in": "query", "required": false, "description": "Only events with this outcome.", "schema": { "type": "string", "enum": ["success", "failure", "pending"] } },
-          { "name": "X-Request-Id", "in": "header", "required": false, "description": "Opaque client-generated correlation id.", "schema": { "type": "string", "pattern": "^[0-9a-f]{32}$" } }
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Page size.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Only events in this category.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "auth",
+                "key",
+                "session",
+                "admin"
+              ]
+            }
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "required": false,
+            "description": "Only events with this outcome.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "success",
+                "failure",
+                "pending"
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Opaque client-generated correlation id.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          }
         ],
         "responses": {
           "200": {
             "description": "Activity page",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ActivityPage" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityPage"
+                }
+              }
+            }
           },
-          "400": { "$ref": "#/components/responses/Error" },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" }
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/csp-violations": {
       "get": {
-        "tags": ["security"],
+        "tags": [
+          "security"
+        ],
         "operationId": "listCspViolations",
         "description": "Aggregated, sample-free CSP violation groups for the caller's organization. Groups never include blocked URIs, document URLs, source files, script samples, DOM content, referrers, tokens or user input. Cursors are opaque (1 to 512 characters from A-Z a-z 0-9 _ - . = : ~). Restricted to organization administrators.",
         "parameters": [
-          { "name": "window", "in": "query", "required": false, "schema": { "type": "string", "enum": ["1h", "24h", "7d"], "default": "24h" } },
-          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 200, "default": 50 } },
-          { "name": "cursor", "in": "query", "required": false, "schema": { "type": "string", "minLength": 1, "maxLength": 512 } },
-          { "name": "directive", "in": "query", "required": false, "schema": { "type": "string", "enum": ["default-src", "script-src", "script-src-elem", "script-src-attr", "style-src", "style-src-elem", "style-src-attr", "img-src", "font-src", "connect-src", "media-src", "worker-src", "manifest-src", "object-src", "base-uri", "form-action", "frame-src", "frame-ancestors", "child-src"] } },
-          { "name": "routeCategory", "in": "query", "required": false, "schema": { "type": "string", "enum": ["public", "verify", "embed", "proofs", "settings", "issuers", "developers", "other"] } },
-          { "name": "release", "in": "query", "required": false, "schema": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$" } },
-          { "name": "X-Request-Id", "in": "header", "required": false, "schema": { "type": "string", "pattern": "^[0-9a-f]{32}$" } }
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1h",
+                "24h",
+                "7d"
+              ],
+              "default": "24h"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "directive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "default-src",
+                "script-src",
+                "script-src-elem",
+                "script-src-attr",
+                "style-src",
+                "style-src-elem",
+                "style-src-attr",
+                "img-src",
+                "font-src",
+                "connect-src",
+                "media-src",
+                "worker-src",
+                "manifest-src",
+                "object-src",
+                "base-uri",
+                "form-action",
+                "frame-src",
+                "frame-ancestors",
+                "child-src"
+              ]
+            }
+          },
+          {
+            "name": "routeCategory",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "public",
+                "verify",
+                "embed",
+                "proofs",
+                "settings",
+                "issuers",
+                "developers",
+                "other"
+              ]
+            }
+          },
+          {
+            "name": "release",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          }
         ],
         "responses": {
           "200": {
             "description": "CSP violation report",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CspViolationReport" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CspViolationReport"
+                }
+              }
+            }
           },
-          "400": { "$ref": "#/components/responses/Error" },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" }
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/webhooks": {
       "post": {
-        "tags": ["webhooks"],
+        "tags": [
+          "webhooks"
+        ],
         "operationId": "createWebhook",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateWebhookRequest" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWebhookRequest"
+              }
+            }
+          }
         },
         "responses": {
           "201": {
             "description": "Webhook",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Webhook" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Webhook"
+                }
+              }
+            }
           },
-          "401": { "$ref": "#/components/responses/Error" }
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
         }
+      }
+    },
+    "/proofs/{proofId}/share-links": {
+      "parameters": [
+        {
+          "name": "proofId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "listShareLinks",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authoritative server response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareLinkPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          },
+          "403": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          },
+          "404": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          },
+          "409": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          },
+          "410": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          }
+        },
+        "description": "Server authorizes proof ownership. Never return or log raw share tokens except the one-time creation response."
+      },
+      "post": {
+        "operationId": "createShareLink",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authoritative server response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareLinkCreated"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          },
+          "403": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          },
+          "404": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          },
+          "409": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          },
+          "410": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          }
+        },
+        "description": "Server authorizes proof ownership. Never return or log raw share tokens except the one-time creation response.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateShareLink"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/proofs/{proofId}/share-links/{id}": {
+      "parameters": [
+        {
+          "name": "proofId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "delete": {
+        "operationId": "revokeShareLink",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked (idempotent)"
+          },
+          "401": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          },
+          "403": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          },
+          "404": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          },
+          "409": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          },
+          "410": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          }
+        },
+        "description": "Server authorizes proof ownership. Never return or log raw share tokens except the one-time creation response."
+      }
+    },
+    "/proofs/{proofId}/share-links/{id}/access-summary": {
+      "parameters": [
+        {
+          "name": "proofId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getShareAccessSummary",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authoritative server response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareAccessSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          },
+          "403": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          },
+          "404": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          },
+          "409": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          },
+          "410": {
+            "description": "Authentication, authorization, unsupported/missing resource, stale/replayed operation, or expired link. No local fallback."
+          }
+        },
+        "description": "Server authorizes proof ownership. Never return or log raw share tokens except the one-time creation response."
+      }
+    },
+    "/organizations/{organizationId}/trusted-sources": {
+      "parameters": [
+        {
+          "name": "organizationId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "listTrustedSources",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Server validates tenant membership, role, issuer linkage and Stellar network. Mutations are not automatically retried. If-Match requires an exact version; stale writes return 409/412. Disabled/deleted sources cannot establish trust.",
+        "responses": {
+          "200": {
+            "description": "Authoritative source response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustedSourcePage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Tenant/role denied"
+          },
+          "404": {
+            "description": "Missing or unsupported"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "412": {
+            "description": "Version mismatch"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createTrustedSource",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Server validates tenant membership, role, issuer linkage and Stellar network. Mutations are not automatically retried. If-Match requires an exact version; stale writes return 409/412. Disabled/deleted sources cannot establish trust.",
+        "responses": {
+          "200": {
+            "description": "Authoritative source response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustedSource"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Tenant/role denied"
+          },
+          "404": {
+            "description": "Missing or unsupported"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "412": {
+            "description": "Version mismatch"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrustedSourceInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizations/{organizationId}/trusted-sources/{id}": {
+      "parameters": [
+        {
+          "name": "organizationId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "patch": {
+        "operationId": "updateTrustedSource",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Server validates tenant membership, role, issuer linkage and Stellar network. Mutations are not automatically retried. If-Match requires an exact version; stale writes return 409/412. Disabled/deleted sources cannot establish trust.",
+        "responses": {
+          "200": {
+            "description": "Authoritative source response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustedSource"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Tenant/role denied"
+          },
+          "404": {
+            "description": "Missing or unsupported"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "412": {
+            "description": "Version mismatch"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrustedSourcePatch"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/organizations/{organizationId}/trusted-sources/{id}/disable": {
+      "parameters": [
+        {
+          "name": "organizationId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "disableTrustedSource",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Server validates tenant membership, role, issuer linkage and Stellar network. Mutations are not automatically retried. If-Match requires an exact version; stale writes return 409/412. Disabled/deleted sources cannot establish trust.",
+        "responses": {
+          "200": {
+            "description": "Authoritative source response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustedSource"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Tenant/role denied"
+          },
+          "404": {
+            "description": "Missing or unsupported"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "412": {
+            "description": "Version mismatch"
+          }
+        },
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/organizations/{organizationId}/trusted-sources/{id}/test": {
+      "parameters": [
+        {
+          "name": "organizationId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "testTrustedSource",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Server validates tenant membership, role, issuer linkage and Stellar network. Mutations are not automatically retried. If-Match requires an exact version; stale writes return 409/412. Disabled/deleted sources cannot establish trust.",
+        "responses": {
+          "200": {
+            "description": "Authoritative source response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustedSourceTest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Tenant/role denied"
+          },
+          "404": {
+            "description": "Missing or unsupported"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "412": {
+            "description": "Version mismatch"
+          }
+        },
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/organizations/{organizationId}/trusted-sources/{id}/history": {
+      "parameters": [
+        {
+          "name": "organizationId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "historyTrustedSource",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Server validates tenant membership, role, issuer linkage and Stellar network. Mutations are not automatically retried. If-Match requires an exact version; stale writes return 409/412. Disabled/deleted sources cannot establish trust.",
+        "responses": {
+          "200": {
+            "description": "Authoritative source response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustedSourceHistory"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Tenant/role denied"
+          },
+          "404": {
+            "description": "Missing or unsupported"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "412": {
+            "description": "Version mismatch"
+          }
+        }
+      }
+    },
+    "/wallet-rotations": {
+      "post": {
+        "operationId": "createWalletRotation",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Server authorizes the current account, binds both single-use wallet challenges to the same intent, role and network, validates signatures, enforces expiry and version, checks replacement-account conflicts, and atomically completes reassignment/session invalidation. Challenge issuance does not change the intent version. See docs/wallet-rotation-server-recovery.md for canonical signing text. Never log signatures or wallet material.",
+        "responses": {
+          "200": {
+            "description": "Authoritative server intent state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletRotationIntent"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Account denied"
+          },
+          "404": {
+            "description": "Missing or unsupported endpoint"
+          },
+          "409": {
+            "description": "Conflict, stale version or challenge replay"
+          },
+          "410": {
+            "description": "Intent or challenge expired"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WalletRotationCreate"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/wallet-rotations/current": {
+      "get": {
+        "operationId": "recoverWalletRotation",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Server authorizes the current account, binds both single-use wallet challenges to the same intent, role and network, validates signatures, enforces expiry and version, checks replacement-account conflicts, and atomically completes reassignment/session invalidation. Challenge issuance does not change the intent version. See docs/wallet-rotation-server-recovery.md for canonical signing text. Never log signatures or wallet material.",
+        "responses": {
+          "200": {
+            "description": "Authoritative server intent state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletRotationRecovery"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Account denied"
+          },
+          "404": {
+            "description": "Missing or unsupported endpoint"
+          },
+          "409": {
+            "description": "Conflict, stale version or challenge replay"
+          },
+          "410": {
+            "description": "Intent or challenge expired"
+          }
+        }
+      }
+    },
+    "/wallet-rotations/{id}/challenges": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "challengesWalletRotation",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Server authorizes the current account, binds both single-use wallet challenges to the same intent, role and network, validates signatures, enforces expiry and version, checks replacement-account conflicts, and atomically completes reassignment/session invalidation. Challenge issuance does not change the intent version. See docs/wallet-rotation-server-recovery.md for canonical signing text. Never log signatures or wallet material.",
+        "responses": {
+          "200": {
+            "description": "Authoritative server intent state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletRotationChallenge"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Account denied"
+          },
+          "404": {
+            "description": "Missing or unsupported endpoint"
+          },
+          "409": {
+            "description": "Conflict, stale version or challenge replay"
+          },
+          "410": {
+            "description": "Intent or challenge expired"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WalletRotationChallengeRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/wallet-rotations/{id}/proofs": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "proofsWalletRotation",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Server authorizes the current account, binds both single-use wallet challenges to the same intent, role and network, validates signatures, enforces expiry and version, checks replacement-account conflicts, and atomically completes reassignment/session invalidation. Challenge issuance does not change the intent version. See docs/wallet-rotation-server-recovery.md for canonical signing text. Never log signatures or wallet material.",
+        "responses": {
+          "200": {
+            "description": "Authoritative server intent state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletRotationIntent"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Account denied"
+          },
+          "404": {
+            "description": "Missing or unsupported endpoint"
+          },
+          "409": {
+            "description": "Conflict, stale version or challenge replay"
+          },
+          "410": {
+            "description": "Intent or challenge expired"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WalletRotationProofRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/wallet-rotations/{id}/complete": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "completeWalletRotation",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Server authorizes the current account, binds both single-use wallet challenges to the same intent, role and network, validates signatures, enforces expiry and version, checks replacement-account conflicts, and atomically completes reassignment/session invalidation. Challenge issuance does not change the intent version. See docs/wallet-rotation-server-recovery.md for canonical signing text. Never log signatures or wallet material.",
+        "responses": {
+          "200": {
+            "description": "Authoritative server intent state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletRotationIntent"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Account denied"
+          },
+          "404": {
+            "description": "Missing or unsupported endpoint"
+          },
+          "409": {
+            "description": "Conflict, stale version or challenge replay"
+          },
+          "410": {
+            "description": "Intent or challenge expired"
+          }
+        },
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/wallet-rotations/{id}/cancel": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "cancelWalletRotation",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Server authorizes the current account, binds both single-use wallet challenges to the same intent, role and network, validates signatures, enforces expiry and version, checks replacement-account conflicts, and atomically completes reassignment/session invalidation. Challenge issuance does not change the intent version. See docs/wallet-rotation-server-recovery.md for canonical signing text. Never log signatures or wallet material.",
+        "responses": {
+          "200": {
+            "description": "Authoritative server intent state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletRotationIntent"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Account denied"
+          },
+          "404": {
+            "description": "Missing or unsupported endpoint"
+          },
+          "409": {
+            "description": "Conflict, stale version or challenge replay"
+          },
+          "410": {
+            "description": "Intent or challenge expired"
+          }
+        },
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     }
   },
@@ -447,77 +2082,321 @@
     "responses": {
       "Error": {
         "description": "Error",
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
       }
     },
     "schemas": {
+      "RemoteSession": {
+        "type": "object",
+        "required": [
+          "id",
+          "expiresAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "deviceLabel": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "firstSeenAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastSeenAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastUsedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "current": {
+            "type": "boolean"
+          },
+          "isCurrent": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SessionInventoryEnvelope": {
+        "type": "object",
+        "required": [
+          "sessions",
+          "total"
+        ],
+        "properties": {
+          "sessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RemoteSession"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "RemoteSessionInventory": {
+        "oneOf": [
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RemoteSession"
+            }
+          },
+          {
+            "$ref": "#/components/schemas/SessionInventoryEnvelope"
+          }
+        ]
+      },
+      "SessionRevocation": {
+        "type": "object",
+        "required": [
+          "status",
+          "revokedSessionId"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "revokedSessionId": {
+            "type": "string"
+          }
+        }
+      },
+      "OtherSessionsRevoked": {
+        "type": "object",
+        "required": [
+          "status",
+          "revokedCount"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "revokedCount": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "SessionLogout": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          }
+        }
+      },
       "HealthResponse": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["status", "service", "database", "timestamp"],
+        "required": [
+          "status",
+          "service",
+          "database",
+          "timestamp"
+        ],
         "properties": {
-          "status": { "type": "string", "example": "ok" },
-          "service": { "type": "string", "example": "earnproof-api" },
-          "database": { "type": "string", "enum": ["ok", "error"], "example": "ok" },
-          "timestamp": { "type": "string", "format": "date-time", "example": "2026-08-16T00:00:00.000Z" }
+          "status": {
+            "type": "string",
+            "example": "ok"
+          },
+          "service": {
+            "type": "string",
+            "example": "earnproof-api"
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error"
+            ],
+            "example": "ok"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-16T00:00:00.000Z"
+          }
         }
       },
       "CreateChallengeRequest": {
         "type": "object",
-        "required": ["walletAddress"],
+        "required": [
+          "walletAddress"
+        ],
         "properties": {
-          "walletAddress": { "type": "string", "example": "GDXSYNTHETICFIXTUREWALLET00000000000000000000000000000A" }
+          "walletAddress": {
+            "type": "string",
+            "example": "GDXSYNTHETICFIXTUREWALLET00000000000000000000000000000A"
+          }
         }
       },
       "AuthChallengeResponse": {
         "type": "object",
-        "required": ["id", "message", "expiresAt"],
+        "required": [
+          "id",
+          "message",
+          "expiresAt"
+        ],
         "properties": {
-          "id": { "type": "string", "example": "fixture-challenge-1" },
-          "message": { "type": "string", "example": "EarnProof wallet authentication" },
-          "expiresAt": { "type": "string", "format": "date-time", "example": "2026-08-16T00:05:00.000Z" }
+          "id": {
+            "type": "string",
+            "example": "fixture-challenge-1"
+          },
+          "message": {
+            "type": "string",
+            "example": "EarnProof wallet authentication"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-16T00:05:00.000Z"
+          }
         }
       },
       "VerifyChallengeRequest": {
         "type": "object",
-        "required": ["challengeId", "walletAddress", "signature"],
+        "required": [
+          "challengeId",
+          "walletAddress",
+          "signature"
+        ],
         "properties": {
-          "challengeId": { "type": "string", "example": "fixture-challenge-1" },
-          "walletAddress": { "type": "string", "example": "GDXSYNTHETICFIXTUREWALLET00000000000000000000000000000A" },
-          "signature": { "type": "string", "example": "fixture-signature" }
+          "challengeId": {
+            "type": "string",
+            "example": "fixture-challenge-1"
+          },
+          "walletAddress": {
+            "type": "string",
+            "example": "GDXSYNTHETICFIXTUREWALLET00000000000000000000000000000A"
+          },
+          "signature": {
+            "type": "string",
+            "example": "fixture-signature"
+          }
         }
       },
       "AuthUser": {
         "type": "object",
-        "required": ["id", "walletAddress", "walletHash", "role"],
+        "required": [
+          "id",
+          "walletAddress",
+          "walletHash",
+          "role"
+        ],
         "properties": {
-          "id": { "type": "string", "example": "fixture-user-1" },
-          "walletAddress": { "type": "string", "example": "GDXSYNTHETICFIXTUREWALLET00000000000000000000000000000A" },
-          "walletHash": { "type": "string", "example": "sha256:fixture-wallet-hash-0001" },
-          "role": { "type": "string", "enum": ["WORKER", "ISSUER", "ADMIN", "DEVELOPER", "worker"] }
+          "id": {
+            "type": "string",
+            "example": "fixture-user-1"
+          },
+          "walletAddress": {
+            "type": "string",
+            "example": "GDXSYNTHETICFIXTUREWALLET00000000000000000000000000000A"
+          },
+          "walletHash": {
+            "type": "string",
+            "example": "sha256:fixture-wallet-hash-0001"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "WORKER",
+              "ISSUER",
+              "ADMIN",
+              "DEVELOPER",
+              "worker"
+            ]
+          }
         }
       },
       "AuthSession": {
         "type": "object",
-        "required": ["token", "tokenType"],
+        "required": [
+          "token",
+          "tokenType"
+        ],
         "properties": {
-          "token": { "type": "string", "example": "fixture-session-token" },
-          "tokenType": { "type": "string", "example": "Bearer" },
-          "sessionId": { "type": "string", "example": "fixture-session-1" },
-          "expiresAt": { "type": "string", "format": "date-time" }
+          "token": {
+            "type": "string",
+            "example": "fixture-session-token"
+          },
+          "tokenType": {
+            "type": "string",
+            "example": "Bearer"
+          },
+          "sessionId": {
+            "type": "string",
+            "example": "fixture-session-1"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "AuthVerifyResponse": {
         "type": "object",
-        "required": ["user", "session"],
+        "required": [
+          "user",
+          "session"
+        ],
         "properties": {
-          "user": { "$ref": "#/components/schemas/AuthUser" },
-          "session": { "$ref": "#/components/schemas/AuthSession" }
+          "user": {
+            "$ref": "#/components/schemas/AuthUser"
+          },
+          "session": {
+            "$ref": "#/components/schemas/AuthSession"
+          }
         }
       },
       "PaymentClassification": {
         "type": "string",
-        "enum": ["INCOME", "REIMBURSEMENT", "PERSONAL_TRANSFER", "UNKNOWN", "EXCLUDED"]
+        "enum": [
+          "INCOME",
+          "REIMBURSEMENT",
+          "PERSONAL_TRANSFER",
+          "UNKNOWN",
+          "EXCLUDED"
+        ]
       },
       "Payment": {
         "type": "object",
@@ -531,223 +2410,682 @@
           "isEligible"
         ],
         "properties": {
-          "id": { "type": "string", "example": "fixture-payment-1" },
-          "stellarTransactionHash": { "type": "string", "example": "aaaaaaaa00000000000000000000000000000000000000000000000000aa" },
-          "operationId": { "type": "string", "example": "123456789012345" },
-          "sourceAddress": { "type": "string", "example": "GDXSYNTHETICFIXTURESOURCE000000000000000000000000000001" },
-          "destinationAddress": { "type": "string" },
-          "assetCode": { "type": "string", "example": "USDC" },
-          "assetIssuer": { "type": "string", "nullable": true, "example": "GDXSYNTHETICFIXTUREISSUER00000000000000000000000000000B" },
-          "occurredAt": { "type": "string", "format": "date-time", "example": "2026-08-01T12:00:00.000Z" },
-          "classification": { "$ref": "#/components/schemas/PaymentClassification" },
-          "isEligible": { "type": "boolean", "example": true }
+          "id": {
+            "type": "string",
+            "example": "fixture-payment-1"
+          },
+          "stellarTransactionHash": {
+            "type": "string",
+            "example": "aaaaaaaa00000000000000000000000000000000000000000000000000aa"
+          },
+          "operationId": {
+            "type": "string",
+            "example": "123456789012345"
+          },
+          "sourceAddress": {
+            "type": "string",
+            "example": "GDXSYNTHETICFIXTURESOURCE000000000000000000000000000001"
+          },
+          "destinationAddress": {
+            "type": "string"
+          },
+          "assetCode": {
+            "type": "string",
+            "example": "USDC"
+          },
+          "assetIssuer": {
+            "type": "string",
+            "nullable": true,
+            "example": "GDXSYNTHETICFIXTUREISSUER00000000000000000000000000000B"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-01T12:00:00.000Z"
+          },
+          "classification": {
+            "$ref": "#/components/schemas/PaymentClassification"
+          },
+          "isEligible": {
+            "type": "boolean",
+            "example": true
+          }
         }
       },
       "PaymentSyncResult": {
         "type": "object",
         "properties": {
-          "created": { "type": "integer", "example": 0 },
-          "updated": { "type": "integer", "example": 0 },
-          "skipped": { "type": "integer", "example": 0 }
+          "created": {
+            "type": "integer",
+            "example": 0
+          },
+          "updated": {
+            "type": "integer",
+            "example": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "example": 0
+          }
         }
       },
       "UpdatePaymentClassificationRequest": {
         "type": "object",
-        "required": ["classification"],
+        "required": [
+          "classification"
+        ],
         "properties": {
-          "classification": { "$ref": "#/components/schemas/PaymentClassification" }
+          "classification": {
+            "$ref": "#/components/schemas/PaymentClassification"
+          }
         }
       },
       "CreateMinimumIncomeProofRequest": {
         "type": "object",
-        "required": ["selectedPaymentIds", "thresholdAmount", "assetCode", "periodStart", "periodEnd"],
+        "required": [
+          "selectedPaymentIds",
+          "thresholdAmount",
+          "assetCode",
+          "periodStart",
+          "periodEnd"
+        ],
         "properties": {
-          "selectedPaymentIds": { "type": "array", "items": { "type": "string" } },
-          "thresholdAmount": { "type": "string", "example": "100" },
-          "assetCode": { "type": "string", "example": "USDC" },
-          "assetIssuer": { "type": "string" },
-          "periodStart": { "type": "string", "format": "date-time" },
-          "periodEnd": { "type": "string", "format": "date-time" },
-          "expiresInDays": { "type": "integer", "example": 30 }
+          "selectedPaymentIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "thresholdAmount": {
+            "type": "string",
+            "example": "100"
+          },
+          "assetCode": {
+            "type": "string",
+            "example": "USDC"
+          },
+          "assetIssuer": {
+            "type": "string"
+          },
+          "periodStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresInDays": {
+            "type": "integer",
+            "example": 30
+          }
         }
       },
       "SignedCredential": {
         "type": "object",
-        "required": ["id", "schemaVersion", "subject", "claim", "privacy", "issuedAt", "expiresAt", "proof"],
+        "required": [
+          "id",
+          "schemaVersion",
+          "subject",
+          "claim",
+          "privacy",
+          "issuedAt",
+          "expiresAt",
+          "proof"
+        ],
         "properties": {
-          "id": { "type": "string", "example": "EP-FIXT-0001" },
-          "type": { "type": "string" },
-          "schemaVersion": { "type": "string", "example": "1.0" },
-          "issuer": { "type": "string" },
+          "id": {
+            "type": "string",
+            "example": "EP-FIXT-0001"
+          },
+          "type": {
+            "type": "string"
+          },
+          "schemaVersion": {
+            "type": "string",
+            "example": "1.0"
+          },
+          "issuer": {
+            "type": "string"
+          },
           "subject": {
             "type": "object",
-            "required": ["walletHash"],
-            "properties": { "walletHash": { "type": "string", "example": "sha256:fixture-wallet-hash-0001" } }
+            "required": [
+              "walletHash"
+            ],
+            "properties": {
+              "walletHash": {
+                "type": "string",
+                "example": "sha256:fixture-wallet-hash-0001"
+              }
+            }
           },
           "claim": {
             "type": "object",
-            "required": ["operator", "thresholdAmount", "assetCode", "periodStart", "periodEnd", "qualifyingPaymentCount"],
+            "required": [
+              "operator",
+              "thresholdAmount",
+              "assetCode",
+              "periodStart",
+              "periodEnd",
+              "qualifyingPaymentCount"
+            ],
             "properties": {
-              "operator": { "type": "string", "enum": ["gte"] },
-              "thresholdAmount": { "type": "string", "example": "100" },
-              "assetCode": { "type": "string", "example": "USDC" },
-              "assetIssuer": { "type": "string", "nullable": true },
-              "periodStart": { "type": "string", "format": "date-time" },
-              "periodEnd": { "type": "string", "format": "date-time" },
-              "qualifyingPaymentCount": { "type": "integer", "example": 1 }
+              "operator": {
+                "type": "string",
+                "enum": [
+                  "gte"
+                ]
+              },
+              "thresholdAmount": {
+                "type": "string",
+                "example": "100"
+              },
+              "assetCode": {
+                "type": "string",
+                "example": "USDC"
+              },
+              "assetIssuer": {
+                "type": "string",
+                "nullable": true
+              },
+              "periodStart": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "periodEnd": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "qualifyingPaymentCount": {
+                "type": "integer",
+                "example": 1
+              }
             }
           },
           "privacy": {
             "type": "object",
-            "required": ["exactIncomeHidden", "sourceTransactionsHidden"],
+            "required": [
+              "exactIncomeHidden",
+              "sourceTransactionsHidden"
+            ],
             "properties": {
-              "exactIncomeHidden": { "type": "boolean", "example": true },
-              "sourceTransactionsHidden": { "type": "boolean", "example": true }
+              "exactIncomeHidden": {
+                "type": "boolean",
+                "example": true
+              },
+              "sourceTransactionsHidden": {
+                "type": "boolean",
+                "example": true
+              }
             }
           },
-          "issuedAt": { "type": "string", "format": "date-time" },
-          "expiresAt": { "type": "string", "format": "date-time" },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
           "proof": {
             "type": "object",
-            "required": ["type", "credentialHash", "signature"],
+            "required": [
+              "type",
+              "credentialHash",
+              "signature"
+            ],
             "properties": {
-              "type": { "type": "string", "example": "HMAC-SHA256" },
-              "credentialHash": { "type": "string", "example": "sha256:fixture-hash" },
-              "signature": { "type": "string", "example": "hmac-sha256:fixture-sig" }
+              "type": {
+                "type": "string",
+                "example": "HMAC-SHA256"
+              },
+              "credentialHash": {
+                "type": "string",
+                "example": "sha256:fixture-hash"
+              },
+              "signature": {
+                "type": "string",
+                "example": "hmac-sha256:fixture-sig"
+              }
             }
           }
         }
       },
       "ProofSummary": {
         "type": "object",
-        "required": ["id", "type", "schemaVersion", "network", "issuedAt", "expiresAt"],
+        "required": [
+          "id",
+          "type",
+          "schemaVersion",
+          "network",
+          "issuedAt",
+          "expiresAt"
+        ],
         "properties": {
-          "id": { "type": "string", "example": "EP-FIXT-0001" },
-          "type": { "type": "string" },
-          "schemaVersion": { "type": "string", "example": "1.0" },
-          "network": { "type": "string", "example": "testnet" },
-          "issuedAt": { "type": "string", "format": "date-time" },
-          "expiresAt": { "type": "string", "format": "date-time" },
-          "revokedAt": { "type": "string", "nullable": true }
+          "id": {
+            "type": "string",
+            "example": "EP-FIXT-0001"
+          },
+          "type": {
+            "type": "string"
+          },
+          "schemaVersion": {
+            "type": "string",
+            "example": "1.0"
+          },
+          "network": {
+            "type": "string",
+            "example": "testnet"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": "string",
+            "nullable": true
+          }
         }
       },
       "VerificationSource": {
         "type": "object",
-        "required": ["id", "type", "status"],
+        "required": [
+          "id",
+          "type",
+          "status"
+        ],
         "properties": {
-          "id": { "type": "string", "description": "Unique identifier for the source", "example": "issuer-veridatum-labs" },
-          "type": { "type": "string", "enum": ["issuer", "contract", "stellar_account", "backend_registry"], "description": "Type of verification source" },
-          "status": { "type": "string", "enum": ["verified", "unavailable", "failed"], "description": "Verification status of this source" },
-          "name": { "type": "string", "description": "Human-readable name for the source", "example": "Veridatum Labs Issuer Registry" },
-          "description": { "type": "string", "description": "Detailed explanation of the source", "example": "EarnProof trusted issuer registry" }
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the source",
+            "example": "issuer-veridatum-labs"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "issuer",
+              "contract",
+              "stellar_account",
+              "backend_registry"
+            ],
+            "description": "Type of verification source"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "unavailable",
+              "failed"
+            ],
+            "description": "Verification status of this source"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable name for the source",
+            "example": "Veridatum Labs Issuer Registry"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed explanation of the source",
+            "example": "EarnProof trusted issuer registry"
+          }
         }
       },
       "VerificationObservation": {
         "type": "object",
-        "required": ["checkpointId", "timestamp", "sourceId", "observationType", "result"],
+        "required": [
+          "checkpointId",
+          "timestamp",
+          "sourceId",
+          "observationType",
+          "result"
+        ],
         "properties": {
-          "checkpointId": { "type": "string", "description": "Reference to the checkpoint this observation belongs to", "example": "cp-issuer-verification" },
-          "timestamp": { "type": "string", "format": "date-time", "description": "When this observation was made", "example": "2026-08-16T14:32:05.000Z" },
-          "sourceId": { "type": "string", "description": "Which source performed this observation", "example": "issuer-veridatum-labs" },
-          "observationType": { "type": "string", "enum": ["signature_check", "issuer_check", "expiration_check", "revocation_check", "account_check"], "description": "What type of verification was performed" },
-          "result": { "type": "boolean", "description": "True if this observation passed, false if it failed" },
-          "details": { "type": "string", "description": "Optional detailed explanation of the observation result" }
+          "checkpointId": {
+            "type": "string",
+            "description": "Reference to the checkpoint this observation belongs to",
+            "example": "cp-issuer-verification"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this observation was made",
+            "example": "2026-08-16T14:32:05.000Z"
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "Which source performed this observation",
+            "example": "issuer-veridatum-labs"
+          },
+          "observationType": {
+            "type": "string",
+            "enum": [
+              "signature_check",
+              "issuer_check",
+              "expiration_check",
+              "revocation_check",
+              "account_check"
+            ],
+            "description": "What type of verification was performed"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "True if this observation passed, false if it failed"
+          },
+          "details": {
+            "type": "string",
+            "description": "Optional detailed explanation of the observation result"
+          }
         }
       },
       "VerificationCheckpoint": {
         "type": "object",
-        "required": ["id", "name", "order"],
+        "required": [
+          "id",
+          "name",
+          "order"
+        ],
         "properties": {
-          "id": { "type": "string", "description": "Unique identifier for this checkpoint", "example": "cp-issuer-verification" },
-          "name": { "type": "string", "description": "Human-readable checkpoint name", "example": "Issuer Verification" },
-          "order": { "type": "integer", "description": "Sequence order in the verification chain (0-indexed)" },
-          "description": { "type": "string", "description": "What this checkpoint verifies", "example": "Verify that the issuer is in the trusted registry" }
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for this checkpoint",
+            "example": "cp-issuer-verification"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable checkpoint name",
+            "example": "Issuer Verification"
+          },
+          "order": {
+            "type": "integer",
+            "description": "Sequence order in the verification chain (0-indexed)"
+          },
+          "description": {
+            "type": "string",
+            "description": "What this checkpoint verifies",
+            "example": "Verify that the issuer is in the trusted registry"
+          }
         }
       },
       "MissingProvenanceLink": {
         "type": "object",
-        "required": ["sourceId", "reason"],
+        "required": [
+          "sourceId",
+          "reason"
+        ],
         "properties": {
-          "sourceId": { "type": "string", "description": "Which source is unavailable", "example": "stellar_account" },
-          "reason": { "type": "string", "enum": ["timeout", "network_error", "permission_denied", "not_applicable"], "description": "Why the source is unavailable" },
-          "retryable": { "type": "boolean", "description": "Whether this source might be available if retried" }
+          "sourceId": {
+            "type": "string",
+            "description": "Which source is unavailable",
+            "example": "stellar_account"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "timeout",
+              "network_error",
+              "permission_denied",
+              "not_applicable"
+            ],
+            "description": "Why the source is unavailable"
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": "Whether this source might be available if retried"
+          }
         }
       },
       "ProvenianceChain": {
         "type": "object",
-        "required": ["sources", "checkpoints", "observations", "verificationPath"],
+        "required": [
+          "sources",
+          "checkpoints",
+          "observations",
+          "verificationPath"
+        ],
         "properties": {
-          "sources": { "type": "array", "items": { "$ref": "#/components/schemas/VerificationSource" }, "description": "All sources that contributed to verification" },
-          "checkpoints": { "type": "array", "items": { "$ref": "#/components/schemas/VerificationCheckpoint" }, "description": "Verification steps in order" },
-          "observations": { "type": "array", "items": { "$ref": "#/components/schemas/VerificationObservation" }, "description": "Timestamped observations from each checkpoint" },
-          "verificationPath": { "type": "array", "items": { "type": "string" }, "description": "Ordered list of checkpoints that were executed", "example": ["cp-credential-structure", "cp-issuer-verification", "cp-signature-validation"] },
-          "missingLinks": { "type": "array", "items": { "$ref": "#/components/schemas/MissingProvenanceLink" }, "description": "Sources that could not be verified (empty list if all sources were checked)" }
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VerificationSource"
+            },
+            "description": "All sources that contributed to verification"
+          },
+          "checkpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VerificationCheckpoint"
+            },
+            "description": "Verification steps in order"
+          },
+          "observations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VerificationObservation"
+            },
+            "description": "Timestamped observations from each checkpoint"
+          },
+          "verificationPath": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Ordered list of checkpoints that were executed",
+            "example": [
+              "cp-credential-structure",
+              "cp-issuer-verification",
+              "cp-signature-validation"
+            ]
+          },
+          "missingLinks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MissingProvenanceLink"
+            },
+            "description": "Sources that could not be verified (empty list if all sources were checked)"
+          }
         }
       },
       "VerifyProofResponse": {
         "type": "object",
-        "required": ["result", "status"],
+        "required": [
+          "result",
+          "status"
+        ],
         "properties": {
           "result": {
             "type": "string",
-            "enum": ["VALID", "EXPIRED", "REVOKED", "INVALID_SIGNATURE", "UNKNOWN_PROOF", "UNVERIFIED_ISSUER"]
+            "enum": [
+              "VALID",
+              "EXPIRED",
+              "REVOKED",
+              "INVALID_SIGNATURE",
+              "UNKNOWN_PROOF",
+              "UNVERIFIED_ISSUER"
+            ]
           },
-          "status": { "type": "string", "enum": ["valid", "expired", "revoked", "unknown", "invalid"] },
-          "credential": { "$ref": "#/components/schemas/SignedCredential" },
-          "proof": { "$ref": "#/components/schemas/ProofSummary" },
-          "provenance": { "$ref": "#/components/schemas/ProvenianceChain", "description": "Verification source provenance chain showing which sources contributed to the verification decision" }
+          "status": {
+            "type": "string",
+            "enum": [
+              "valid",
+              "expired",
+              "revoked",
+              "unknown",
+              "invalid"
+            ]
+          },
+          "credential": {
+            "$ref": "#/components/schemas/SignedCredential"
+          },
+          "proof": {
+            "$ref": "#/components/schemas/ProofSummary"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/ProvenianceChain",
+            "description": "Verification source provenance chain showing which sources contributed to the verification decision"
+          }
         }
       },
       "ProofCreated": {
         "type": "object",
-        "required": ["proofId", "status", "verificationUrl", "credential"],
+        "required": [
+          "proofId",
+          "status",
+          "verificationUrl",
+          "credential"
+        ],
         "properties": {
-          "proofId": { "type": "string", "example": "EP-FIXT-0001" },
-          "status": { "type": "string", "example": "issued" },
-          "verificationUrl": { "type": "string", "example": "https://app.earnproof.example/verify?proof=EP-FIXT-0001" },
-          "credential": { "$ref": "#/components/schemas/SignedCredential" }
+          "proofId": {
+            "type": "string",
+            "example": "EP-FIXT-0001"
+          },
+          "status": {
+            "type": "string",
+            "example": "issued"
+          },
+          "verificationUrl": {
+            "type": "string",
+            "example": "https://app.earnproof.example/verify?proof=EP-FIXT-0001"
+          },
+          "credential": {
+            "$ref": "#/components/schemas/SignedCredential"
+          }
         }
       },
       "RecurringIncomeProof": {
         "type": "object",
-        "required": ["proofId", "status", "verificationUrl", "credential"],
+        "required": [
+          "proofId",
+          "status",
+          "verificationUrl",
+          "credential"
+        ],
         "properties": {
-          "proofId": { "type": "string", "example": "EP-FIXT-RECURRING-0001" },
-          "status": { "type": "string", "example": "issued" },
-          "verificationUrl": { "type": "string", "example": "https://app.earnproof.example/verify?proof=EP-FIXT-RECURRING-0001" },
-          "credential": { "$ref": "#/components/schemas/SignedCredential" }
+          "proofId": {
+            "type": "string",
+            "example": "EP-FIXT-RECURRING-0001"
+          },
+          "status": {
+            "type": "string",
+            "example": "issued"
+          },
+          "verificationUrl": {
+            "type": "string",
+            "example": "https://app.earnproof.example/verify?proof=EP-FIXT-RECURRING-0001"
+          },
+          "credential": {
+            "$ref": "#/components/schemas/SignedCredential"
+          }
         }
       },
       "Issuer": {
         "type": "object",
-        "required": ["id", "name", "status"],
+        "required": [
+          "id",
+          "name",
+          "status"
+        ],
         "properties": {
-          "id": { "type": "string", "example": "fixture-issuer-1" },
-          "name": { "type": "string", "example": "Synthetic Test Issuer" },
-          "status": { "type": "string", "enum": ["ACTIVE", "PENDING", "SUSPENDED", "REVOKED"] },
-          "organizationId": { "type": "string", "example": "fixture-org-1" }
+          "id": {
+            "type": "string",
+            "example": "fixture-issuer-1"
+          },
+          "name": {
+            "type": "string",
+            "example": "Synthetic Test Issuer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PENDING",
+              "SUSPENDED",
+              "REVOKED"
+            ]
+          },
+          "organizationId": {
+            "type": "string",
+            "example": "fixture-org-1"
+          }
         }
       },
       "Organization": {
         "type": "object",
-        "required": ["id", "name", "slug", "status"],
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "status"
+        ],
         "properties": {
-          "id": { "type": "string", "example": "fixture-org-1" },
-          "name": { "type": "string", "example": "Synthetic Test Organization" },
-          "slug": { "type": "string", "example": "synthetic-org" },
-          "website": { "type": "string", "nullable": true, "example": "https://example.invalid" },
-          "status": { "type": "string", "enum": ["ACTIVE", "PENDING", "SUSPENDED", "REVOKED", "DELETED"] }
+          "id": {
+            "type": "string",
+            "example": "fixture-org-1"
+          },
+          "name": {
+            "type": "string",
+            "example": "Synthetic Test Organization"
+          },
+          "slug": {
+            "type": "string",
+            "example": "synthetic-org"
+          },
+          "website": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://example.invalid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PENDING",
+              "SUSPENDED",
+              "REVOKED",
+              "DELETED"
+            ]
+          }
         }
       },
       "ApiKey": {
         "type": "object",
-        "required": ["id", "name", "prefix", "scopes"],
+        "required": [
+          "id",
+          "name",
+          "prefix",
+          "scopes"
+        ],
         "properties": {
-          "id": { "type": "string", "example": "fixture-api-key-1" },
-          "name": { "type": "string", "example": "Reporting integration" },
-          "prefix": { "type": "string", "example": "epk_test" },
-          "scopes": { "type": "array", "items": { "type": "string" }, "example": ["proofs:read"] },
-          "expiresAt": { "type": "string", "nullable": true },
+          "id": {
+            "type": "string",
+            "example": "fixture-api-key-1"
+          },
+          "name": {
+            "type": "string",
+            "example": "Reporting integration"
+          },
+          "prefix": {
+            "type": "string",
+            "example": "epk_test"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "proofs:read"
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "nullable": true
+          },
           "createdAt": {
             "type": "string",
             "nullable": true,
@@ -758,84 +3096,299 @@
       },
       "CreateWebhookRequest": {
         "type": "object",
-        "required": ["url", "events"],
+        "required": [
+          "url",
+          "events"
+        ],
         "properties": {
-          "url": { "type": "string", "example": "https://example.invalid/webhooks/earnproof" },
+          "url": {
+            "type": "string",
+            "example": "https://example.invalid/webhooks/earnproof"
+          },
           "events": {
             "type": "array",
-            "items": { "type": "string", "enum": ["proof.created", "proof.verified", "proof.revoked"] }
+            "items": {
+              "type": "string",
+              "enum": [
+                "proof.created",
+                "proof.verified",
+                "proof.revoked"
+              ]
+            }
           }
         }
       },
       "Webhook": {
         "type": "object",
-        "required": ["id", "url", "events", "status"],
+        "required": [
+          "id",
+          "url",
+          "events",
+          "status"
+        ],
         "properties": {
-          "id": { "type": "string", "example": "fixture-webhook-1" },
-          "url": { "type": "string", "example": "https://example.invalid/webhooks/earnproof" },
-          "events": { "type": "array", "items": { "type": "string" } },
-          "status": { "type": "string", "enum": ["ACTIVE", "DISABLED"] }
+          "id": {
+            "type": "string",
+            "example": "fixture-webhook-1"
+          },
+          "url": {
+            "type": "string",
+            "example": "https://example.invalid/webhooks/earnproof"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "DISABLED"
+            ]
+          }
         }
       },
       "ActivityEvent": {
         "type": "object",
-        "required": ["id", "category", "action", "outcome", "occurredAt"],
+        "required": [
+          "id",
+          "category",
+          "action",
+          "outcome",
+          "occurredAt"
+        ],
         "description": "Redacted activity event. Only the masked field matching the category is present. Unknown categories or actions may appear and are shown as an unrecognized event.",
         "properties": {
-          "id": { "type": "string", "example": "evt_001" },
-          "category": { "type": "string", "enum": ["auth", "key", "session", "admin"] },
-          "action": { "type": "string", "example": "wallet-signature-verified" },
-          "outcome": { "type": "string", "enum": ["success", "failure", "pending"] },
-          "occurredAt": { "type": "string", "format": "date-time", "example": "2026-01-02T03:04:05.000Z" },
-          "ipAddressMasked": { "type": "string", "example": "203.0.113.0" },
-          "locationLabel": { "type": "string", "example": "Lagos, NG" },
-          "walletAddressMasked": { "type": "string", "example": "GABC•••MNOP" },
-          "apiKeyIdMasked": { "type": "string", "example": "key_•••3210" },
-          "sessionIdMasked": { "type": "string", "example": "sess•••7089" },
-          "targetLabel": { "type": "string", "example": "Synthetic Issuer Co" }
+          "id": {
+            "type": "string",
+            "example": "evt_001"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "auth",
+              "key",
+              "session",
+              "admin"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "example": "wallet-signature-verified"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "success",
+              "failure",
+              "pending"
+            ]
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-02T03:04:05.000Z"
+          },
+          "ipAddressMasked": {
+            "type": "string",
+            "example": "203.0.113.0"
+          },
+          "locationLabel": {
+            "type": "string",
+            "example": "Lagos, NG"
+          },
+          "walletAddressMasked": {
+            "type": "string",
+            "example": "GABC\u2022\u2022\u2022MNOP"
+          },
+          "apiKeyIdMasked": {
+            "type": "string",
+            "example": "key_\u2022\u2022\u20223210"
+          },
+          "sessionIdMasked": {
+            "type": "string",
+            "example": "sess\u2022\u2022\u20227089"
+          },
+          "targetLabel": {
+            "type": "string",
+            "example": "Synthetic Issuer Co"
+          }
         }
       },
       "ActivityPage": {
         "type": "object",
-        "required": ["events", "nextCursor"],
+        "required": [
+          "events",
+          "nextCursor"
+        ],
         "properties": {
-          "events": { "type": "array", "items": { "$ref": "#/components/schemas/ActivityEvent" } },
-          "nextCursor": { "type": "string", "nullable": true }
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityEvent"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
         }
       },
       "CspViolationGroup": {
         "type": "object",
-        "required": ["id", "directive", "routeCategory", "release", "firstSeenRelease", "blockedKind", "count", "firstSeenAt", "lastSeenAt"],
+        "required": [
+          "id",
+          "directive",
+          "routeCategory",
+          "release",
+          "firstSeenRelease",
+          "blockedKind",
+          "count",
+          "firstSeenAt",
+          "lastSeenAt"
+        ],
         "properties": {
-          "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$", "example": "grp_script_embed" },
-          "directive": { "type": "string", "enum": ["default-src", "script-src", "script-src-elem", "script-src-attr", "style-src", "style-src-elem", "style-src-attr", "img-src", "font-src", "connect-src", "media-src", "worker-src", "manifest-src", "object-src", "base-uri", "form-action", "frame-src", "frame-ancestors", "child-src"] },
-          "routeCategory": { "type": "string", "enum": ["public", "verify", "embed", "proofs", "settings", "issuers", "developers", "other"] },
-          "release": { "type": "string", "example": "2026.03.1" },
-          "firstSeenRelease": { "type": "string", "example": "2026.03.1" },
-          "blockedKind": { "type": "string", "enum": ["inline", "eval", "data", "blob", "same-origin", "third-party", "unknown"] },
-          "count": { "type": "integer", "minimum": 1, "example": 42 },
-          "firstSeenAt": { "type": "string", "format": "date-time", "example": "2026-03-10T09:00:00.000Z" },
-          "lastSeenAt": { "type": "string", "format": "date-time", "example": "2026-03-10T11:50:00.000Z" }
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "example": "grp_script_embed"
+          },
+          "directive": {
+            "type": "string",
+            "enum": [
+              "default-src",
+              "script-src",
+              "script-src-elem",
+              "script-src-attr",
+              "style-src",
+              "style-src-elem",
+              "style-src-attr",
+              "img-src",
+              "font-src",
+              "connect-src",
+              "media-src",
+              "worker-src",
+              "manifest-src",
+              "object-src",
+              "base-uri",
+              "form-action",
+              "frame-src",
+              "frame-ancestors",
+              "child-src"
+            ]
+          },
+          "routeCategory": {
+            "type": "string",
+            "enum": [
+              "public",
+              "verify",
+              "embed",
+              "proofs",
+              "settings",
+              "issuers",
+              "developers",
+              "other"
+            ]
+          },
+          "release": {
+            "type": "string",
+            "example": "2026.03.1"
+          },
+          "firstSeenRelease": {
+            "type": "string",
+            "example": "2026.03.1"
+          },
+          "blockedKind": {
+            "type": "string",
+            "enum": [
+              "inline",
+              "eval",
+              "data",
+              "blob",
+              "same-origin",
+              "third-party",
+              "unknown"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 42
+          },
+          "firstSeenAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-10T09:00:00.000Z"
+          },
+          "lastSeenAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-10T11:50:00.000Z"
+          }
         }
       },
       "CspViolationReport": {
         "type": "object",
-        "required": ["generatedAt", "windowStart", "windowEnd", "currentRelease", "releases", "groups", "nextCursor"],
+        "required": [
+          "generatedAt",
+          "windowStart",
+          "windowEnd",
+          "currentRelease",
+          "releases",
+          "groups",
+          "nextCursor"
+        ],
         "properties": {
-          "generatedAt": { "type": "string", "format": "date-time" },
-          "windowStart": { "type": "string", "format": "date-time" },
-          "windowEnd": { "type": "string", "format": "date-time" },
-          "currentRelease": { "type": "string", "example": "2026.03.1" },
-          "releases": { "type": "array", "maxItems": 50, "items": { "type": "string" } },
-          "groups": { "type": "array", "items": { "$ref": "#/components/schemas/CspViolationGroup" } },
-          "nextCursor": { "type": "string", "nullable": true }
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "windowStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "windowEnd": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "currentRelease": {
+            "type": "string",
+            "example": "2026.03.1"
+          },
+          "releases": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "string"
+            }
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CspViolationGroup"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
         }
       },
       "ApiError": {
         "type": "object",
-        "required": ["statusCode", "code", "message", "requestId"],
+        "required": [
+          "statusCode",
+          "code",
+          "message",
+          "requestId"
+        ],
         "properties": {
-          "statusCode": { "type": "integer", "example": 401 },
+          "statusCode": {
+            "type": "integer",
+            "example": 401
+          },
           "code": {
             "type": "string",
             "enum": [
@@ -857,18 +3410,618 @@
               "INTERNAL_ERROR"
             ]
           },
-          "message": { "type": "string", "example": "Authentication token is invalid." },
-          "requestId": { "type": "string", "example": "fixture-request-1" },
+          "message": {
+            "type": "string",
+            "example": "Authentication token is invalid."
+          },
+          "requestId": {
+            "type": "string",
+            "example": "fixture-request-1"
+          },
           "violations": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["field", "message"],
+              "required": [
+                "field",
+                "message"
+              ],
               "properties": {
-                "field": { "type": "string" },
-                "message": { "type": "string" }
+                "field": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
               }
             }
+          }
+        }
+      },
+      "ShareLink": {
+        "type": "object",
+        "required": [
+          "id",
+          "proofId",
+          "expiresInHours",
+          "expiresAt",
+          "discloseAmount",
+          "discloseSender",
+          "createdAt",
+          "revokedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "proofId": {
+            "type": "string"
+          },
+          "expiresInHours": {
+            "type": "number",
+            "minimum": 1
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "discloseAmount": {
+            "type": "boolean"
+          },
+          "discloseSender": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "ShareLinkPage": {
+        "type": "object",
+        "required": [
+          "links"
+        ],
+        "properties": {
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShareLink"
+            }
+          }
+        }
+      },
+      "ShareLinkCreated": {
+        "type": "object",
+        "required": [
+          "token",
+          "record"
+        ],
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "record": {
+            "$ref": "#/components/schemas/ShareLink"
+          }
+        }
+      },
+      "CreateShareLink": {
+        "type": "object",
+        "required": [
+          "proofId",
+          "expiresInHours",
+          "discloseAmount",
+          "discloseSender"
+        ],
+        "properties": {
+          "proofId": {
+            "type": "string"
+          },
+          "expiresInHours": {
+            "type": "number",
+            "enum": [
+              1,
+              24,
+              72,
+              168
+            ]
+          },
+          "discloseAmount": {
+            "type": "boolean"
+          },
+          "discloseSender": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ShareAccessEvent": {
+        "type": "object",
+        "required": [
+          "id",
+          "shareLinkId",
+          "outcome",
+          "occurredAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "shareLinkId": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "ACCEPTED",
+              "EXPIRED",
+              "REJECTED"
+            ]
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ShareAccessSummary": {
+        "type": "object",
+        "required": [
+          "shareLinkId",
+          "totalAttempts",
+          "acceptedCount",
+          "expiredCount",
+          "rejectedCount",
+          "recent"
+        ],
+        "properties": {
+          "shareLinkId": {
+            "type": "string"
+          },
+          "totalAttempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "acceptedCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "expiredCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rejectedCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recent": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "$ref": "#/components/schemas/ShareAccessEvent"
+            }
+          }
+        }
+      },
+      "TrustedSource": {
+        "type": "object",
+        "required": [
+          "id",
+          "organizationId",
+          "name",
+          "issuerId",
+          "network",
+          "status",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "issuerId": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "testnet",
+              "public"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "DISABLED",
+              "DELETED"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TrustedSourcePage": {
+        "type": "object",
+        "required": [
+          "sources"
+        ],
+        "properties": {
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrustedSource"
+            }
+          }
+        }
+      },
+      "TrustedSourceInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "issuerId",
+          "network"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "issuerId": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "testnet",
+              "public"
+            ]
+          }
+        }
+      },
+      "TrustedSourcePatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "issuerId": {
+            "type": "string"
+          }
+        }
+      },
+      "TrustedSourceTest": {
+        "type": "object",
+        "required": [
+          "source",
+          "eligible",
+          "testedAt"
+        ],
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/TrustedSource"
+          },
+          "eligible": {
+            "type": "boolean"
+          },
+          "testedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TrustedSourceHistoryEvent": {
+        "type": "object",
+        "required": [
+          "id",
+          "action",
+          "version",
+          "occurredAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "CREATE",
+              "UPDATE",
+              "DISABLE",
+              "TEST"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TrustedSourceHistory": {
+        "type": "object",
+        "required": [
+          "organizationId",
+          "sourceId",
+          "events"
+        ],
+        "properties": {
+          "organizationId": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrustedSourceHistoryEvent"
+            }
+          }
+        }
+      },
+      "WalletRotationProof": {
+        "type": "object",
+        "required": [
+          "intentId",
+          "network",
+          "walletAddress",
+          "role",
+          "challengeId",
+          "expiresAt",
+          "verified"
+        ],
+        "properties": {
+          "intentId": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "testnet",
+              "public"
+            ]
+          },
+          "walletAddress": {
+            "type": "string",
+            "pattern": "^G[A-Z2-7]{55}$"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "current",
+              "replacement"
+            ]
+          },
+          "challengeId": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verified": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        }
+      },
+      "WalletRotationIntent": {
+        "type": "object",
+        "required": [
+          "id",
+          "previousAddress",
+          "newAddress",
+          "network",
+          "status",
+          "version",
+          "expiresAt",
+          "completedAt",
+          "currentProof",
+          "replacementProof"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "previousAddress": {
+            "type": "string",
+            "pattern": "^G[A-Z2-7]{55}$"
+          },
+          "newAddress": {
+            "type": "string",
+            "pattern": "^G[A-Z2-7]{55}$"
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "testnet",
+              "public"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "READY",
+              "COMPLETED",
+              "CANCELLED",
+              "EXPIRED"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "currentProof": {
+            "$ref": "#/components/schemas/WalletRotationProof",
+            "nullable": true
+          },
+          "replacementProof": {
+            "$ref": "#/components/schemas/WalletRotationProof",
+            "nullable": true
+          }
+        }
+      },
+      "WalletRotationRecovery": {
+        "type": "object",
+        "required": [
+          "intent"
+        ],
+        "properties": {
+          "intent": {
+            "$ref": "#/components/schemas/WalletRotationIntent",
+            "nullable": true
+          }
+        }
+      },
+      "WalletRotationCreate": {
+        "type": "object",
+        "required": [
+          "newAddress",
+          "network"
+        ],
+        "properties": {
+          "newAddress": {
+            "type": "string",
+            "pattern": "^G[A-Z2-7]{55}$"
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "testnet",
+              "public"
+            ]
+          }
+        }
+      },
+      "WalletRotationChallengeRequest": {
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "current",
+              "replacement"
+            ]
+          }
+        }
+      },
+      "WalletRotationChallenge": {
+        "type": "object",
+        "required": [
+          "id",
+          "intentId",
+          "network",
+          "walletAddress",
+          "role",
+          "message",
+          "expiresAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "intentId": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "testnet",
+              "public"
+            ]
+          },
+          "walletAddress": {
+            "type": "string",
+            "pattern": "^G[A-Z2-7]{55}$"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "current",
+              "replacement"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "WalletRotationProofRequest": {
+        "type": "object",
+        "required": [
+          "role",
+          "challengeId",
+          "signature",
+          "network"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "current",
+              "replacement"
+            ]
+          },
+          "challengeId": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "testnet",
+              "public"
+            ]
           }
         }
       }

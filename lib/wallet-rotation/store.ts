@@ -1,115 +1,92 @@
-/**
- * Wallet address rotation tracking (#169).
- *
- * No rotation-completion endpoint exists in this repo's OpenAPI spec: only
- * /auth/challenge and /auth/verify are real, and both only ever authenticate
- * a session for whatever wallet address is already presented — neither one
- * reassigns which wallet an *existing* account is tied to. This store
- * layers a client-local rotation record on top of two real challenge/verify
- * round trips (one for the current wallet, one for the replacement), so
- * the "replacement not already assigned" and "no rotation completes after
- * either proof expires" checks this issue asks for have somewhere to live.
- * The actual identity reassignment recorded here would need a real backend
- * mutation once one exists; this store's function signatures are the
- * intended drop-in target for that.
- */
+import { z } from "zod";
+import { apiClient, bearer } from "@/lib/api/client";
+import { readStoredSession } from "@/lib/session";
+import { appConfig } from "@/config/app";
+import { validateApiResponse } from "@/lib/validation/runtime-response";
 
-const STORAGE_KEY = "earnproof.wallet-rotations";
-
-export interface WalletRotationRecord {
-  id: string;
-  previousAddress: string;
-  newAddress: string;
-  completedAt: string;
+const address = z.string().regex(/^G[A-Z2-7]{55}$/);
+const network = z.enum(["testnet", "public"]);
+export type WalletRole = "current" | "replacement";
+const roleSchema = z.enum(["current", "replacement"]);
+const proofSchema = z.object({ intentId: z.string().min(1), network, walletAddress: address, role: roleSchema, challengeId: z.string().min(1), expiresAt: z.iso.datetime(), verified: z.literal(true) });
+export const rotationIntentSchema = z.object({
+  id: z.string().min(1), previousAddress: address, newAddress: address, network,
+  status: z.enum(["PENDING", "READY", "COMPLETED", "CANCELLED", "EXPIRED"]), version: z.number().int().positive(),
+  expiresAt: z.iso.datetime(), completedAt: z.iso.datetime().nullable(),
+  currentProof: proofSchema.nullable(), replacementProof: proofSchema.nullable(),
+});
+export type WalletRotationIntent = z.infer<typeof rotationIntentSchema>;
+const challengeSchema = z.object({ id: z.string().min(1), intentId: z.string().min(1), network, walletAddress: address, role: roleSchema, message: z.string().min(1), expiresAt: z.iso.datetime() });
+export type RotationChallenge = z.infer<typeof challengeSchema>;
+function headers(previousAddress: string) {
+  const session = readStoredSession();
+  if (!session || session.user.walletAddress !== previousAddress) throw new Error("Authenticate with the current wallet.");
+  return bearer(session.token);
 }
-
-function isWalletRotationRecord(value: unknown): value is WalletRotationRecord {
-  if (typeof value !== "object" || value === null) return false;
-  const r = value as Record<string, unknown>;
-  return (
-    typeof r.id === "string" &&
-    typeof r.previousAddress === "string" &&
-    typeof r.newAddress === "string" &&
-    typeof r.completedAt === "string"
-  );
+const path = (id: string) => `/wallet-rotations/${encodeURIComponent(id)}`;
+const match = (intent: WalletRotationIntent) => ({ "If-Match": `"${intent.version}"` });
+export function areBothChallengesValid(currentExpiresAt: string, replacementExpiresAt: string, now = Date.now()): boolean {
+  return Number.isFinite(Date.parse(currentExpiresAt)) && Number.isFinite(Date.parse(replacementExpiresAt)) && now < Date.parse(currentExpiresAt) && now < Date.parse(replacementExpiresAt);
 }
-
-function readAll(): WalletRotationRecord[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isWalletRotationRecord);
-  } catch {
-    return [];
+function checked(value: unknown, previousAddress: string): WalletRotationIntent {
+  const intent = validateApiResponse(rotationIntentSchema, value);
+  if (intent.previousAddress !== previousAddress || intent.newAddress === previousAddress || intent.network !== appConfig.stellarNetwork) throw new Error("Rotation scope mismatch.");
+  for (const role of ["current", "replacement"] as const) {
+    const proof = role === "current" ? intent.currentProof : intent.replacementProof;
+    if (proof && (proof.intentId !== intent.id || proof.network !== intent.network || proof.role !== role || proof.walletAddress !== (role === "current" ? intent.previousAddress : intent.newAddress) || Date.parse(proof.expiresAt) > Date.parse(intent.expiresAt))) throw new Error("Rotation proof scope mismatch.");
   }
+  if (intent.status === "COMPLETED" && (!intent.completedAt || !intent.currentProof || !intent.replacementProof)) throw new Error("Completion was not confirmed.");
+  if (intent.status === "READY" && (!intent.currentProof || !intent.replacementProof)) throw new Error("Rotation proofs are incomplete.");
+  return intent;
 }
-
-function writeAll(records: WalletRotationRecord[]): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+function active(intent: WalletRotationIntent) {
+  if (!["PENDING", "READY"].includes(intent.status) || Date.now() >= Date.parse(intent.expiresAt)) throw new Error("Rotation is expired or no longer active. Refresh server state.");
 }
-
-export function listWalletRotations(): WalletRotationRecord[] {
-  return readAll();
+function sameIntent(value: unknown, intent: WalletRotationIntent) {
+  const result = checked(value, intent.previousAddress);
+  if (result.id !== intent.id || result.newAddress !== intent.newAddress || result.version <= intent.version) throw new Error("Rotation changed. Refresh server state.");
+  return result;
 }
-
-/**
- * True if `address` is already the *current* address of a completed
- * rotation (i.e. some other account has already rotated into it) —
- * #169's "replacement address ... not already assigned" acceptance
- * criterion. Only checks addresses that are a rotation *target*; being a
- * rotation's old/previous address does not block reuse, since that wallet
- * is exactly the one being vacated.
- */
-export function isWalletAlreadyAssigned(address: string): boolean {
-  return readAll().some((r) => r.newAddress === address);
+export async function getRotationIntent(previousAddress: string, signal?: AbortSignal): Promise<WalletRotationIntent | null> {
+  const response = validateApiResponse(z.object({ intent: rotationIntentSchema.nullable() }), await apiClient<unknown>({ path: "/wallet-rotations/current", headers: headers(previousAddress), signal, skipCoalescing: true }));
+  return response.intent ? checked(response.intent, previousAddress) : null;
 }
-
-export class WalletAlreadyAssignedError extends Error {
-  constructor() {
-    super("This wallet address is already assigned to another account.");
-    this.name = "WalletAlreadyAssignedError";
-  }
+export async function createRotationIntent(previousAddress: string, newAddress: string, idempotencyKey: string, signal?: AbortSignal): Promise<WalletRotationIntent> {
+  address.parse(newAddress);
+  if (previousAddress === newAddress) throw new Error("Choose a different replacement wallet.");
+  const intent = checked(await apiClient<unknown>({ path: "/wallet-rotations", method: "POST", headers: { ...headers(previousAddress), "Idempotency-Key": idempotencyKey }, body: JSON.stringify({ newAddress, network: appConfig.stellarNetwork }), signal }), previousAddress);
+  if (intent.newAddress !== newAddress || intent.status !== "PENDING") throw new Error("Unexpected rotation intent.");
+  active(intent); return intent;
 }
-
-export function completeWalletRotation(
-  previousAddress: string,
-  newAddress: string,
-): WalletRotationRecord {
-  if (isWalletAlreadyAssigned(newAddress)) {
-    throw new WalletAlreadyAssignedError();
-  }
-
-  const record: WalletRotationRecord = {
-    id:
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `rotation_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-    previousAddress,
-    newAddress,
-    completedAt: new Date().toISOString(),
-  };
-  const records = readAll();
-  records.push(record);
-  writeAll(records);
-  return record;
+export function rotationChallengeMessage(challenge: Omit<RotationChallenge, "message">): string {
+  return JSON.stringify({ purpose: "earnproof.wallet-rotation.v1", intentId: challenge.intentId, network: challenge.network, role: challenge.role, walletAddress: challenge.walletAddress, challengeId: challenge.id, expiresAt: challenge.expiresAt });
 }
-
-/**
- * True while both the current-wallet and replacement-wallet challenges are
- * still within their expiry window (#169's "No rotation completes after
- * either proof expires"). Pass the two AuthChallenge.expiresAt values.
- */
-export function areBothChallengesValid(
-  currentExpiresAt: string,
-  replacementExpiresAt: string,
-  now: number = Date.now(),
-): boolean {
-  const currentExpiry = Date.parse(currentExpiresAt);
-  const replacementExpiry = Date.parse(replacementExpiresAt);
-  if (Number.isNaN(currentExpiry) || Number.isNaN(replacementExpiry)) return false;
-  return now < currentExpiry && now < replacementExpiry;
+function checkChallenge(intent: WalletRotationIntent, role: WalletRole, challenge: RotationChallenge) {
+  active(intent);
+  if ((role === "current" ? intent.currentProof : intent.replacementProof) !== null) throw new Error("This wallet proof has already been accepted.");
+  if (challenge.intentId !== intent.id || challenge.network !== intent.network || challenge.role !== role || challenge.walletAddress !== (role === "current" ? intent.previousAddress : intent.newAddress) || Date.now() >= Date.parse(challenge.expiresAt) || Date.parse(challenge.expiresAt) > Date.parse(intent.expiresAt) || challenge.message !== rotationChallengeMessage(challenge)) throw new Error("Invalid or expired rotation challenge.");
+}
+export async function createRotationChallenge(intent: WalletRotationIntent, role: WalletRole, signal?: AbortSignal): Promise<RotationChallenge> {
+  active(intent);
+  if ((role === "current" ? intent.currentProof : intent.replacementProof) !== null) throw new Error("This wallet proof has already been accepted.");
+  const challenge = validateApiResponse(challengeSchema, await apiClient<unknown>({ path: `${path(intent.id)}/challenges`, method: "POST", headers: { ...headers(intent.previousAddress), ...match(intent) }, body: JSON.stringify({ role }), signal }));
+  checkChallenge(intent, role, challenge); return challenge;
+}
+export async function submitRotationProof(intent: WalletRotationIntent, challenge: RotationChallenge, signature: string, signal?: AbortSignal): Promise<WalletRotationIntent> {
+  checkChallenge(intent, challenge.role, challenge);
+  if (!signature) throw new Error("A wallet signature is required.");
+  const result = sameIntent(await apiClient<unknown>({ path: `${path(intent.id)}/proofs`, method: "POST", headers: { ...headers(intent.previousAddress), ...match(intent) }, body: JSON.stringify({ role: challenge.role, challengeId: challenge.id, signature, network: intent.network }), signal }), intent);
+  const proof = challenge.role === "current" ? result.currentProof : result.replacementProof;
+  if (!proof || proof.challengeId !== challenge.id || proof.expiresAt !== challenge.expiresAt) throw new Error("Wallet proof was not confirmed.");
+  active(result); return result;
+}
+export async function completeWalletRotation(intent: WalletRotationIntent, signal?: AbortSignal): Promise<WalletRotationIntent> {
+  active(intent);
+  if (intent.status !== "READY" || !intent.currentProof || !intent.replacementProof || !areBothChallengesValid(intent.currentProof.expiresAt, intent.replacementProof.expiresAt)) throw new Error("Both wallet proofs must still be valid.");
+  const result = sameIntent(await apiClient<unknown>({ path: `${path(intent.id)}/complete`, method: "POST", headers: { ...headers(intent.previousAddress), ...match(intent) }, signal }), intent);
+  if (result.status !== "COMPLETED") throw new Error("Rotation completion was not confirmed."); return result;
+}
+export async function cancelRotationIntent(intent: WalletRotationIntent, signal?: AbortSignal): Promise<void> {
+  const result = sameIntent(await apiClient<unknown>({ path: `${path(intent.id)}/cancel`, method: "POST", headers: { ...headers(intent.previousAddress), ...match(intent) }, signal }), intent);
+  if (result.status !== "CANCELLED") throw new Error("Cancellation was not confirmed.");
 }

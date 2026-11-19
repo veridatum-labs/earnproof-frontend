@@ -70,6 +70,7 @@ export interface StorageSchema {
   TRANSACTION_OPERATIONS: {
     // Keyed by operationId; stores only non-sensitive operation references with bounded expiry.
     data: Record<string, PersistedTransactionOperationRef>;
+  };
   QUICKSTART_PROGRESS: {
     // Checklist step ids only (see lib/developers/quickstart.ts's
     // QUICKSTART_STEPS) - never an API secret, key id, or request payload.
@@ -157,6 +158,8 @@ export const migrations: Record<StorageKey, Record<number, StorageMigration>> = 
     1: (data) => data,
   },
   TRANSACTION_OPERATIONS: {
+    1: (data) => data,
+  },
   QUICKSTART_PROGRESS: {
     // Version 1 is current - no migration needed
     1: (data) => data,

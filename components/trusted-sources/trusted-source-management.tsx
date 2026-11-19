@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useSessionToken } from "@/lib/use-session";
+import { readStoredOrganizationId, subscribeStoredOrganizationId } from "@/lib/organization-context/store";
 import { CreateTrustedSourceForm } from "./create-trusted-source-form";
 import { TrustedSourceList } from "./trusted-source-list";
 import { getIssuers } from "@/lib/api/issuers";
@@ -17,10 +19,16 @@ type SessionData = {
 };
 
 export function TrustedSourceManagement() {
+  const token = useSessionToken();
+  const organizationId = useSyncExternalStore(subscribeStoredOrganizationId, readStoredOrganizationId, () => null);
+  return <TrustedSourceWorkspace key={`${token}:${organizationId}`} />;
+}
+
+function TrustedSourceWorkspace() {
   const [session] = useState<SessionData | null>(() => readStoredSession());
   const [trustedSources, setTrustedSources] = useState<TrustedSourceRecord[]>([]);
   const [issuers, setIssuers] = useState<Issuer[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const sessionToken = session?.token ?? null;
@@ -45,18 +53,19 @@ export function TrustedSourceManagement() {
     abortControllerRef.current = controller;
 
     setLoading(true);
+    setTrustedSources([]);
     setError(null);
 
     try {
-      const issuersData = await getIssuers(sessionToken, controller.signal);
+      const [issuersData, sources] = await Promise.all([getIssuers(sessionToken, controller.signal), listTrustedSources(sessionUserId, controller.signal)]);
 
       if (!controller.signal.aborted) {
-        setIssuers(issuersData);
-        setTrustedSources(listTrustedSources(sessionUserId));
+        setIssuers(issuersData.filter(issuer => issuer.status === "ACTIVE" && Boolean(issuer.organizationId) && issuer.organizationId === readStoredOrganizationId()));
+        setTrustedSources(sources);
       }
     } catch {
       if (!controller.signal.aborted) {
-        setError("Failed to load issuers. Please try again.");
+        setError("Failed to load server trusted sources. Select an organization and refresh.");
       }
     } finally {
       if (!controller.signal.aborted) {
@@ -127,11 +136,11 @@ export function TrustedSourceManagement() {
 
   return (
     <div className="grid gap-8 sm:gap-10">
-      <CreateTrustedSourceForm
+      {!loading && !error && <CreateTrustedSourceForm
         userId={session.user.id}
         issuers={issuers}
         onTrustedSourceCreated={handleTrustedSourceCreated}
-      />
+      />}
 
       <section className="grid gap-4 rounded-lg border border-white/10 bg-white/[0.04] p-5">
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
@@ -159,14 +168,14 @@ export function TrustedSourceManagement() {
           </div>
         )}
 
-        <TrustedSourceList
+        {loading ? <p role="status">Loading server trusted sources...</p> : <TrustedSourceList
           userId={session.user.id}
           trustedSources={trustedSources}
           issuers={issuers}
           loading={loading}
           onTrustedSourceUpdated={handleTrustedSourceUpdated}
           onTrustedSourceDeleted={handleTrustedSourceDeleted}
-        />
+        />}
       </section>
     </div>
   );

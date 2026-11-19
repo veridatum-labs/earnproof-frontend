@@ -642,7 +642,7 @@ export function resolveLinkedSession(
  * Remotely signs out the session linked to a risk event and records a
  * corresponding `session-revoked` event in the tenant-scoped history.
  */
-export function signOutSessionFromRiskEvent(params: {
+export async function signOutSessionFromRiskEvent(params: {
   userId: string;
   organizationId: string;
   sessionId: string;
@@ -650,11 +650,12 @@ export function signOutSessionFromRiskEvent(params: {
   viewerUserId?: string;
   viewerOrganizationId?: string;
   now?: number;
-}): {
+  signal?: AbortSignal;
+}): Promise<{
   activeSessions: SessionRecord[];
   revokedSessions: SessionRecord[];
   events: SessionSecurityEvent[];
-} {
+}> {
   const viewerUserId = params.viewerUserId ?? params.userId;
   const viewerOrganizationId = params.viewerOrganizationId ?? params.organizationId;
 
@@ -666,10 +667,14 @@ export function signOutSessionFromRiskEvent(params: {
   });
 
   // Ensure active sessions are initialized for the user before revoking
-  const activeBefore = listActiveSessions(params.userId);
+  if (params.signal?.aborted) throw new DOMException("Cancelled", "AbortError");
+  const activeBefore = await listActiveSessions(params.userId, params.signal);
+  if (params.signal?.aborted) throw new DOMException("Cancelled", "AbortError");
   const target = activeBefore.find((s) => s.id === params.sessionId);
 
-  revokeSession(params.userId, params.sessionId);
+  if (!target || target.isCurrent) throw new TenantSessionAccessError("Select an active remote session from the server inventory.");
+  await revokeSession(params.userId, params.sessionId, params.signal);
+  if (params.signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
   const nowIso = new Date(params.now ?? Date.now()).toISOString();
   recordSessionSecurityEvent(
@@ -689,8 +694,8 @@ export function signOutSessionFromRiskEvent(params: {
   );
 
   return {
-    activeSessions: listActiveSessions(params.userId),
-    revokedSessions: listRecentlyRevokedSessions(params.userId),
+    activeSessions: await listActiveSessions(params.userId, params.signal),
+    revokedSessions: await listRecentlyRevokedSessions(params.userId, params.signal),
     events: listSessionSecurityEvents({
       userId: params.userId,
       organizationId: params.organizationId,

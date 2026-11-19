@@ -1,9 +1,12 @@
+jest.mock("@/lib/sessions/store", () => jest.requireActual("@/tests/fixtures/session-api").sessionStoreMock);
+import { resetSessionFixture, sessionStoreMock } from "@/tests/fixtures/session-api";
 import {
   render,
   screen,
   fireEvent,
   waitFor,
   within,
+  act,
 } from "@testing-library/react";
 import { SessionRiskHistory } from "../session-risk-history";
 import { RecentAuthExplainer } from "@/components/auth/recent-auth-explainer";
@@ -18,12 +21,26 @@ const ORG_ID = "org-alpha";
 
 beforeEach(() => {
   window.localStorage.clear();
+  resetSessionFixture();
 });
 
 describe("SessionRiskHistory and RecentAuthExplainer (#244)", () => {
-  it("renders descriptive risk labels for unknown devices and replay alerts without overclaiming", () => {
-    const active = listActiveSessions(USER_ID);
-    const revoked = listRecentlyRevokedSessions(USER_ID);
+  it("does not apply a remote sign-out result to another organization", async () => {
+    const active = await listActiveSessions(USER_ID);
+    let resolve!: (value: { revokedSessionId: string; currentSessionRevoked: boolean }) => void;
+    sessionStoreMock.revokeSession.mockImplementationOnce(() => new Promise(done => { resolve = done; }));
+    const completed = jest.fn();
+    const view = render(<SessionRiskHistory userId={USER_ID} organizationId={ORG_ID} activeSessions={active} revokedSessions={[]} onRemoteSignOutCompleted={completed} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Revoke affected session" })[0]);
+    fireEvent.click(within(screen.getByRole("dialog", { hidden: true })).getByRole("button", { name: "Revoke session", hidden: true }));
+    await waitFor(() => expect(resolve).toBeDefined());
+    view.rerender(<SessionRiskHistory userId={USER_ID} organizationId="org-other" activeSessions={[]} revokedSessions={[]} onRemoteSignOutCompleted={completed} />);
+    await act(async () => { resolve({ revokedSessionId: "seed-1", currentSessionRevoked: false }); });
+    expect(completed).not.toHaveBeenCalled();
+  });
+  it("renders descriptive risk labels for unknown devices and replay alerts without overclaiming", async () => {
+    const active = await listActiveSessions(USER_ID);
+    const revoked = await listRecentlyRevokedSessions(USER_ID);
 
     render(
       <SessionRiskHistory
@@ -46,8 +63,8 @@ describe("SessionRiskHistory and RecentAuthExplainer (#244)", () => {
   });
 
   it("links risk events to active remote sessions and completes remote sign-out with confirmation", async () => {
-    const active = listActiveSessions(USER_ID);
-    const revoked = listRecentlyRevokedSessions(USER_ID);
+    const active = await listActiveSessions(USER_ID);
+    const revoked = await listRecentlyRevokedSessions(USER_ID);
     const onRemoteSignOutCompleted = jest.fn();
 
     render(
@@ -86,9 +103,9 @@ describe("SessionRiskHistory and RecentAuthExplainer (#244)", () => {
     ).toBe(true);
   });
 
-  it("blocks cross-tenant observation when viewerOrganizationId differs from organizationId", () => {
-    const active = listActiveSessions(USER_ID);
-    const revoked = listRecentlyRevokedSessions(USER_ID);
+  it("blocks cross-tenant observation when viewerOrganizationId differs from organizationId", async () => {
+    const active = await listActiveSessions(USER_ID);
+    const revoked = await listRecentlyRevokedSessions(USER_ID);
 
     render(
       <SessionRiskHistory
@@ -109,9 +126,9 @@ describe("SessionRiskHistory and RecentAuthExplainer (#244)", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("displays redacted device and location context and never leaks raw IPs or fingerprints", () => {
-    const active = listActiveSessions(USER_ID);
-    const revoked = listRecentlyRevokedSessions(USER_ID);
+  it("displays redacted device and location context and never leaks raw IPs or fingerprints", async () => {
+    const active = await listActiveSessions(USER_ID);
+    const revoked = await listRecentlyRevokedSessions(USER_ID);
     const customEvent = sanitizeSessionSecurityEvent({
       id: "evt-redacted-check",
       userId: USER_ID,
@@ -144,7 +161,7 @@ describe("SessionRiskHistory and RecentAuthExplainer (#244)", () => {
     ).toBeGreaterThan(0);
   });
 
-  it("explains when sensitive actions require a fresh wallet signature and shows recent-auth expiry", () => {
+  it("explains when sensitive actions require a fresh wallet signature and shows recent-auth expiry", async () => {
     const nowMs = 1_700_000_000_000;
     const onVerify = jest.fn();
 
