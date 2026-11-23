@@ -14,6 +14,7 @@
     "build": "next build",
     "start": "next start",
     "security:malware-scan": "node scripts/security/scan-malware.mjs",
+    "security:verify-lockfile": "node scripts/security/verify-lockfile-integrity.js",
     "lint": "eslint",
     "test": "jest",
     "generate:api-types": "node scripts/generate-api-types/index.js",
