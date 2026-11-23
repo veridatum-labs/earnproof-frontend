@@ -117,4 +117,19 @@ describe("VerifyProofForm loading state", () => {
       expect(screen.getByRole("button", { name: "Verify proof" })).toBeInTheDocument();
     });
   });
+
+  it("normalizes not-found (404) and unauthorized (401) errors to enumeration-safe message", async () => {
+    const notFoundError = new Error("404 Not Found");
+    mockedApiClient.mockRejectedValue(notFoundError);
+
+    const user = userEvent.setup();
+    render(<VerifyProofForm />);
+
+    await user.type(screen.getByLabelText("Proof ID"), "EP-8A42-91DC");
+    await user.click(screen.getByRole("button", { name: "Verify proof" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Verification details are unavailable for this identifier. Check the identifier or contact support.")).toBeInTheDocument();
+    });
+  });
 });

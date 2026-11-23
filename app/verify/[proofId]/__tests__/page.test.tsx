@@ -172,14 +172,25 @@ describe("VerifyProofPage", () => {
     });
   });
 
-  it("handles 404 error appropriately", async () => {
+  it("handles 404 error with enumeration-safe normalized state", async () => {
     const notFoundError = new Error("EarnProof API request failed with 404");
     mockApiClient.mockRejectedValue(notFoundError);
     
     render(<VerifyProofPage params={mockParams} />);
     
     await waitFor(() => {
-      expect(screen.getByText("Proof not found. Please check the proof identifier and try again.")).toBeInTheDocument();
+      expect(screen.getByText("Verification details are unavailable for this identifier. Check the identifier or contact support.")).toBeInTheDocument();
+    });
+  });
+
+  it("handles 401 unauthorized error with identical enumeration-safe state", async () => {
+    const unauthorizedError = new Error("EarnProof API request failed with 401");
+    mockApiClient.mockRejectedValue(unauthorizedError);
+    
+    render(<VerifyProofPage params={mockParams} />);
+    
+    await waitFor(() => {
+      expect(screen.getByText("Verification details are unavailable for this identifier. Check the identifier or contact support.")).toBeInTheDocument();
     });
   });
 

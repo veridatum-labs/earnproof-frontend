@@ -1,7 +1,12 @@
 import { apiClient, bearer, retryRead } from "./client";
 import type { VerifyProofResponse } from "./generated/v1";
+import {
+  ENUMERATION_SAFE_VERIFICATION_MESSAGE,
+  normalizeVerificationError,
+} from "./verification-enumeration-safety";
 
 export type { VerifyProofResponse };
+export { ENUMERATION_SAFE_VERIFICATION_MESSAGE, normalizeVerificationError };
 
 /**
  * Statuses that can never change again once reached. A proof still `valid`
