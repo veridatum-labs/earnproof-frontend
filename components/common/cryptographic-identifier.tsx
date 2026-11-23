@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useId, useState } from "react";
+import { useCallback, useId, useState, useMemo } from "react";
 import {
   computeIdentifierDisplay,
   describeIdentifierKind,
@@ -12,6 +12,14 @@ import {
   makeBidiSafeForDisplay,
   stripBidiControlCharacters,
 } from "@/lib/i18n/bidi-isolation";
+import {
+  analyzeUnicodeConfusables,
+  type ConfusableAnalysisResult,
+} from "@/lib/security/unicode-confusables";
+import {
+  ConfusableWarningBanner,
+  RiskyCopyConfirmationDialog,
+} from "@/components/common/confusable-warning-banner";
 
 /**
  * Shared accessible control for displaying a cryptographic identifier
@@ -28,17 +36,26 @@ export function CryptographicIdentifier({
   kind,
   network,
   defaultExpanded = false,
+  checkConfusables = true,
 }: {
   value: string;
   kind: IdentifierKind;
   network?: string;
   defaultExpanded?: boolean;
+  checkConfusables?: boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const [showRiskyCopyModal, setShowRiskyCopyModal] = useState(false);
+  const [isRiskAcknowledged, setIsRiskAcknowledged] = useState(false);
   const statusId = useId();
 
-  const handleCopy = useCallback(async () => {
+  const confusableAnalysis = useMemo<ConfusableAnalysisResult | null>(() => {
+    if (!checkConfusables || isMalformedIdentifier(value)) return null;
+    return analyzeUnicodeConfusables(value);
+  }, [value, checkConfusables]);
+
+  const performCopy = useCallback(async () => {
     try {
       if (!navigator.clipboard?.writeText) {
         throw new Error("Clipboard API unavailable");
@@ -46,15 +63,25 @@ export function CryptographicIdentifier({
       await navigator.clipboard.writeText(value);
       setCopyStatus("copied");
     } catch {
-      // Manual fallback: select the text so the user can copy it
-      // themselves via their browser/OS copy shortcut, satisfying
-      // "provide copy feedback and manual fallback" even when the
-      // Clipboard API is denied/unavailable.
       setCopyStatus("failed");
     } finally {
       setTimeout(() => setCopyStatus("idle"), 3000);
     }
   }, [value]);
+
+  const handleCopy = useCallback(async () => {
+    if (confusableAnalysis?.hasRisk && !isRiskAcknowledged) {
+      setShowRiskyCopyModal(true);
+      return;
+    }
+    await performCopy();
+  }, [confusableAnalysis, isRiskAcknowledged, performCopy]);
+
+  const confirmRiskyCopy = useCallback(async () => {
+    setIsRiskAcknowledged(true);
+    setShowRiskyCopyModal(false);
+    await performCopy();
+  }, [performCopy]);
 
   if (isMalformedIdentifier(value)) {
     return (
@@ -133,6 +160,25 @@ export function CryptographicIdentifier({
         <span className="sr-only" data-testid="full-identifier-fallback">
           {display.fullValue}
         </span>
+      )}
+
+      {confusableAnalysis?.hasRisk && (
+        <div className="w-full">
+          <ConfusableWarningBanner
+            analysis={confusableAnalysis}
+            isAcknowledged={isRiskAcknowledged}
+            onAcknowledge={() => setIsRiskAcknowledged(true)}
+          />
+        </div>
+      )}
+
+      {confusableAnalysis && (
+        <RiskyCopyConfirmationDialog
+          isOpen={showRiskyCopyModal}
+          analysis={confusableAnalysis}
+          onConfirm={confirmRiskyCopy}
+          onCancel={() => setShowRiskyCopyModal(false)}
+        />
       )}
     </span>
   );
