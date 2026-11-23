@@ -176,4 +176,42 @@ describe("ConfirmationDialog", () => {
     expect(title).toHaveAttribute("id");
     expect(message).toHaveAttribute("id");
   });
+
+  it("renders concurrent action warning message when lockConflictMessage is provided", () => {
+    render(
+      <ConfirmationDialog
+        title="Revoke proof"
+        message="Are you sure you want to revoke this proof?"
+        onConfirm={mockOnConfirm}
+        onCancel={mockOnCancel}
+        lockConflictMessage="Another browser tab is currently revoking this proof."
+      />
+    );
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText("Concurrent Action Warning")).toBeInTheDocument();
+    expect(
+      screen.getByText("Another browser tab is currently revoking this proof.")
+    ).toBeInTheDocument();
+  });
+
+  it("renders override button and calls onOverrideLock when provided", () => {
+    const onOverrideLock = jest.fn();
+    render(
+      <ConfirmationDialog
+        title="Revoke proof"
+        message="Are you sure you want to revoke this proof?"
+        onConfirm={mockOnConfirm}
+        onCancel={mockOnCancel}
+        lockConflictMessage="Another tab lock active."
+        onOverrideLock={onOverrideLock}
+      />
+    );
+
+    const overrideBtn = screen.getByRole("button", {
+      name: "Override stale lock & proceed",
+    });
+    fireEvent.click(overrideBtn);
+    expect(onOverrideLock).toHaveBeenCalledTimes(1);
+  });
 });
