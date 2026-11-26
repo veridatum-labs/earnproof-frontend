@@ -158,6 +158,7 @@ export const migrations: Record<StorageKey, Record<number, StorageMigration>> = 
     1: (data) => data,
   },
   TRANSACTION_OPERATIONS: {
+    // Version 1 is current - no migration needed
     1: (data) => data,
   },
   QUICKSTART_PROGRESS: {

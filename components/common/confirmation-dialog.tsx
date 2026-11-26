@@ -11,6 +11,8 @@ export function ConfirmationDialog({
   onConfirm,
   onCancel,
   isProcessing = false,
+  lockConflictMessage,
+  onOverrideLock,
 }: {
   title: string;
   message: string;
@@ -20,6 +22,8 @@ export function ConfirmationDialog({
   onConfirm: () => void;
   onCancel: () => void;
   isProcessing?: boolean;
+  lockConflictMessage?: string | null;
+  onOverrideLock?: () => void;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
@@ -61,6 +65,26 @@ export function ConfirmationDialog({
         <p id="dialog-description" className="mt-2 text-sm leading-6 text-slate-300">
           {message}
         </p>
+
+        {lockConflictMessage && (
+          <div
+            role="alert"
+            className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-200"
+          >
+            <p className="font-semibold text-amber-100">Concurrent Action Warning</p>
+            <p className="mt-1">{lockConflictMessage}</p>
+            {onOverrideLock && (
+              <button
+                type="button"
+                onClick={onOverrideLock}
+                className="mt-2 text-xs text-amber-300 underline hover:text-amber-100"
+              >
+                Override stale lock & proceed
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="mt-6 flex justify-end gap-3">
           <button
             ref={cancelButtonRef}

@@ -16,6 +16,8 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: node scripts/security/scan-malware.mjs
+      - name: Verify dependency lockfile integrity
+        run: node scripts/security/verify-lockfile-integrity.js
 
   frontend:
     needs: malware-scan

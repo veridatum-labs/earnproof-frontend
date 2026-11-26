@@ -152,3 +152,46 @@ describe("CryptographicIdentifier — distinguishable similar prefixes", () => {
     expect(labelA).not.toBe(labelB);
   });
 });
+
+describe("CryptographicIdentifier — Unicode confusables & risky copy acknowledgement (#370)", () => {
+  const DECEPTIVE_IDENTIFIER = "p\u0430ypal-org"; // Cyrillic 'а'
+
+  it("displays a warning banner when confusable homoglyphs are detected", () => {
+    render(<CryptographicIdentifier value={DECEPTIVE_IDENTIFIER} kind="proof-id" />);
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText("Deceptive Identifier Warning")).toBeInTheDocument();
+  });
+
+  it("allows inspecting canonical value without mutating the original signed identifier", async () => {
+    const user = userEvent.setup();
+    render(<CryptographicIdentifier value={DECEPTIVE_IDENTIFIER} kind="proof-id" />);
+
+    const inspectButton = screen.getByRole("button", { name: "Inspect canonical value" });
+    await user.click(inspectButton);
+
+    expect(screen.getByText("Canonical (ASCII / Normalized):")).toBeInTheDocument();
+    expect(screen.getByText(/paypal-org/)).toBeInTheDocument();
+  });
+
+  it("requires acknowledgement before copying an identifier with confusable risk", async () => {
+    const writeText = jest.spyOn(navigator.clipboard, "writeText").mockResolvedValue(undefined);
+
+    const user = userEvent.setup();
+    render(<CryptographicIdentifier value={DECEPTIVE_IDENTIFIER} kind="proof-id" />);
+
+    // Clicking copy should trigger the confirmation dialog, NOT copy immediately
+    const copyButton = screen.getByRole("button", { name: /Copy proof identifier/i });
+    await user.click(copyButton);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText("Acknowledge Risky Identifier Copy")).toBeInTheDocument();
+    expect(writeText).not.toHaveBeenCalled();
+
+    // Confirming the modal copies the EXACT raw original value, never the rewritten canonical
+    const confirmButton = screen.getByRole("button", { name: "Acknowledge & Copy" });
+    await user.click(confirmButton);
+
+    expect(writeText).toHaveBeenCalledWith(DECEPTIVE_IDENTIFIER);
+    writeText.mockRestore();
+  });
+});

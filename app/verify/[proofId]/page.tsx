@@ -13,6 +13,10 @@ import { useProofStatusPolling } from "@/lib/proof-status-polling";
 import { hasProvenance } from "@/lib/proofs/provenance-chain";
 import { formatDateRange, formatMessage } from "@/lib/i18n";
 import type { VerifyProofResponse } from "@/lib/api/generated/v1";
+import {
+  normalizeVerificationError,
+  ENUMERATION_SAFE_VERIFICATION_MESSAGE,
+} from "@/lib/api/verify-proof";
 
 function ResultItem({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -81,11 +85,28 @@ function LoadingState() {
   );
 }
 
-function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) {
+function ErrorState({
+  error,
+  requestId,
+  correlationId,
+  onRetry,
+}: {
+  error: string;
+  requestId?: string;
+  correlationId?: string;
+  onRetry: () => void;
+}) {
+  const supportRef = requestId ?? correlationId;
   return (
     <div className="rounded-lg border border-rose-300/30 bg-rose-300/10 p-6 print:hidden">
       <h3 className="text-lg font-semibold text-rose-100 mb-3">Verification failed</h3>
       <p className="text-sm text-slate-300 mb-4">{error}</p>
+      {supportRef && (
+        <p className="text-xs text-slate-400 mb-4">
+          Reference:{" "}
+          <span className="font-mono text-slate-300">{supportRef}</span>
+        </p>
+      )}
       <div className="flex flex-col sm:flex-row gap-3">
         <button
           onClick={onRetry}
@@ -276,7 +297,9 @@ export default function VerifyProofPage({ params }: { params: { proofId: string 
 
   const handleRetry = () => setRetryNonce((n) => n + 1);
 
-  const displayError = polling.error ? mapErrorMessage(polling.error) : null;
+  const normalizedError = polling.error
+    ? normalizeVerificationError(polling.error)
+    : null;
 
   return (
     <PublicShell>
@@ -290,8 +313,13 @@ export default function VerifyProofPage({ params }: { params: { proofId: string 
 
         {polling.loading && !polling.data && <LoadingState />}
 
-        {displayError && !polling.data && (
-          <ErrorState error={displayError} onRetry={handleRetry} />
+        {normalizedError && !polling.data && (
+          <ErrorState
+            error={normalizedError.message}
+            requestId={normalizedError.requestId}
+            correlationId={normalizedError.correlationId}
+            onRetry={handleRetry}
+          />
         )}
 
         {polling.data && (

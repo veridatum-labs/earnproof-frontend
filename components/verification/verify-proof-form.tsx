@@ -3,6 +3,8 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiClient } from "@/lib/api/client";
+import { ApiError } from "@/lib/errors/types";
+import { normalizeVerificationError } from "@/lib/api/verification-enumeration-safety";
 import { ErrorReference } from "@/components/common/error-reference";
 import {
   VerificationPanel,
@@ -44,7 +46,15 @@ export function VerifyProofForm() {
       });
       setResult(response);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error("Verification request failed. Check the proof ID and API URL."));
+      const normalized = normalizeVerificationError(err);
+      setError(
+        new ApiError({
+          status: normalized.statusCode ?? 400,
+          message: normalized.message,
+          requestId: normalized.requestId,
+          correlationId: normalized.correlationId,
+        })
+      );
     } finally {
       setIsLoading(false);
     }
