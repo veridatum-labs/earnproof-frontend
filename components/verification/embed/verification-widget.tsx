@@ -117,6 +117,17 @@ function UnavailableState({ onRetry }: { onRetry: () => void }) {
   );
 }
 
+function DeniedParentOriginState() {
+  return (
+    <div role="alert">
+      <p className="text-sm font-semibold text-rose-200">Embedding not allowed</p>
+      <p className="mt-1 text-xs leading-5 text-slate-400">
+        This verification widget cannot be embedded on this site. Please verify the proof directly at EarnProof.
+      </p>
+    </div>
+  );
+}
+
 function ResultState({ response }: { response: VerifyProofResponse }) {
   return (
     <div>
@@ -171,8 +182,17 @@ function ResultState({ response }: { response: VerifyProofResponse }) {
  * identifier. Fetches once on mount / whenever `proofId` changes, and
  * exposes a manual retry for the `unavailable` state without re-deriving
  * `proofId` from anywhere the host page could influence after mount.
+ *
+ * Also validates the parent origin (if embedded) against the configured
+ * allow-list to prevent untrusted sites from silently accessing widget data.
  */
-export function VerificationWidget({ proofId }: { proofId: string }) {
+export function VerificationWidget({
+  proofId,
+  parentOriginValidation,
+}: {
+  proofId: string;
+  parentOriginValidation?: { ok: boolean; reason?: string };
+}) {
   const [state, setState] = useState<WidgetState>({ kind: "loading" });
   // Bumping this triggers the effect below to refetch — the same
   // generation-counter retry pattern `lib/capabilities/capability-context.tsx`
@@ -180,7 +200,17 @@ export function VerificationWidget({ proofId }: { proofId: string }) {
   const [attempt, setAttempt] = useState(0);
   const requestIdRef = useRef(0);
 
+  // If parent-origin validation failed and embedding is explicitly denied,
+  // show the denied state immediately without fetching.
+  const isParentOriginDenied = parentOriginValidation && !parentOriginValidation.ok;
+
   useEffect(() => {
+    // Skip fetch if parent origin is denied
+    if (isParentOriginDenied) {
+      setState({ kind: "denied-parent-origin" });
+      return;
+    }
+
     const requestId = ++requestIdRef.current;
     const controller = new AbortController();
 
@@ -200,7 +230,7 @@ export function VerificationWidget({ proofId }: { proofId: string }) {
     return () => {
       controller.abort();
     };
-  }, [proofId, attempt]);
+  }, [proofId, attempt, isParentOriginDenied]);
 
   const retry = () => setAttempt((value) => value + 1);
 
@@ -209,6 +239,7 @@ export function VerificationWidget({ proofId }: { proofId: string }) {
       {state.kind === "loading" && <WidgetSkeleton />}
       {state.kind === "invalid-id" && <InvalidIdState />}
       {state.kind === "unavailable" && <UnavailableState onRetry={retry} />}
+      {state.kind === "denied-parent-origin" && <DeniedParentOriginState />}
       {state.kind === "result" && <ResultState response={state.response} />}
     </WidgetShell>
   );

@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback } from "react";
 import { WalletRotationFlow } from "./wallet-rotation-flow";
-import { readStoredSession, type Session } from "@/lib/session";
+import { readStoredSession } from "@/lib/session";
+import { useSessionToken } from "@/lib/use-session";
 
 export function WalletRotationManagement() {
-  const [session] = useState<Session | null>(() => readStoredSession());
+  const token = useSessionToken();
+  const session = token ? readStoredSession() : null;
+  const completed = useCallback(() => window.location.replace("/proofs"), []);
 
   if (!session) {
     return (
@@ -27,14 +30,9 @@ export function WalletRotationManagement() {
 
   return (
     <WalletRotationFlow
+      key={`${token}:${session.user.walletAddress}`}
       currentWalletAddress={session.user.walletAddress}
-      onRotationCompleted={() => {
-        // Session was already cleared by WalletRotationFlow; a full reload
-        // sends the user back through the normal connect flow with the
-        // new wallet, rather than trying to patch React state that no
-        // longer has a valid session behind it.
-        window.location.reload();
-      }}
+      onRotationCompleted={completed}
     />
   );
 }

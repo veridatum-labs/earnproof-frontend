@@ -33,7 +33,6 @@ export const scannedRoutes: ScannedRoute[] = [
     description:
       "Page displaying accessible operational metric charts (line, bar, thresholds)",
   },
-];
   {
     name: "proofs",
     path: "/proofs",

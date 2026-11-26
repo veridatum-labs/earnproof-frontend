@@ -17,6 +17,7 @@ import {
 } from "@/lib/storage";
 import { SessionCoordinator } from "@/lib/auth/session-coordinator";
 import { clearPendingRequests } from "./request-dedup";
+import { clearSensitiveServiceWorkerCaches } from "@/lib/offline";
 
 /**
  * Categories of sensitive data that must be cleared on auth change.
@@ -109,25 +110,18 @@ export class SensitiveDataPolicy {
 
 /**
  * Browser cache clearing for sensitive data.
- * Attempts to clear various browser caches that might store sensitive responses.
+ * Clears service worker caches using the cache exclusion policy.
+ *
+ * @see lib/offline/cache-exclusion-policy.ts for cache exclusion rules
  */
 function clearBrowserCaches(): void {
-  // Clear service worker cache for sensitive endpoints
-  if ("caches" in window) {
-    caches.keys().then((cacheNames) => {
-      cacheNames.forEach((cacheName) => {
-        // Only clear caches that might contain sensitive data
-        if (
-          cacheName.includes("api") ||
-          cacheName.includes("auth") ||
-          cacheName.includes("proof") ||
-          cacheName.includes("payment")
-        ) {
-          caches.delete(cacheName);
-        }
-      });
-    });
-  }
+  // Use the cache exclusion policy to clear sensitive caches
+  // This is async but we don't await it — cache clearing should not
+  // block auth operations like logout.
+  clearSensitiveServiceWorkerCaches().catch((error) => {
+    // Log but don't throw: cache clearing should not break auth flows
+    console.error("[SensitiveDataPolicy] Failed to clear service worker caches:", error);
+  });
 }
 
 /**

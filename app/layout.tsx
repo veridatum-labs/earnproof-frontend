@@ -5,6 +5,7 @@ import { ContractMigrationStatusBanner } from "@/components/common/contract-migr
 import { WebVitalsReporter } from "@/components/common/web-vitals-reporter";
 import { PrivacyProvider } from "@/contexts/privacy-context";
 import { AnnouncerProvider } from "@/lib/a11y/announcer-context";
+import { trustedScript } from "@/lib/security/trusted-types-policy";
 import "./globals.css";
 
 // Mirrors lib/storage's STORAGE_KEYS.DISPLAY_PREFERENCES: a plain <script>
@@ -16,6 +17,10 @@ const DISPLAY_PREFERENCES_STORAGE_KEY = "earnproof.display-preferences";
 // paint, so the page never flashes the system-default appearance first.
 // "system" needs no JS (the CSS media queries alone govern it), so this
 // only touches the DOM when the user has explicitly overridden a mode.
+//
+// This script is hardcoded at build time with no dynamic input, making it
+// safe for injection via Trusted Types policy. It only manipulates
+// document.documentElement.dataset and catches errors.
 const DISPLAY_PREFERENCES_BOOTSTRAP_SCRIPT = `(function() {
   try {
     var raw = window.localStorage.getItem(${JSON.stringify(DISPLAY_PREFERENCES_STORAGE_KEY)});
@@ -34,6 +39,11 @@ const DISPLAY_PREFERENCES_BOOTSTRAP_SCRIPT = `(function() {
     }
   } catch (e) {}
 })();`;
+
+// Validate and wrap the bootstrap script through the Trusted Types policy.
+// This ensures that even this hardcoded, static script passes through our
+// security validation layer.
+const DISPLAY_PREFERENCES_BOOTSTRAP_TRUSTED = trustedScript(DISPLAY_PREFERENCES_BOOTSTRAP_SCRIPT);
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -82,7 +92,7 @@ export default async function RootLayout({
         </AnnouncerProvider>
         <script
           nonce={nonce}
-          dangerouslySetInnerHTML={{ __html: DISPLAY_PREFERENCES_BOOTSTRAP_SCRIPT }}
+          dangerouslySetInnerHTML={DISPLAY_PREFERENCES_BOOTSTRAP_TRUSTED}
         />
       </body>
     </html>

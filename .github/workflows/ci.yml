@@ -36,6 +36,11 @@ jobs:
       - run: npm run validate:production
       - run: npm run check:doc-freshness
       - run: npm run build
+      # Bundle security scan (issue #364). Checks for exposed secrets
+      # (private keys, tokens, internal endpoints) and unintended source maps
+      # in the production bundle. Fails if any are found.
+      - name: Scan production bundle for secrets and source maps
+        run: npm run security:scan-bundle
       # Bundle composition gate (issue #82). Runs its own production build
       # with ANALYZE_BUNDLE=1 so Turbopack emits the client source maps the
       # analyzer needs to attribute chunks to packages; the build above stays

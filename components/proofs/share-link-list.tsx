@@ -1,9 +1,11 @@
 "use client";
 
 import { formatDate } from "@/lib/i18n";
+import { useEffect, useState } from "react";
 import type { ShareLinkWithStatus } from "@/lib/proof-sharing/store";
 import type { ShareLinkStatus } from "@/lib/validation/proof-sharing";
-import { summarizeAccessHistory } from "@/lib/proof-sharing/access-history";
+import { getShareLinkAccessSummary, type ShareLinkRecord } from "@/lib/proof-sharing/store";
+import type { ShareLinkAccessSummary } from "@/lib/proof-sharing/access-history";
 import { ShareLinkAccessInsights } from "./share-link-access-insights";
 
 const STATUS_STYLES: Record<ShareLinkStatus, string> = {
@@ -73,9 +75,23 @@ export function ShareLinkList({
               </dd>
             </div>
           </dl>
-          {userId ? <ShareLinkAccessInsights summary={summarizeAccessHistory(userId, link)} /> : null}
+          {userId ? <ServerAccessSummary key={`${link.id}:${link.revokedAt}`} userId={userId} link={link} /> : null}
         </li>
       ))}
     </ul>
   );
+}
+
+function ServerAccessSummary({ userId, link }: { userId: string; link: ShareLinkRecord }) {
+  const [summary, setSummary] = useState<ShareLinkAccessSummary | null>(null);
+  const [failed, setFailed] = useState(false);
+  const { id, proofId, expiresAt, revokedAt } = link;
+  useEffect(() => {
+    const controller = new AbortController();
+    void getShareLinkAccessSummary(userId, proofId, { id, proofId, expiresAt, revokedAt }, controller.signal).then(value => {
+      if (!controller.signal.aborted) setSummary(value);
+    }).catch(() => { if (!controller.signal.aborted) setFailed(true); });
+    return () => controller.abort();
+  }, [userId, id, proofId, expiresAt, revokedAt]);
+  return summary ? <ShareLinkAccessInsights summary={summary} /> : <p role="status">{failed ? "Server access summary unavailable." : "Loading access summary..."}</p>;
 }

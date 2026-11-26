@@ -66,6 +66,10 @@ function cspValue(parts: string[]): string {
  * is limited to style attributes because Next/Image and progress indicators
  * emit reviewed inline style attributes; script sources and style elements
  * still do not permit inline execution.
+ *
+ * Trusted Types enforcement is enabled for all dangerous sinks (HTML, Script)
+ * to prevent injection attacks. The policy requires all values assigned to
+ * these sinks to pass through an approved Trusted Types policy.
  */
 export function buildSecurityPolicy(
   options: BuildSecurityPolicyOptions = {},
@@ -121,6 +125,10 @@ export function buildSecurityPolicy(
     `frame-src ${cspValue(["'none'"])}`,
     `frame-ancestors ${cspValue([frameAncestors])}`,
     `child-src ${cspValue(["'none'"])}`,
+    // Trusted Types enforcement: require all dangerous sinks to pass through
+    // an approved policy. Violations are reported via CSP and treated as
+    // script-src violations, preventing unsafe injection.
+    `require-trusted-types-for ${cspValue(["'script'", "'html'"])}`,
     isHttpsApp ? "upgrade-insecure-requests" : "",
   ].filter(Boolean);
 

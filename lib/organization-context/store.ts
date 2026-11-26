@@ -20,6 +20,7 @@ export function storeOrganizationId(organizationId: string): void {
     return;
   }
   window.localStorage.setItem(CURRENT_ORGANIZATION_KEY, organizationId);
+  window.dispatchEvent(new Event("earnproof:organization-changed"));
 }
 
 export function clearStoredOrganizationId(): void {
@@ -27,4 +28,12 @@ export function clearStoredOrganizationId(): void {
     return;
   }
   window.localStorage.removeItem(CURRENT_ORGANIZATION_KEY);
+  window.dispatchEvent(new Event("earnproof:organization-changed"));
+}
+
+export function subscribeStoredOrganizationId(listener: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("storage", listener);
+  window.addEventListener("earnproof:organization-changed", listener);
+  return () => { window.removeEventListener("storage", listener); window.removeEventListener("earnproof:organization-changed", listener); };
 }

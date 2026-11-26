@@ -8,6 +8,40 @@
 
 export const API_SPEC_SOURCE = "lib/api/openapi/earnproof-api.v1.json" as const;
 export const API_SPEC_VERSION = "1.0.0" as const;
+export interface RemoteSession {
+  id: string;
+  deviceLabel?: string;
+  createdAt?: string | null;
+  firstSeenAt?: string | null;
+  lastSeenAt?: string | null;
+  lastUsedAt?: string | null;
+  expiresAt: string;
+  revokedAt?: string | null;
+  current?: boolean;
+  isCurrent?: boolean;
+}
+
+export interface SessionInventoryEnvelope {
+  sessions: Array<RemoteSession>;
+  total: number;
+}
+
+export type RemoteSessionInventory = unknown;
+
+export interface SessionRevocation {
+  status: "ok";
+  revokedSessionId: string;
+}
+
+export interface OtherSessionsRevoked {
+  status: "ok";
+  revokedCount: number;
+}
+
+export interface SessionLogout {
+  status: "ok";
+}
+
 export interface HealthResponse {
   status: string;
   service: string;
@@ -198,6 +232,7 @@ export interface Organization {
   slug: string;
   website?: string | null;
   status: "ACTIVE" | "PENDING" | "SUSPENDED" | "REVOKED" | "DELETED";
+  createdAt?: string | null;
 }
 
 export interface ApiKey {
@@ -271,4 +306,146 @@ export interface ApiError {
   field: string;
   message: string;
 }>;
+}
+
+export interface ShareLink {
+  id: string;
+  proofId: string;
+  expiresInHours: number;
+  expiresAt: string;
+  discloseAmount: boolean;
+  discloseSender: boolean;
+  createdAt: string;
+  revokedAt: string | null;
+}
+
+export interface ShareLinkPage {
+  links: Array<ShareLink>;
+}
+
+export interface ShareLinkCreated {
+  token: string;
+  record: ShareLink;
+}
+
+export interface CreateShareLink {
+  proofId: string;
+  expiresInHours: 1 | 24 | 72 | 168;
+  discloseAmount: boolean;
+  discloseSender: boolean;
+}
+
+export interface ShareAccessEvent {
+  id: string;
+  shareLinkId: string;
+  outcome: "ACCEPTED" | "EXPIRED" | "REJECTED";
+  occurredAt: string;
+}
+
+export interface ShareAccessSummary {
+  shareLinkId: string;
+  totalAttempts: number;
+  acceptedCount: number;
+  expiredCount: number;
+  rejectedCount: number;
+  recent: Array<ShareAccessEvent>;
+}
+
+export interface TrustedSource {
+  id: string;
+  organizationId: string;
+  name: string;
+  issuerId: string;
+  network: "testnet" | "public";
+  status: "ACTIVE" | "DISABLED" | "DELETED";
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TrustedSourcePage {
+  sources: Array<TrustedSource>;
+}
+
+export interface TrustedSourceInput {
+  name: string;
+  issuerId: string;
+  network: "testnet" | "public";
+}
+
+export interface TrustedSourcePatch {
+  name?: string;
+  issuerId?: string;
+}
+
+export interface TrustedSourceTest {
+  source: TrustedSource;
+  eligible: boolean;
+  testedAt: string;
+}
+
+export interface TrustedSourceHistoryEvent {
+  id: string;
+  action: "CREATE" | "UPDATE" | "DISABLE" | "TEST";
+  version: number;
+  occurredAt: string;
+}
+
+export interface TrustedSourceHistory {
+  organizationId: string;
+  sourceId: string;
+  events: Array<TrustedSourceHistoryEvent>;
+}
+
+export interface WalletRotationProof {
+  intentId: string;
+  network: "testnet" | "public";
+  walletAddress: string;
+  role: "current" | "replacement";
+  challengeId: string;
+  expiresAt: string;
+  verified: true;
+}
+
+export interface WalletRotationIntent {
+  id: string;
+  previousAddress: string;
+  newAddress: string;
+  network: "testnet" | "public";
+  status: "PENDING" | "READY" | "COMPLETED" | "CANCELLED" | "EXPIRED";
+  version: number;
+  expiresAt: string;
+  completedAt: string | null;
+  currentProof: WalletRotationProof | null;
+  replacementProof: WalletRotationProof | null;
+}
+
+export interface WalletRotationRecovery {
+  intent: WalletRotationIntent | null;
+}
+
+export interface WalletRotationCreate {
+  newAddress: string;
+  network: "testnet" | "public";
+}
+
+export interface WalletRotationChallengeRequest {
+  role: "current" | "replacement";
+}
+
+export interface WalletRotationChallenge {
+  id: string;
+  intentId: string;
+  network: "testnet" | "public";
+  walletAddress: string;
+  role: "current" | "replacement";
+  message: string;
+  expiresAt: string;
+}
+
+export interface WalletRotationProofRequest {
+  role: "current" | "replacement";
+  challengeId: string;
+  signature: string;
+  network: "testnet" | "public";
 }

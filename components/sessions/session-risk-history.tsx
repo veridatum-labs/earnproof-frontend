@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 import { StatusBadge } from "@/components/common/production-ui";
 import { formatDateTime, formatMessage } from "@/lib/i18n";
@@ -39,7 +39,11 @@ export interface SessionRiskHistoryProps {
   }) => void;
 }
 
-export function SessionRiskHistory({
+export function SessionRiskHistory(props: SessionRiskHistoryProps) {
+  return <SessionRiskHistoryWorkspace key={`${props.userId}:${props.organizationId}:${props.viewerUserId ?? props.userId}:${props.viewerOrganizationId ?? props.organizationId}`} {...props} />;
+}
+
+function SessionRiskHistoryWorkspace({
   userId,
   organizationId,
   viewerUserId = userId,
@@ -59,6 +63,9 @@ export function SessionRiskHistory({
     null,
   );
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const pendingAction = useRef(false);
+  const lifetime = useRef<AbortController | null>(null);
+  useEffect(() => { const controller = new AbortController(); lifetime.current = controller; return () => controller.abort(); }, [userId, organizationId]);
 
   const resolvedState = useMemo(() => {
     try {
@@ -146,26 +153,32 @@ export function SessionRiskHistory({
     });
   };
 
-  const handleConfirmRemoteSignOut = () => {
-    if (!confirmTarget) return;
+  const handleConfirmRemoteSignOut = async () => {
+    if (!confirmTarget || pendingAction.current) return;
+    pendingAction.current = true;
+    const signal = lifetime.current!.signal;
     setActionError(null);
 
     try {
-      const updated = signOutSessionFromRiskEvent({
+      const updated = await signOutSessionFromRiskEvent({
         userId,
         organizationId,
         sessionId: confirmTarget.sessionId,
         riskEventId: confirmTarget.eventId,
         viewerUserId,
         viewerOrganizationId,
+        signal,
       });
+      if (signal.aborted) return;
       setLocalEvents(updated.events);
       onRemoteSignOutCompleted?.(updated);
     } catch {
+      if (signal.aborted) return;
       setActionError(
         "Could not sign out the affected session. It may have already been revoked.",
       );
     } finally {
+      pendingAction.current = false;
       setConfirmTarget(null);
       triggerRef.current?.focus();
     }

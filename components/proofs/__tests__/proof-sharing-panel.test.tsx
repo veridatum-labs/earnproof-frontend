@@ -1,74 +1,63 @@
-/**
- * @jest-environment jsdom
- */
-
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ProofSharingPanel } from "../proof-sharing-panel";
-
-describe("ProofSharingPanel", () => {
-  beforeEach(() => {
-    window.localStorage.clear();
-  });
-
-  it("creates a link, reveals the token once, then shows it in the active list after dismissal", async () => {
-    render(<ProofSharingPanel proofId="proof-1" userId="user-1" />);
-
-    fireEvent.click(screen.getByRole("button", { name: /Create share link/i }));
-
-    await waitFor(() => expect(screen.getByLabelText("Share token")).toBeInTheDocument());
-    const tokenValue = (screen.getByLabelText("Share token") as HTMLInputElement).value;
-    expect(tokenValue.length).toBeGreaterThan(0);
-
-    fireEvent.click(screen.getByRole("button", { name: /I've saved the token/i }));
-
-    await waitFor(() => expect(screen.getByText("ACTIVE")).toBeInTheDocument());
-    expect(screen.queryByLabelText("Share token")).not.toBeInTheDocument();
-  });
-
-  it("does not create a link when the user never clicks create (cancellation)", () => {
-    render(<ProofSharingPanel proofId="proof-1" userId="user-1" />);
-    expect(screen.getByText(/No share links have been created/i)).toBeInTheDocument();
-  });
-
-  it("revokes an active link and reflects REVOKED status", async () => {
-    render(<ProofSharingPanel proofId="proof-1" userId="user-1" />);
-
-    fireEvent.click(screen.getByRole("button", { name: /Create share link/i }));
-    await waitFor(() => expect(screen.getByLabelText("Share token")).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: /I've saved the token/i }));
-
-    await waitFor(() => expect(screen.getByRole("button", { name: /^Revoke$/i })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: /^Revoke$/i }));
-
-    await waitFor(() => expect(screen.getByText("REVOKED")).toBeInTheDocument());
-    expect(screen.queryByRole("button", { name: /^Revoke$/i })).not.toBeInTheDocument();
-  });
-
-  it("persists created links across remounts for the same proof and user", async () => {
-    const { unmount } = render(<ProofSharingPanel proofId="proof-1" userId="user-1" />);
-
-    fireEvent.click(screen.getByRole("button", { name: /Create share link/i }));
-    await waitFor(() => expect(screen.getByLabelText("Share token")).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: /I've saved the token/i }));
-    await waitFor(() => expect(screen.getByText("ACTIVE")).toBeInTheDocument());
-
-    unmount();
-
-    render(<ProofSharingPanel proofId="proof-1" userId="user-1" />);
-    expect(screen.getByText("ACTIVE")).toBeInTheDocument();
-  });
-
-  it("does not show links created for a different proof", async () => {
-    const { unmount } = render(<ProofSharingPanel proofId="proof-1" userId="user-1" />);
-
-    fireEvent.click(screen.getByRole("button", { name: /Create share link/i }));
-    await waitFor(() => expect(screen.getByLabelText("Share token")).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: /I've saved the token/i }));
-    await waitFor(() => expect(screen.getByText("ACTIVE")).toBeInTheDocument());
-
-    unmount();
-
-    render(<ProofSharingPanel proofId="proof-2" userId="user-1" />);
-    expect(screen.getByText(/No share links have been created/i)).toBeInTheDocument();
-  });
+import { listShareLinks, createShareLink, revokeShareLink } from "@/lib/proof-sharing/store";
+jest.mock("@/lib/use-session", () => ({ useSessionToken: () => "synthetic-auth" }));
+jest.mock("@/lib/proof-sharing/store", () => ({ listShareLinks: jest.fn(), createShareLink: jest.fn(), revokeShareLink: jest.fn(), getShareLinkAccessSummary: jest.fn().mockRejectedValue(new Error("unavailable")) }));
+const record = { id: "share-1", proofId: "proof-1", expiresInHours: 24, expiresAt: "2099-01-02T00:00:00.000Z", createdAt: "2099-01-01T00:00:00.000Z", revokedAt: null, discloseAmount: false, discloseSender: false };
+const list = jest.mocked(listShareLinks);
+beforeEach(() => { jest.clearAllMocks(); list.mockResolvedValue([]); });
+it("reveals the server token once and reloads authoritative state across remounts", async () => {
+  jest.mocked(createShareLink).mockResolvedValue({ record, token: "synthetic-once" });
+  const view = render(<ProofSharingPanel userId="user-1" proofId="proof-1" />);
+  await waitFor(() => expect(screen.getByRole("button", { name: /Create share link/i })).toBeEnabled());
+  list.mockResolvedValue([{ ...record, status: "ACTIVE" }]);
+  fireEvent.click(screen.getByRole("button", { name: /Create share link/i }));
+  await waitFor(() => expect(screen.getByLabelText("Share token")).toHaveValue("synthetic-once"));
+  fireEvent.click(screen.getByRole("button", { name: /I've saved the token/i }));
+  expect(screen.queryByLabelText("Share token")).not.toBeInTheDocument();
+  view.unmount();
+  render(<ProofSharingPanel userId="user-1" proofId="proof-1" />);
+  await screen.findByText("ACTIVE");
+  expect(screen.queryByLabelText("Share token")).not.toBeInTheDocument();
+});
+it("removes stale active controls when server refresh fails", async () => {
+  list.mockResolvedValue([{ ...record, status: "ACTIVE" }]);
+  render(<ProofSharingPanel userId="user-1" proofId="proof-1" />);
+  await screen.findByText("ACTIVE"); list.mockRejectedValue(new Error("Forbidden"));
+  fireEvent.click(screen.getByRole("button", { name: /Refresh share links/i }));
+  await screen.findByRole("alert");
+  expect(screen.queryByRole("button", { name: /^Revoke$/ })).not.toBeInTheDocument();
+});
+it("discards a revealed token when a refresh observes remote revocation", async () => {
+  jest.mocked(createShareLink).mockResolvedValue({ record, token: "synthetic-once" });
+  render(<ProofSharingPanel userId="user-1" proofId="proof-1" />);
+  await waitFor(() => expect(screen.getByRole("button", { name: /Create share link/i })).toBeEnabled());
+  list.mockResolvedValue([{ ...record, status: "ACTIVE" }]);
+  fireEvent.click(screen.getByRole("button", { name: /Create share link/i }));
+  await screen.findByLabelText("Share token");
+  list.mockResolvedValue([{ ...record, status: "REVOKED", revokedAt: "2099-01-01T00:00:00.000Z" }]);
+  fireEvent.click(screen.getByRole("button", { name: /Refresh share links/i }));
+  await screen.findByText("REVOKED"); expect(screen.queryByLabelText("Share token")).not.toBeInTheDocument();
+});
+it("awaits server revocation before reading the list again", async () => {
+  list.mockResolvedValue([{ ...record, status: "ACTIVE" }]);
+  jest.mocked(revokeShareLink).mockResolvedValue();
+  render(<ProofSharingPanel userId="user-1" proofId="proof-1" />);
+  await screen.findByText("ACTIVE");
+  list.mockResolvedValue([{ ...record, revokedAt: "2099-01-01T00:00:00.000Z", status: "REVOKED" }]);
+  fireEvent.click(screen.getByRole("button", { name: /^Revoke$/ }));
+  await screen.findByText("REVOKED");
+  expect(revokeShareLink).toHaveBeenCalledWith("user-1", "proof-1", "share-1", expect.any(AbortSignal));
+});
+it("aborts the previous scope and ignores its late response", async () => {
+  let resolve!: (value: Awaited<ReturnType<typeof listShareLinks>>) => void;
+  list.mockImplementationOnce(() => new Promise(done => { resolve = done; }));
+  const view = render(<ProofSharingPanel userId="user-1" proofId="proof-1" />);
+  await waitFor(() => expect(list).toHaveBeenCalledTimes(1));
+  const signal = list.mock.calls[0][2];
+  view.rerender(<ProofSharingPanel userId="user-1" proofId="proof-2" />);
+  await waitFor(() => expect(list).toHaveBeenCalledTimes(2));
+  expect(signal?.aborted).toBe(true);
+  resolve([{ ...record, status: "ACTIVE" }]);
+  await waitFor(() => expect(screen.queryByText("ACTIVE")).not.toBeInTheDocument());
 });

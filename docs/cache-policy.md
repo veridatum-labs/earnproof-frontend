@@ -69,6 +69,42 @@ be superseded before it resolves:
   covered separately under the proof-form idempotency work tracked in
   issue #86, not by this document.
 
+## Service worker cache exclusion
+
+Future or existing offline caching via service workers must never persist
+authenticated API responses or protected pages. The cache exclusion policy
+in [lib/offline/cache-exclusion-policy.ts](../lib/offline/cache-exclusion-policy.ts)
+defines:
+
+- **Response guards**: functions to check if a response should be cached based on
+  authentication status, content type, and endpoint sensitivity.
+- **Cache exclusion rules**: URL patterns and response header checks that
+  determine which requests must not be cached. Authenticated endpoints
+  (`/api/payments`, `/api/proofs`, etc.), protected pages (`/proofs/*`,
+  `/settings/*`), and any response with sensitive headers (authorization,
+  x-auth-token, x-api-key, set-cookie) or `Cache-Control: no-store` are
+  always excluded.
+- **Cache purge behavior**: [clearSensitiveServiceWorkerCaches()](../lib/offline/cache-exclusion-policy.ts)
+  clears all caches containing sensitive data on logout, account change,
+  or auth failure, preventing stale authenticated data from being served on
+  restoration from bfcache or when a new user logs in.
+
+Service workers implementing offline caching should:
+
+1. Import `guardResponseForCache` and `createAuthContext` from [lib/offline/service-worker-cache-guard.ts](../lib/offline/service-worker-cache-guard.ts)
+2. In the fetch event handler, check each response before caching:
+   ```typescript
+   const guarded = guardResponseForCache(url, response, authContext);
+   if (guarded.shouldCache) {
+     // Safe to cache this response
+   }
+   ```
+3. Call `clearSensitiveServiceWorkerCaches()` whenever the user logs out,
+   switches accounts, or encounters an auth failure (401/403).
+
+Tests for this policy are in [lib/offline/__tests__/](../lib/offline/__tests__/)
+and cover positive, negative, boundary, authorization, and regression scenarios.
+
 ## Offline / stale UI
 
 `useHealthCheck` retains the last successfully fetched `data` across a

@@ -62,6 +62,7 @@ export type WidgetState =
   | { kind: "loading" }
   | { kind: "invalid-id" }
   | { kind: "unavailable" }
+  | { kind: "denied-parent-origin" }
   | { kind: "result"; response: VerifyProofResponse };
 
 /**

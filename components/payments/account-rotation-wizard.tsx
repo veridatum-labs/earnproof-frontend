@@ -364,7 +364,7 @@ export function AccountRotationWizard({
       setState((s) => ({
         ...s,
         stepError:
-          "The ownership challenge has expired. Click "Request challenge" to get a new one.",
+          'The ownership challenge has expired. Click "Request challenge" to get a new one.',
         phase: "idle",
         challenge: null,
       }));
@@ -1135,7 +1135,7 @@ export function AccountRotationWizard({
         </dl>
 
         <div className="rounded-md border border-amber-300/30 bg-amber-300/10 p-3 text-xs text-amber-200">
-          Starting the resync is irreversible once it reaches "running" state.
+          Starting the resync is irreversible once it reaches &quot;running&quot; state.
           Use the Rollback step to cancel before you start.
         </div>
 

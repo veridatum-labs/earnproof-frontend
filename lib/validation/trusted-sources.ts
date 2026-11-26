@@ -3,9 +3,9 @@ import { z } from "zod";
 export const createTrustedSourceSchema = z.object({
   name: z
     .string()
+    .trim()
     .min(2, "Trusted source name must be at least 2 characters")
-    .max(100, "Trusted source name must be less than 100 characters")
-    .trim(),
+    .max(100, "Trusted source name must be less than 100 characters"),
   issuerId: z.string().min(1, "An issuer must be selected"),
 });
 

@@ -1,6 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { CapabilityProvider, useCapability } from "@/lib/capabilities/capability-context";
+import {
+  buildParentOriginValidator,
+  getParentOrigin,
+  type EmbedParentOriginConfig,
+} from "@/lib/security/embed-parent-origin";
 import { VerificationWidget } from "@/components/verification/embed/verification-widget";
 
 /**
@@ -13,14 +19,34 @@ import { VerificationWidget } from "@/components/verification/embed/verification
  * explicit "not available" state — never whether the underlying
  * verification request is allowed to succeed.
  *
+ * Also validates the parent origin (if embedded) against a configurable
+ * allow-list (issue #368).
+ *
  * Deliberately does NOT reuse `CapabilityUnavailable`
  * (`components/common/capability-unavailable.tsx`): that component links
  * back to the main EarnProof app ("Back to EarnProof"), which is
  * meaningless — and would be a confusing/broken link target — inside a
  * small iframe embedded on an unrelated relying-party site.
  */
-function GatedVerificationWidget({ proofId }: { proofId: string }) {
+function GatedVerificationWidget({
+  proofId,
+  parentOriginConfig,
+}: {
+  proofId: string;
+  parentOriginConfig: EmbedParentOriginConfig;
+}) {
   const { enabled, status } = useCapability("embeddable-verification-widget");
+  const [parentOriginValidation, setParentOriginValidation] = useState<{
+    ok: boolean;
+    reason?: string;
+  } | undefined>(undefined);
+
+  useEffect(() => {
+    const validator = buildParentOriginValidator(parentOriginConfig);
+    const parentOrigin = getParentOrigin();
+    const validation = validator(parentOrigin);
+    setParentOriginValidation(validation);
+  }, [parentOriginConfig]);
 
   if (status === "loading") {
     return (
@@ -47,13 +73,19 @@ function GatedVerificationWidget({ proofId }: { proofId: string }) {
     );
   }
 
-  return <VerificationWidget proofId={proofId} />;
+  return <VerificationWidget proofId={proofId} parentOriginValidation={parentOriginValidation} />;
 }
 
-export function VerificationWidgetGate({ proofId }: { proofId: string }) {
+export function VerificationWidgetGate({
+  proofId,
+  parentOriginConfig,
+}: {
+  proofId: string;
+  parentOriginConfig: EmbedParentOriginConfig;
+}) {
   return (
     <CapabilityProvider>
-      <GatedVerificationWidget proofId={proofId} />
+      <GatedVerificationWidget proofId={proofId} parentOriginConfig={parentOriginConfig} />
     </CapabilityProvider>
   );
 }

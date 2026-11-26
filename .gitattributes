@@ -1,1 +1,2 @@
 .githooks/* text eol=lf
+lib/api/generated/v1.ts text eol=lf

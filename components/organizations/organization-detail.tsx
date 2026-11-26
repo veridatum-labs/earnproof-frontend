@@ -2,6 +2,7 @@
 
 import { formatOrganizationStatus, getStatusTone } from "@/lib/api/organizations";
 import { StatusBadge } from "@/components/common/production-ui";
+import { ExternalLink } from "@/components/common/external-link";
 import type { Organization } from "@/lib/api/generated/v1";
 
 /**
@@ -73,14 +74,12 @@ export function OrganizationDetail({
           </div>
           {organization.website ? (
             <div className="mt-2">
-              <a
+              <ExternalLink
                 href={organization.website}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="text-base text-cyan-300 hover:text-cyan-200 transition break-all"
               >
                 {organization.website}
-              </a>
+              </ExternalLink>
             </div>
           ) : (
             <div className="mt-2 text-base text-slate-500">

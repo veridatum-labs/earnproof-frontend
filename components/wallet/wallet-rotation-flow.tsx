@@ -1,264 +1,95 @@
 "use client";
-
-import { useCallback, useState } from "react";
-import { createAuthChallenge, verifyAuthChallenge, type AuthChallenge } from "@/lib/api/auth";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { connectFreighterWallet, signFreighterMessage } from "@/lib/wallet/freighter-sign";
-import {
-  completeWalletRotation,
-  isWalletAlreadyAssigned,
-  areBothChallengesValid,
-  WalletAlreadyAssignedError,
-} from "@/lib/wallet-rotation/store";
-import { clearStoredSession } from "@/lib/session";
+import { getRotationIntent, createRotationIntent, createRotationChallenge, submitRotationProof, completeWalletRotation, cancelRotationIntent, areBothChallengesValid, type WalletRotationIntent, type WalletRole } from "@/lib/wallet-rotation/store";
+import { clearRotatedAccount } from "@/lib/wallet-rotation/cleanup";
 
-type RotationStep =
-  | "idle"
-  | "verifying-current"
-  | "current-verified"
-  | "verifying-replacement"
-  | "ready-to-confirm"
-  | "completing"
-  | "completed"
-  | "error";
-
-interface VerifiedWallet {
-  address: string;
-  challenge: AuthChallenge;
-}
-
-export function WalletRotationFlow({
-  currentWalletAddress,
-  onRotationCompleted,
-}: {
-  currentWalletAddress: string;
-  onRotationCompleted: (newAddress: string) => void;
-}) {
-  const [step, setStep] = useState<RotationStep>("idle");
-  const [current, setCurrent] = useState<VerifiedWallet | null>(null);
-  const [replacement, setReplacement] = useState<VerifiedWallet | null>(null);
+export function WalletRotationFlow({ currentWalletAddress, onRotationCompleted }: { currentWalletAddress: string; onRotationCompleted: (newAddress: string) => void }) {
+  const [intent, setIntent] = useState<WalletRotationIntent | null>(null);
+  const [newAddress, setNewAddress] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [pending, setPending] = useState(false);
+  const [needsRefresh, setNeedsRefresh] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const verifyWallet = useCallback(
-    async (expectedAddress?: string): Promise<VerifiedWallet | null> => {
-      const controller = new AbortController();
-      const address = await connectFreighterWallet();
-      if (!address) {
-        setError("Wallet connection failed. Check your Freighter extension and try again.");
-        return null;
-      }
-      if (expectedAddress && address !== expectedAddress) {
-        setError(
-          `Connected wallet (${shortAddress(address)}) does not match the current account wallet (${shortAddress(expectedAddress)}). Reconnect the correct wallet.`,
-        );
-        return null;
-      }
-
-      const challenge = await createAuthChallenge(address, controller.signal);
-      const signature = await signFreighterMessage(challenge.message, address);
-      if (!signature) {
-        setError("Wallet did not return a signature. The request may have been cancelled.");
-        return null;
-      }
-
-      // Proof of control is the successful challenge/verify round trip
-      // itself — a valid signature over a fresh, backend-issued challenge.
-      await verifyAuthChallenge(
-        { challengeId: challenge.id, walletAddress: address, signature },
-        controller.signal,
-      );
-
-      return { address, challenge };
-    },
-    [],
-  );
-
-  const handleVerifyCurrent = useCallback(async () => {
-    setError(null);
-    setStep("verifying-current");
+  const [now, setNow] = useState(Date.now);
+  const busy = useRef(false);
+  const lifetime = useRef<AbortController | null>(null);
+  const reading = useRef<AbortController | null>(null);
+  const creation = useRef<{ address: string; key: string } | null>(null);
+  const finish = useCallback(async (confirmed: WalletRotationIntent) => {
+    await clearRotatedAccount(); onRotationCompleted(confirmed.newAddress);
+  }, [onRotationCompleted]);
+  const refresh = useCallback(async () => {
+    if (busy.current) return;
+    reading.current?.abort(); const c = new AbortController(); reading.current = c;
+    setLoading(true); setError(null); setIntent(null);
     try {
-      const verified = await verifyWallet(currentWalletAddress);
-      if (!verified) {
-        setStep("error");
-        return;
-      }
-      setCurrent(verified);
-      setStep("current-verified");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to verify current wallet.");
-      setStep("error");
-    }
-  }, [currentWalletAddress, verifyWallet]);
-
-  const handleVerifyReplacement = useCallback(async () => {
-    setError(null);
-    setStep("verifying-replacement");
-    try {
-      const verified = await verifyWallet();
-      if (!verified) {
-        setStep("error");
-        return;
-      }
-      if (verified.address === currentWalletAddress) {
-        setError("The replacement wallet must be different from the current wallet.");
-        setStep("error");
-        return;
-      }
-      if (isWalletAlreadyAssigned(verified.address)) {
-        setError("This wallet address is already assigned to another account.");
-        setStep("error");
-        return;
-      }
-      setReplacement(verified);
-      setStep("ready-to-confirm");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to verify replacement wallet.");
-      setStep("error");
-    }
-  }, [currentWalletAddress, verifyWallet]);
-
-  const handleConfirmRotation = useCallback(() => {
-    if (!current || !replacement) return;
-    setError(null);
-    setStep("completing");
-    try {
-      if (
-        !areBothChallengesValid(current.challenge.expiresAt, replacement.challenge.expiresAt)
-      ) {
-        setError(
-          "One of the proof-of-control challenges has expired. Please start the rotation again.",
-        );
-        setStep("error");
-        return;
-      }
-
-      completeWalletRotation(current.address, replacement.address);
-
-      // Successful rotation invalidates stale wallet and session state
-      // (#169's own acceptance criterion) — the session token was issued
-      // for the old wallet identity.
-      clearStoredSession();
-
-      setStep("completed");
-      onRotationCompleted(replacement.address);
-    } catch (err) {
-      if (err instanceof WalletAlreadyAssignedError) {
-        setError(err.message);
-      } else {
-        setError(err instanceof Error ? err.message : "Failed to complete rotation.");
-      }
-      setStep("error");
-    }
-  }, [current, replacement, onRotationCompleted]);
-
-  const handleCancel = useCallback(() => {
-    setStep("idle");
-    setCurrent(null);
-    setReplacement(null);
-    setError(null);
-  }, []);
-
-  if (step === "completed") {
-    return (
-      <div className="rounded-lg border border-emerald-300/30 bg-emerald-300/10 p-5">
-        <h3 className="text-lg font-semibold text-emerald-100">Wallet Rotated</h3>
-        <p className="mt-2 text-sm leading-6 text-emerald-200">
-          Your account is now associated with{" "}
-          <span className="font-mono">{shortAddress(replacement!.address)}</span>. Please
-          reconnect to continue.
-        </p>
-      </div>
-    );
+      const recovered = await getRotationIntent(currentWalletAddress, c.signal);
+      if (c.signal.aborted) return;
+      if (recovered?.status === "COMPLETED") { await finish(recovered); return; }
+      setIntent(recovered); setNeedsRefresh(false);
+    } catch { if (!c.signal.aborted) { setNeedsRefresh(true); setError("Server recovery unavailable. Refresh before continuing."); } }
+    finally { if (!c.signal.aborted) setLoading(false); }
+  }, [currentWalletAddress, finish]);
+  useEffect(() => {
+    const c = new AbortController(); lifetime.current = c;
+    void Promise.resolve().then(() => { if (!c.signal.aborted) void refresh(); });
+    const focus = () => void refresh(); window.addEventListener("focus", focus);
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => { c.abort(); reading.current?.abort(); window.removeEventListener("focus", focus); window.clearInterval(timer); };
+  }, [refresh]);
+  async function mutate(action: (signal: AbortSignal) => Promise<void>) {
+    if (busy.current || loading || needsRefresh) return;
+    busy.current = true; setPending(true); setError(null); reading.current?.abort();
+    const signal = lifetime.current!.signal;
+    try { await action(signal); }
+    catch { if (!signal.aborted) { setNeedsRefresh(true); setError("The server did not confirm this action. Refresh to recover its authoritative state before retrying."); } }
+    finally { busy.current = false; if (!signal.aborted) setPending(false); }
   }
-
-  return (
-    <div className="grid gap-4 rounded-lg border border-white/10 bg-white/[0.04] p-5">
-      <div>
-        <h2 className="text-xl font-semibold text-white">Rotate Wallet Address</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-300">
-          Prove control of your current wallet, then your replacement wallet, to
-          rotate the address associated with this account.
-        </p>
-      </div>
-
-      {error && (
-        <div className="rounded-md border border-rose-300/30 bg-rose-300/10 p-3">
-          <p className="text-sm text-rose-200" role="alert">
-            {error}
-          </p>
-        </div>
-      )}
-
-      <ol className="grid gap-3 text-sm">
-        <li className="flex items-center justify-between gap-3 rounded-md border border-white/10 bg-slate-950 p-3">
-          <span className="text-slate-300">
-            1. Verify current wallet ({shortAddress(currentWalletAddress)})
-          </span>
-          {current ? (
-            <span className="text-xs font-semibold text-emerald-300">Verified</span>
-          ) : (
-            <button
-              onClick={() => void handleVerifyCurrent()}
-              disabled={step === "verifying-current"}
-              className="h-8 rounded border border-cyan-300/30 px-3 text-xs font-medium text-cyan-200 hover:bg-cyan-300/10 transition disabled:opacity-50"
-              type="button"
-            >
-              {step === "verifying-current" ? "Verifying..." : "Verify"}
-            </button>
-          )}
-        </li>
-
-        <li className="flex items-center justify-between gap-3 rounded-md border border-white/10 bg-slate-950 p-3">
-          <span className="text-slate-300">
-            2. Verify replacement wallet
-            {replacement ? ` (${shortAddress(replacement.address)})` : ""}
-          </span>
-          {replacement ? (
-            <span className="text-xs font-semibold text-emerald-300">Verified</span>
-          ) : (
-            <button
-              onClick={() => void handleVerifyReplacement()}
-              disabled={!current || step === "verifying-replacement"}
-              className="h-8 rounded border border-cyan-300/30 px-3 text-xs font-medium text-cyan-200 hover:bg-cyan-300/10 transition disabled:cursor-not-allowed disabled:opacity-50"
-              type="button"
-            >
-              {step === "verifying-replacement" ? "Verifying..." : "Verify"}
-            </button>
-          )}
-        </li>
-      </ol>
-
-      {current && replacement && (
-        <div className="rounded-md border border-amber-300/30 bg-amber-300/10 p-3">
-          <p className="text-xs font-semibold text-amber-100">Before you confirm</p>
-          <p className="mt-1 text-xs text-amber-200">
-            Rotating will end your current session on this device and any other
-            active sessions. You will need to reconnect with the new wallet.
-          </p>
-        </div>
-      )}
-
-      <div className="flex gap-3">
-        <button
-          onClick={handleConfirmRotation}
-          disabled={!current || !replacement || step === "completing"}
-          className="h-10 rounded-md bg-cyan-300 px-4 text-xs font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
-          type="button"
-        >
-          {step === "completing" ? "Completing..." : "Confirm rotation"}
-        </button>
-        <button
-          onClick={handleCancel}
-          className="h-10 rounded-md border border-white/15 px-4 text-xs font-semibold text-white transition hover:bg-white/5"
-          type="button"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
+  const open = intent && ["PENDING", "READY"].includes(intent.status);
+  const expired = Boolean(intent && now >= Date.parse(intent.expiresAt));
+  const proofsValid = Boolean(intent?.currentProof && intent.replacementProof && areBothChallengesValid(intent.currentProof.expiresAt, intent.replacementProof.expiresAt, now));
+  async function prove(role: WalletRole, signal: AbortSignal) {
+    if (!intent) return;
+    const expected = role === "current" ? intent.previousAddress : intent.newAddress;
+    const address = await connectFreighterWallet(); if (signal.aborted) return;
+    if (address !== expected) throw new Error("Connect the selected wallet.");
+    const challenge = await createRotationChallenge(intent, role, signal); if (signal.aborted) return;
+    const signature = await signFreighterMessage(challenge.message, expected); if (signal.aborted) return;
+    if (!signature) throw new Error("Signing was cancelled.");
+    const result = await submitRotationProof(intent, challenge, signature, signal);
+    if (!signal.aborted) setIntent(result);
+  }
+  async function start(signal: AbortSignal) {
+    const address = newAddress.trim();
+    if (creation.current?.address !== address) creation.current = { address, key: crypto.randomUUID() };
+    const result = await createRotationIntent(currentWalletAddress, address, creation.current!.key, signal);
+    if (!signal.aborted) { setIntent(result); creation.current = null; }
+  }
+  return <section className="grid gap-4 rounded-lg border border-white/10 p-5" aria-busy={loading || pending}>
+    <h2 className="text-xl font-semibold">Rotate Wallet Address</h2>
+    <p>Both wallets must approve the same server intent and Stellar network. Your account changes only after the server confirms completion.</p>
+    {loading && <p role="status">Recovering server rotation state...</p>}
+    {pending && <p role="status">Waiting for wallet or server confirmation...</p>}
+    {error && <p role="alert">{error}</p>}
+    <button type="button" disabled={loading || pending} onClick={() => void refresh()}>Refresh rotation state</button>
+    {!loading && !open && <form onSubmit={event => { event.preventDefault(); void mutate(start); }} className="grid gap-2">
+      {intent && <p role="status">Previous server intent: {intent.status}</p>}
+      <label htmlFor="rotation-replacement">Replacement wallet address</label>
+      <input id="rotation-replacement" value={newAddress} onChange={event => setNewAddress(event.target.value)} autoComplete="off" required pattern="G[A-Z2-7]{55}" disabled={pending || needsRefresh} />
+      <button type="submit" disabled={pending || needsRefresh}>Start rotation</button>
+    </form>}
+    {!loading && open && intent && <div className="grid gap-3">
+      <p role="status">Server intent: {intent.status}. Expires {intent.expiresAt}.</p>
+      <p>Current wallet: {shortAddress(intent.previousAddress)}. Replacement: {shortAddress(intent.newAddress)}. Network: {intent.network}.</p>
+      {expired && <p role="alert">This rotation has expired. Refresh server state before starting another.</p>}
+      {!expired && intent.status === "READY" && !proofsValid && <p role="alert">A wallet proof has expired. Cancel this intent and start another rotation.</p>}
+      <button type="button" disabled={pending || needsRefresh || expired || Boolean(intent.currentProof)} onClick={() => void mutate(signal => prove("current", signal))}>{intent.currentProof ? "Current wallet verified" : "Verify current wallet"}</button>
+      <button type="button" disabled={pending || needsRefresh || expired || !intent.currentProof || Boolean(intent.replacementProof)} onClick={() => void mutate(signal => prove("replacement", signal))}>{intent.replacementProof ? "Replacement wallet verified" : "Verify replacement wallet"}</button>
+      <p>Confirming rotation will end your current session. Reconnect with the replacement wallet after completion.</p>
+      <button type="button" disabled={pending || needsRefresh || expired || intent.status !== "READY" || !proofsValid} onClick={() => void mutate(async signal => { const result = await completeWalletRotation(intent, signal); if (!signal.aborted) await finish(result); })}>Confirm rotation</button>
+      <button type="button" disabled={pending || needsRefresh} onClick={() => void mutate(async signal => { await cancelRotationIntent(intent, signal); if (!signal.aborted) setIntent(null); })}>Cancel rotation</button>
+    </div>}
+  </section>;
 }
-
-function shortAddress(address: string): string {
-  if (address.length <= 12) return address;
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
+function shortAddress(value: string) { return `${value.slice(0, 6)}...${value.slice(-4)}`; }

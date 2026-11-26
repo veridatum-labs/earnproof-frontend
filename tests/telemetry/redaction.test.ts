@@ -30,6 +30,84 @@ describe("redactMessage", () => {
     },
   );
 
+  describe("URL query strings and fragments", () => {
+    it("redacts URLs with tokens in query strings", () => {
+      const url = "https://app.example.com/verify?proof=ABC123&token=secret_jwt_token";
+      const shape = redactMessage(url);
+      expect(shape).toBe("<url>");
+      expect(shape).not.toContain("secret");
+      expect(shape).not.toContain("token");
+    });
+
+    it("redacts URLs with credentials in query strings", () => {
+      const url = "https://api.example.com/check?credential=%7B%22proof%22%3A%22data%22%7D";
+      const shape = redactMessage(url);
+      expect(shape).toBe("<url>");
+      expect(shape).not.toContain("credential");
+    });
+
+    it("redacts URLs with api_key in query strings", () => {
+      const url = "https://external.api.com/resource?api_key=sk_live_abc123def456";
+      const shape = redactMessage(url);
+      expect(shape).toBe("<url>");
+      expect(shape).not.toContain("api_key");
+      expect(shape).not.toContain("sk_live");
+    });
+
+    it("redacts URLs with email in query strings", () => {
+      const url = "https://example.com/verify?email=user%40example.com&code=12345";
+      const shape = redactMessage(url);
+      expect(shape).toBe("<url>");
+      expect(shape).not.toContain("user@example.com");
+    });
+
+    it("redacts URLs with wallet addresses in query strings", () => {
+      const address = "GBXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWX2Z5EE";
+      const url = `https://example.com/verify?wallet=${address}`;
+      const shape = redactMessage(url);
+      expect(shape).toBe("<url>");
+      expect(shape).not.toContain(address);
+    });
+
+    it("redacts URLs with multiple sensitive query params", () => {
+      const url = "https://api.example.com/resource?token=xyz&password=secret&api_key=key123";
+      const shape = redactMessage(url);
+      expect(shape).toBe("<url>");
+      expect(shape).not.toContain("token");
+      expect(shape).not.toContain("password");
+      expect(shape).not.toContain("api_key");
+    });
+
+    it("redacts URLs with fragments containing sensitive data", () => {
+      const url = "https://example.com/page#token=secret";
+      const shape = redactMessage(url);
+      expect(shape).toBe("<url>");
+      expect(shape).not.toContain("secret");
+    });
+
+    it("redacts mixed URL with query string and fragment", () => {
+      const url =
+        "https://example.com/verify?proof=ABC&token=secret#top";
+      const shape = redactMessage(url);
+      expect(shape).toBe("<url>");
+    });
+
+    it("redacts HTTP URLs as well as HTTPS", () => {
+      const url = "http://example.com/verify?token=secret";
+      const shape = redactMessage(url);
+      expect(shape).toBe("<url>");
+      expect(shape).not.toContain("token");
+    });
+
+    it("redacts URLs appearing in error context messages", () => {
+      const message = `Failed to fetch from https://api.example.com/check?token=secret_token: 401 Unauthorized`;
+      const shape = redactMessage(message);
+      expect(shape).not.toContain("secret_token");
+      expect(shape).toContain("Failed to fetch from");
+      expect(shape).toContain("<url>");
+    });
+  });
+
   it("replaces each sensitive shape with a named placeholder", () => {
     expect(redactMessage(`account ${WALLET_ADDRESS} rejected`)).toBe("account <address> rejected");
     expect(redactMessage(`bearer ${BEARER_TOKEN} expired`)).toBe("bearer <token> expired");

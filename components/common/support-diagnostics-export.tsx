@@ -9,19 +9,33 @@ import {
   type SupportBundleFieldKey,
 } from "@/lib/diagnostics/supportBundle";
 import { copyTextToClipboard } from "@/lib/credentials/export";
+import { createBlobURL, revokeBlobURL } from "@/lib/blob-url-manager";
 
+/**
+ * Downloads diagnostics bundle as JSON.
+ * Uses centralized blob URL lifecycle management (#372).
+ */
 function downloadJson(bundle: SupportBundle): void {
   const body = JSON.stringify(bundle, null, 2);
   const blob = new Blob([body], { type: "application/json" });
-  const href = URL.createObjectURL(blob);
+  const { url: href } = createBlobURL(blob, {
+    purposeLabel: "support-diagnostics-export",
+  });
+
   const anchor = document.createElement("a");
   anchor.href = href;
   anchor.download = "earnproof-support-diagnostics.json";
   anchor.rel = "noopener";
   document.body.appendChild(anchor);
   anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(href);
+  document.body.removeChild(anchor);
+
+  try {
+    revokeBlobURL(href);
+  } catch (err) {
+    // Log but don't throw; download already completed
+    console.error("Failed to revoke diagnostics export URL:", err);
+  }
 }
 
 /**

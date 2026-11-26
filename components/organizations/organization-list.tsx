@@ -1,13 +1,14 @@
 "use client";
 
 import { Fragment, useCallback, useState } from "react";
-import { updateOrganization, formatOrganizationStatus, getStatusTone, getOrganization, type LifecycleAction } from "@/lib/api/organizations";
+import { updateOrganization, formatOrganizationStatus, getStatusTone, getOrganization, type LifecycleAction, formatCreatedAt, getCreatedAtForSorting } from "@/lib/api/organizations";
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 import { CursorPagination, type PaginationState } from "@/components/common/cursor-pagination";
 import { ResultsHeading } from "@/components/common/results-heading";
 import { ResolveConflictDialog } from "@/components/forms/resolve-conflict-dialog";
 import { StatusBadge } from "@/components/common/production-ui";
 import { RecentAuthGate } from "@/components/common/recent-auth-gate";
+import { ExternalLink } from "@/components/common/external-link";
 import { useRecentAuth } from "@/lib/auth/recent-auth";
 import { signWithFreighter } from "@/lib/wallet/sign-message";
 import {
@@ -164,7 +165,11 @@ export function OrganizationList({
   const { sortKey, sortDirection, toggleSort, pageItems, page, pageCount, setPage } =
     useDataTableState(organizations, {
       pageSize: 10,
-      getSortValue: (org, key) => (key === "name" ? org.name : org.status),
+      getSortValue: (org, key) => {
+        if (key === "name") return org.name;
+        if (key === "created") return getCreatedAtForSorting(org.createdAt);
+        return org.status;
+      },
     });
 
   if (loading && organizations.length === 0) {
@@ -200,7 +205,12 @@ export function OrganizationList({
             >
               Status
             </DataTableHeadCell>
-            <DataTableHeadCell>Created</DataTableHeadCell>
+            <DataTableHeadCell
+              sortDirection={sortKey === "created" ? sortDirection : undefined}
+              onSort={() => toggleSort("created")}
+            >
+              Created
+            </DataTableHeadCell>
             <DataTableHeadCell>Actions</DataTableHeadCell>
           </DataTableHead>
           {organizations.length === 0 ? (
@@ -351,14 +361,12 @@ function OrganizationRow({
           </div>
           {organization.website && (
             <div className="mt-1 text-xs">
-              <a
+              <ExternalLink
                 href={organization.website}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="text-cyan-300 hover:text-cyan-200 transition"
               >
                 {organization.website}
-              </a>
+              </ExternalLink>
             </div>
           )}
         </div>
@@ -372,8 +380,7 @@ function OrganizationRow({
 
       <DataTableCell>
         <div className="text-slate-400">
-          {/* Using placeholder since creation date is not in API response */}
-          Recently
+          {formatCreatedAt(organization.createdAt)}
         </div>
       </DataTableCell>
 

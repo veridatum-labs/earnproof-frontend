@@ -13,7 +13,8 @@
       "schemaVersion": 1,
       "owner": "lib/storage/index.ts",
       "accessors": [
-        "lib/storage/index.ts"
+        "lib/storage/index.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "Kept until the form is submitted or the draft is discarded.",
       "cleanup": "Removed by clearAllStorage() on logout, account change and 401, and by the form on submit.",
@@ -32,7 +33,8 @@
       "owner": "lib/storage/index.ts",
       "accessors": [
         "lib/storage/index.ts",
-        "app/layout.tsx"
+        "app/layout.tsx",
+        "lib/sessions/logout.ts"
       ],
       "retention": "Kept until the user resets it; browser-scoped.",
       "cleanup": "Removed by clearAllStorage(); invalid or unknown-version values are discarded on read.",
@@ -50,7 +52,8 @@
       "schemaVersion": 1,
       "owner": "lib/storage/proof-drafts.ts",
       "accessors": [
-        "lib/storage/index.ts"
+        "lib/storage/index.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "7 days from last save (expiresAt on each draft).",
       "cleanup": "Expired drafts are dropped on read; removed by clearAllStorage() and clearAllProofDrafts().",
@@ -68,7 +71,8 @@
       "schemaVersion": 1,
       "owner": "lib/i18n/preferences.ts",
       "accessors": [
-        "lib/i18n/preferences.ts"
+        "lib/i18n/preferences.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "Kept until the user resets it.",
       "cleanup": "Invalid values resolve to the default locale on read; removed when the user resets the preference.",
@@ -85,7 +89,8 @@
       "schemaVersion": 1,
       "owner": "lib/i18n/preferences.ts",
       "accessors": [
-        "lib/i18n/preferences.ts"
+        "lib/i18n/preferences.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "Kept until the user resets it.",
       "cleanup": "Invalid values resolve to the default time zone on read; removed when the user resets the preference.",
@@ -102,7 +107,8 @@
       "schemaVersion": 1,
       "owner": "lib/organization-context/store.ts",
       "accessors": [
-        "lib/organization-context/store.ts"
+        "lib/organization-context/store.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "Kept until the user switches organization or signs out.",
       "cleanup": "clearStoredOrganizationId() on organization removal.",
@@ -119,7 +125,8 @@
       "schemaVersion": 1,
       "owner": "lib/api/capability-cache.ts",
       "accessors": [
-        "lib/api/capability-cache.ts"
+        "lib/api/capability-cache.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "5 minutes (CAPABILITY_CACHE_TTL_MS).",
       "cleanup": "Discarded on TTL expiry, malformed data, or a deployment identity change.",
@@ -136,7 +143,8 @@
       "schemaVersion": 1,
       "owner": "lib/wallet-rotation/store.ts",
       "accessors": [
-        "lib/wallet-rotation/store.ts"
+        "lib/wallet-rotation/store.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "Kept as a local audit trail until browser data is cleared.",
       "cleanup": "Invalid shapes are discarded on read.",
@@ -153,7 +161,8 @@
       "schemaVersion": 1,
       "owner": "lib/supported-assets/store.ts",
       "accessors": [
-        "lib/supported-assets/store.ts"
+        "lib/supported-assets/store.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "Kept until browser data is cleared; stand-in until a backend inventory exists.",
       "cleanup": "Invalid shapes are discarded on read.",
@@ -170,7 +179,8 @@
       "schemaVersion": 1,
       "owner": "lib/trusted-sources/store.ts",
       "accessors": [
-        "lib/trusted-sources/store.ts"
+        "lib/trusted-sources/store.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "Kept per account until the user deletes the source.",
       "cleanup": "Invalid shapes are discarded on read; per-account key so another account never sees it.",
@@ -187,7 +197,8 @@
       "schemaVersion": 1,
       "owner": "lib/sessions/store.ts",
       "accessors": [
-        "lib/sessions/store.ts"
+        "lib/sessions/store.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "Revoked entries are listed for a short window, then dropped.",
       "cleanup": "Invalid shapes are discarded on read. Holds device metadata only, never bearer tokens.",
@@ -204,7 +215,8 @@
       "schemaVersion": 1,
       "owner": "lib/invoice-settlement/store.ts",
       "accessors": [
-        "lib/invoice-settlement/store.ts"
+        "lib/invoice-settlement/store.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "Kept per account until browser data is cleared.",
       "cleanup": "Invalid shapes are discarded on read.",
@@ -221,7 +233,8 @@
       "schemaVersion": 1,
       "owner": "lib/invoice-settlement/store.ts",
       "accessors": [
-        "lib/invoice-settlement/store.ts"
+        "lib/invoice-settlement/store.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "Each proof carries expiresAt; kept per account.",
       "cleanup": "Invalid shapes are discarded on read.",
@@ -238,7 +251,8 @@
       "schemaVersion": 1,
       "owner": "lib/proof-sharing/store.ts",
       "accessors": [
-        "lib/proof-sharing/store.ts"
+        "lib/proof-sharing/store.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "Each link carries expiresAt; revoked links stay listed.",
       "cleanup": "Invalid shapes are discarded on read. Only a digest of the share token is stored, never the token.",
@@ -261,7 +275,8 @@
       "schemaVersion": 1,
       "owner": "lib/payment-backfill/store.ts",
       "accessors": [
-        "lib/payment-backfill/store.ts"
+        "lib/payment-backfill/store.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "Kept per account until browser data is cleared.",
       "cleanup": "Invalid shapes are discarded on read.",
@@ -278,7 +293,8 @@
       "schemaVersion": 1,
       "owner": "lib/employment-continuity/store.ts",
       "accessors": [
-        "lib/employment-continuity/store.ts"
+        "lib/employment-continuity/store.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "Each proof carries expiresAt; kept per account.",
       "cleanup": "Invalid shapes are discarded on read.",
@@ -295,7 +311,8 @@
       "schemaVersion": 1,
       "owner": "lib/proof-renewal/store.ts",
       "accessors": [
-        "lib/proof-renewal/store.ts"
+        "lib/proof-renewal/store.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "Kept per account until browser data is cleared.",
       "cleanup": "Invalid shapes are discarded on read.",
@@ -312,7 +329,8 @@
       "schemaVersion": 1,
       "owner": "lib/organization-archival/store.ts",
       "accessors": [
-        "lib/organization-archival/store.ts"
+        "lib/organization-archival/store.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "Each export carries expiresAt (EXPORT_RETENTION_DAYS).",
       "cleanup": "Invalid shapes are discarded on read.",
@@ -329,7 +347,8 @@
       "schemaVersion": 1,
       "owner": "lib/organization-archival/store.ts",
       "accessors": [
-        "lib/organization-archival/store.ts"
+        "lib/organization-archival/store.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "One ISO timestamp per account; the freshness window is enforced by the reader.",
       "cleanup": "Overwritten on each re-authentication. Holds a timestamp only, never a credential.",
@@ -346,7 +365,8 @@
       "schemaVersion": 1,
       "owner": "lib/approvals/store.ts",
       "accessors": [
-        "lib/approvals/store.ts"
+        "lib/approvals/store.ts",
+        "lib/sessions/logout.ts"
       ],
       "retention": "Cached operations are refreshed from the server; kept until cleared.",
       "cleanup": "clearOperations(); invalid shapes are discarded on read.",

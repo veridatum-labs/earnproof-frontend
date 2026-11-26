@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 import { StatusBadge } from "@/components/common/production-ui";
 import { revokeSession, revokeAllOtherSessions, type SessionRecord } from "@/lib/sessions/store";
@@ -11,13 +11,19 @@ export function SessionList({
   sessions,
   loading,
   onSessionsChanged,
+  onCurrentSessionRevoked,
 }: {
   userId: string;
   sessions: SessionRecord[];
   loading: boolean;
   onSessionsChanged: (sessions: SessionRecord[]) => void;
+  onCurrentSessionRevoked?: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const busy = useRef(false);
+  const lifetime = useRef<AbortController | null>(null);
+  useEffect(() => { const controller = new AbortController(); lifetime.current = controller; return () => controller.abort(); }, [userId]);
   const [confirmRevoke, setConfirmRevoke] = useState<{
     id: string;
     deviceLabel: string;
@@ -33,16 +39,21 @@ export function SessionList({
     setConfirmRevoke({ id: session.id, deviceLabel: session.deviceLabel });
   };
 
-  const handleConfirmRevoke = () => {
-    if (!confirmRevoke) return;
+  const handleConfirmRevoke = async () => {
+    if (!confirmRevoke || busy.current) return;
+    busy.current = true; setPending(true);
     setError(null);
     try {
-      revokeSession(userId, confirmRevoke.id);
+      const signal = lifetime.current!.signal;
+      const result = await revokeSession(userId, confirmRevoke.id, signal, sessions.some(item => item.id === confirmRevoke.id && item.isCurrent));
+      if (signal.aborted) return;
+      if (result.currentSessionRevoked) { onCurrentSessionRevoked?.(); return; }
       onSessionsChanged(sessions.filter((s) => s.id !== confirmRevoke.id));
     } catch {
       setError("Failed to revoke session. It may have already been revoked.");
     } finally {
       setConfirmRevoke(null);
+      busy.current = false; setPending(false);
       triggerRef.current?.focus();
     }
   };
@@ -57,15 +68,20 @@ export function SessionList({
     setConfirmRevokeAll(true);
   };
 
-  const handleConfirmRevokeAll = () => {
+  const handleConfirmRevokeAll = async () => {
+    if (busy.current) return;
+    busy.current = true; setPending(true);
     setError(null);
     try {
-      revokeAllOtherSessions(userId);
+      const signal = lifetime.current!.signal;
+      await revokeAllOtherSessions(userId, signal);
+      if (signal.aborted) return;
       onSessionsChanged(sessions.filter((s) => s.isCurrent));
     } catch {
       setError("Failed to revoke sessions. Please try again.");
     } finally {
       setConfirmRevokeAll(false);
+      busy.current = false; setPending(false);
       revokeAllTriggerRef.current?.focus();
     }
   };
@@ -84,7 +100,8 @@ export function SessionList({
   }
 
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-3" aria-busy={pending}>
+      {pending && <p role="status">Updating server sessions...</p>}
       {error && (
         <div className="rounded-md border border-rose-300/30 bg-rose-300/10 p-3">
           <p className="text-sm text-rose-200" role="alert">
@@ -93,7 +110,7 @@ export function SessionList({
         </div>
       )}
 
-      {otherSessions.length > 0 && (
+      {otherSessions.length > 0 && !pending && (
         <div className="flex justify-end">
           <button
             onClick={(e) => handleRevokeAllClick(e.currentTarget)}
@@ -123,10 +140,10 @@ export function SessionList({
               <StatusBadge tone="success">This device</StatusBadge>
             )}
           </div>
-          <div className="text-slate-400">{formatDateTime(session.createdAt)}</div>
-          <div className="text-slate-400">{formatDateTime(session.lastUsedAt)}</div>
+          <div className="text-slate-400">{session.createdAt ? formatDateTime(session.createdAt) : "Unknown"}</div>
+          <div className="text-slate-400">{session.lastUsedAt ? formatDateTime(session.lastUsedAt) : "Unknown"}</div>
           <div>
-            {!session.isCurrent && (
+            {!pending && !loading && (!session.isCurrent || onCurrentSessionRevoked) && (
               <button
                 onClick={(e) => handleRevokeClick(session, e.currentTarget)}
                 className="h-8 rounded border border-rose-300/30 px-3 text-xs font-medium text-rose-200 hover:bg-rose-300/10 transition"

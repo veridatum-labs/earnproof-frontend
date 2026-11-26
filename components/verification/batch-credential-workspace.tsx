@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { apiClient } from "@/lib/api/client";
+import { createBlobURL, revokeBlobURL } from "@/lib/blob-url-manager";
 import { BatchCredentialDropZone } from "./batch-credential-drop-zone";
 import {
   BatchCredentialItemRow,
@@ -267,14 +268,23 @@ export function BatchCredentialWorkspace() {
     const blob = new Blob([JSON.stringify(payload, null, 2)], {
       type: "application/json",
     });
-    const url = URL.createObjectURL(blob);
+    const { url } = createBlobURL(blob, {
+      purposeLabel: "batch-verification-failures",
+    });
+
     const link = document.createElement("a");
     link.href = url;
     link.download = `batch-verification-failures-${Date.now()}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+
+    try {
+      revokeBlobURL(url);
+    } catch (err) {
+      // Log but don't throw; download already completed
+      console.error("Failed to revoke batch failures URL:", err);
+    }
   }
 
   const canVerify =

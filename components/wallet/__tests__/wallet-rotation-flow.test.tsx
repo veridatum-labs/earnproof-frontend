@@ -1,225 +1,55 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { WalletRotationFlow } from "../wallet-rotation-flow";
+import { getRotationIntent, createRotationIntent, createRotationChallenge, submitRotationProof, completeWalletRotation, cancelRotationIntent } from "@/lib/wallet-rotation/store";
 import { connectFreighterWallet, signFreighterMessage } from "@/lib/wallet/freighter-sign";
-import { createAuthChallenge, verifyAuthChallenge } from "@/lib/api/auth";
-import { completeWalletRotation } from "@/lib/wallet-rotation/store";
-import { readStoredSession, storeSession } from "@/lib/session";
-
-jest.mock("@/lib/wallet/freighter-sign", () => ({
-  connectFreighterWallet: jest.fn(),
-  signFreighterMessage: jest.fn(),
-}));
-jest.mock("@/lib/api/auth", () => ({
-  createAuthChallenge: jest.fn(),
-  verifyAuthChallenge: jest.fn(),
-}));
-
-const mockConnect = connectFreighterWallet as jest.MockedFunction<typeof connectFreighterWallet>;
-const mockSign = signFreighterMessage as jest.MockedFunction<typeof signFreighterMessage>;
-const mockCreateChallenge = createAuthChallenge as jest.MockedFunction<typeof createAuthChallenge>;
-const mockVerifyChallenge = verifyAuthChallenge as jest.MockedFunction<typeof verifyAuthChallenge>;
-
-const CURRENT_WALLET = "GCURRENTWALLET0000000000000000000000000000000000000001";
-const REPLACEMENT_WALLET = "GREPLACEMENTWALLET000000000000000000000000000000000002";
-
-function futureChallenge(id: string, minutesFromNow = 5) {
-  return {
-    id,
-    message: `challenge-${id}`,
-    expiresAt: new Date(Date.now() + minutesFromNow * 60_000).toISOString(),
-  };
-}
-
+import { clearStoredSession } from "@/lib/session";
+import { clearAllStorage } from "@/lib/storage";
+import { CURRENT, REPLACEMENT, makeIntent, makeProof, makeChallenge } from "@/tests/fixtures/wallet-rotation-api";
+jest.mock("@/lib/wallet-rotation/store", () => ({ ...jest.requireActual("@/lib/wallet-rotation/store"), getRotationIntent: jest.fn(), createRotationIntent: jest.fn(), createRotationChallenge: jest.fn(), submitRotationProof: jest.fn(), completeWalletRotation: jest.fn(), cancelRotationIntent: jest.fn() }));
+jest.mock("@/lib/wallet/freighter-sign", () => ({ connectFreighterWallet: jest.fn(), signFreighterMessage: jest.fn() }));
+jest.mock("@/lib/session", () => ({ clearStoredSession: jest.fn() }));
+jest.mock("@/lib/storage", () => ({ clearAllStorage: jest.fn() }));
+const ready = () => makeIntent({ status: "READY", version: 3, currentProof: makeProof("current"), replacementProof: makeProof("replacement") });
 beforeEach(() => {
-  window.localStorage.clear();
-  mockConnect.mockReset();
-  mockSign.mockReset();
-  mockCreateChallenge.mockReset();
-  mockVerifyChallenge.mockReset();
-  mockVerifyChallenge.mockResolvedValue({
-    user: { id: "u1", walletAddress: "x", role: "MEMBER" },
-    session: { token: "t", tokenType: "Bearer" },
-  });
+  jest.clearAllMocks(); jest.mocked(getRotationIntent).mockResolvedValue(makeIntent()); jest.mocked(createRotationIntent).mockResolvedValue(makeIntent());
+  jest.mocked(createRotationChallenge).mockImplementation(async (_intent, role) => makeChallenge(role));
+  jest.mocked(submitRotationProof).mockImplementation(async (intent, challenge) => challenge.role === "current" ? { ...intent, version: 2, currentProof: makeProof("current") } : ready());
+  jest.mocked(signFreighterMessage).mockResolvedValue("synthetic-signature"); jest.mocked(cancelRotationIntent).mockResolvedValue();
+  jest.mocked(completeWalletRotation).mockResolvedValue({ ...ready(), status: "COMPLETED", version: 4, completedAt: "2026-11-18T00:00:00.000Z" });
 });
-
-describe("WalletRotationFlow", () => {
-  it("verifies the current wallet via a real challenge/sign/verify round trip", async () => {
-    mockConnect.mockResolvedValue(CURRENT_WALLET);
-    mockCreateChallenge.mockResolvedValue(futureChallenge("c1"));
-    mockSign.mockResolvedValue("sig1");
-
-    render(
-      <WalletRotationFlow currentWalletAddress={CURRENT_WALLET} onRotationCompleted={jest.fn()} />,
-    );
-
-    fireEvent.click(screen.getAllByRole("button", { name: "Verify" })[0]!);
-
-    await waitFor(() => {
-      expect(mockVerifyChallenge).toHaveBeenCalledWith(
-        { challengeId: "c1", walletAddress: CURRENT_WALLET, signature: "sig1" },
-        expect.anything(),
-      );
-    });
-    expect(screen.getAllByText("Verified")).toHaveLength(1);
-  });
-
-  it("rejects verification when the connected wallet does not match the current account wallet (wrong-wallet case)", async () => {
-    mockConnect.mockResolvedValue("GDIFFERENTWALLET00000000000000000000000000000000000003");
-
-    render(
-      <WalletRotationFlow currentWalletAddress={CURRENT_WALLET} onRotationCompleted={jest.fn()} />,
-    );
-
-    fireEvent.click(screen.getAllByRole("button", { name: "Verify" })[0]!);
-
-    await waitFor(() => {
-      expect(screen.getByText(/does not match the current account wallet/)).toBeInTheDocument();
-    });
-    expect(mockCreateChallenge).not.toHaveBeenCalled();
-  });
-
-  it("shows a cancellation-friendly error when the wallet declines to sign", async () => {
-    mockConnect.mockResolvedValue(CURRENT_WALLET);
-    mockCreateChallenge.mockResolvedValue(futureChallenge("c1"));
-    mockSign.mockResolvedValue(null);
-
-    render(
-      <WalletRotationFlow currentWalletAddress={CURRENT_WALLET} onRotationCompleted={jest.fn()} />,
-    );
-
-    fireEvent.click(screen.getAllByRole("button", { name: "Verify" })[0]!);
-
-    await waitFor(() => {
-      expect(screen.getByText(/did not return a signature/i)).toBeInTheDocument();
-    });
-  });
-
-  it("only enables replacement verification after the current wallet is verified", () => {
-    render(
-      <WalletRotationFlow currentWalletAddress={CURRENT_WALLET} onRotationCompleted={jest.fn()} />,
-    );
-
-    const buttons = screen.getAllByRole("button", { name: "Verify" });
-    expect(buttons[1]).toBeDisabled();
-  });
-
-  it("rejects a replacement wallet identical to the current wallet (negative case)", async () => {
-    mockConnect.mockResolvedValueOnce(CURRENT_WALLET); // step 1
-    mockCreateChallenge.mockResolvedValue(futureChallenge("c1"));
-    mockSign.mockResolvedValue("sig1");
-
-    render(
-      <WalletRotationFlow currentWalletAddress={CURRENT_WALLET} onRotationCompleted={jest.fn()} />,
-    );
-    fireEvent.click(screen.getAllByRole("button", { name: "Verify" })[0]!);
-    await waitFor(() => expect(screen.getAllByText("Verified")).toHaveLength(1));
-
-    mockConnect.mockResolvedValueOnce(CURRENT_WALLET); // step 2: same wallet again
-    mockCreateChallenge.mockResolvedValue(futureChallenge("c2"));
-    fireEvent.click(screen.getByRole("button", { name: "Verify" }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/must be different from the current wallet/i)).toBeInTheDocument();
-    });
-  });
-
-  it("rejects a replacement wallet that is already assigned to another account (conflict case)", async () => {
-    completeWalletRotation("GOLDACCOUNTWALLET0000000000000000000000000000000000004", REPLACEMENT_WALLET);
-
-    mockConnect.mockResolvedValueOnce(CURRENT_WALLET);
-    mockCreateChallenge.mockResolvedValue(futureChallenge("c1"));
-    mockSign.mockResolvedValue("sig1");
-
-    render(
-      <WalletRotationFlow currentWalletAddress={CURRENT_WALLET} onRotationCompleted={jest.fn()} />,
-    );
-    fireEvent.click(screen.getAllByRole("button", { name: "Verify" })[0]!);
-    await waitFor(() => expect(screen.getAllByText("Verified")).toHaveLength(1));
-
-    mockConnect.mockResolvedValueOnce(REPLACEMENT_WALLET);
-    mockCreateChallenge.mockResolvedValue(futureChallenge("c2"));
-    fireEvent.click(screen.getByRole("button", { name: "Verify" }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/already assigned to another account/i)).toBeInTheDocument();
-    });
-  });
-
-  it("completes a full rotation end to end and clears the session", async () => {
-    storeSession({
-      token: "old",
-      user: { id: "u1", walletAddress: CURRENT_WALLET, walletHash: "h1", role: "WORKER" },
-    });
-    expect(readStoredSession()).not.toBeNull();
-
-    mockConnect.mockResolvedValueOnce(CURRENT_WALLET);
-    mockCreateChallenge.mockResolvedValueOnce(futureChallenge("c1"));
-    mockSign.mockResolvedValueOnce("sig1");
-
-    const onCompleted = jest.fn();
-    render(
-      <WalletRotationFlow currentWalletAddress={CURRENT_WALLET} onRotationCompleted={onCompleted} />,
-    );
-    fireEvent.click(screen.getAllByRole("button", { name: "Verify" })[0]!);
-    await waitFor(() => expect(screen.getAllByText("Verified")).toHaveLength(1));
-
-    mockConnect.mockResolvedValueOnce(REPLACEMENT_WALLET);
-    mockCreateChallenge.mockResolvedValueOnce(futureChallenge("c2"));
-    mockSign.mockResolvedValueOnce("sig2");
-    fireEvent.click(screen.getByRole("button", { name: "Verify" }));
-    await waitFor(() => expect(screen.getAllByText("Verified")).toHaveLength(2));
-
-    fireEvent.click(screen.getByRole("button", { name: "Confirm rotation" }));
-
-    await waitFor(() => {
-      expect(onCompleted).toHaveBeenCalledWith(REPLACEMENT_WALLET);
-    });
-    expect(readStoredSession()).toBeNull();
-    expect(screen.getByText("Wallet Rotated")).toBeInTheDocument();
-  });
-
-  it("blocks completion when a challenge has expired between verification and confirmation (replay/expiry case)", async () => {
-    mockConnect.mockResolvedValueOnce(CURRENT_WALLET);
-    // Already-expired challenge.
-    mockCreateChallenge.mockResolvedValueOnce({
-      id: "c1",
-      message: "m1",
-      expiresAt: new Date(Date.now() - 60_000).toISOString(),
-    });
-    mockSign.mockResolvedValueOnce("sig1");
-
-    render(
-      <WalletRotationFlow currentWalletAddress={CURRENT_WALLET} onRotationCompleted={jest.fn()} />,
-    );
-    fireEvent.click(screen.getAllByRole("button", { name: "Verify" })[0]!);
-    await waitFor(() => expect(screen.getAllByText("Verified")).toHaveLength(1));
-
-    mockConnect.mockResolvedValueOnce(REPLACEMENT_WALLET);
-    mockCreateChallenge.mockResolvedValueOnce(futureChallenge("c2"));
-    mockSign.mockResolvedValueOnce("sig2");
-    fireEvent.click(screen.getByRole("button", { name: "Verify" }));
-    await waitFor(() => expect(screen.getAllByText("Verified")).toHaveLength(2));
-
-    fireEvent.click(screen.getByRole("button", { name: "Confirm rotation" }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/challenges has expired/i)).toBeInTheDocument();
-    });
-  });
-
-  it("cancel resets the flow back to the start", async () => {
-    mockConnect.mockResolvedValue(CURRENT_WALLET);
-    mockCreateChallenge.mockResolvedValue(futureChallenge("c1"));
-    mockSign.mockResolvedValue("sig1");
-
-    render(
-      <WalletRotationFlow currentWalletAddress={CURRENT_WALLET} onRotationCompleted={jest.fn()} />,
-    );
-    fireEvent.click(screen.getAllByRole("button", { name: "Verify" })[0]!);
-    await waitFor(() => expect(screen.getAllByText("Verified")).toHaveLength(1));
-
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-
-    expect(screen.queryByText("Verified")).not.toBeInTheDocument();
-  });
+it("recovers both server proofs after navigation without signing again", async () => {
+  jest.mocked(getRotationIntent).mockResolvedValue(ready()); render(<WalletRotationFlow currentWalletAddress={CURRENT} onRotationCompleted={jest.fn()} />);
+  await screen.findByRole("button", { name: "Current wallet verified" }); expect(screen.getByRole("button", { name: "Replacement wallet verified" })).toBeDisabled(); expect(screen.getByRole("button", { name: "Confirm rotation" })).toBeEnabled(); expect(signFreighterMessage).not.toHaveBeenCalled();
+});
+it("requires both wallet proofs and server completion before logout or success", async () => {
+  const done = jest.fn(); jest.mocked(connectFreighterWallet).mockResolvedValueOnce(CURRENT).mockResolvedValueOnce(REPLACEMENT);
+  render(<WalletRotationFlow currentWalletAddress={CURRENT} onRotationCompleted={done} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Verify current wallet" })); await screen.findByRole("button", { name: "Current wallet verified" });
+  fireEvent.click(screen.getByRole("button", { name: "Verify replacement wallet" })); await screen.findByRole("button", { name: "Replacement wallet verified" });
+  expect(done).not.toHaveBeenCalled(); expect(clearStoredSession).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Confirm rotation" })); await waitFor(() => expect(done).toHaveBeenCalledWith(REPLACEMENT)); expect(clearStoredSession).toHaveBeenCalledWith("wallet_changed"); expect(clearAllStorage).toHaveBeenCalled();
+});
+it("keeps ambiguous completion failures blocked until server recovery", async () => {
+  jest.mocked(getRotationIntent).mockResolvedValue(ready()); jest.mocked(completeWalletRotation).mockRejectedValue(new Error("Conflict")); const done = jest.fn(); render(<WalletRotationFlow currentWalletAddress={CURRENT} onRotationCompleted={done} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Confirm rotation" })); await screen.findByRole("alert"); expect(done).not.toHaveBeenCalled(); expect(clearStoredSession).not.toHaveBeenCalled(); expect(screen.getByRole("button", { name: "Confirm rotation" })).toBeDisabled();
+  jest.mocked(getRotationIntent).mockResolvedValue(null); fireEvent.click(screen.getByRole("button", { name: "Refresh rotation state" })); await screen.findByRole("button", { name: "Start rotation" });
+});
+it("does not submit a proof after the wallet rejects signing", async () => {
+  jest.mocked(connectFreighterWallet).mockResolvedValue(CURRENT); jest.mocked(signFreighterMessage).mockResolvedValue(null); render(<WalletRotationFlow currentWalletAddress={CURRENT} onRotationCompleted={jest.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Verify current wallet" })); await screen.findByRole("alert"); expect(submitRotationProof).not.toHaveBeenCalled();
+});
+it("creates a new server intent rather than recording local reassignment", async () => {
+  jest.mocked(getRotationIntent).mockResolvedValue(null); render(<WalletRotationFlow currentWalletAddress={CURRENT} onRotationCompleted={jest.fn()} />);
+  fireEvent.change(await screen.findByLabelText("Replacement wallet address"), { target: { value: REPLACEMENT } }); fireEvent.click(screen.getByRole("button", { name: "Start rotation" })); await screen.findByRole("button", { name: "Verify current wallet" });
+  expect(createRotationIntent).toHaveBeenCalledWith(CURRENT, REPLACEMENT, expect.any(String), expect.any(AbortSignal)); expect(clearStoredSession).not.toHaveBeenCalled();
+});
+it("cancels through the server before showing a new intent form", async () => {
+  render(<WalletRotationFlow currentWalletAddress={CURRENT} onRotationCompleted={jest.fn()} />); fireEvent.click(await screen.findByRole("button", { name: "Cancel rotation" })); await screen.findByRole("button", { name: "Start rotation" }); expect(cancelRotationIntent).toHaveBeenCalledWith(makeIntent(), expect.any(AbortSignal));
+});
+it("aborts recovery on unmount and prevents late wallet prompts from sending proofs", async () => {
+  let connect!: (value: string) => void; jest.mocked(connectFreighterWallet).mockImplementationOnce(() => new Promise(resolve => { connect = resolve; }));
+  const view = render(<WalletRotationFlow currentWalletAddress={CURRENT} onRotationCompleted={jest.fn()} />); fireEvent.click(await screen.findByRole("button", { name: "Verify current wallet" })); const signal = jest.mocked(getRotationIntent).mock.calls[0][1]; view.unmount(); expect(signal?.aborted).toBe(true); connect(CURRENT); await waitFor(() => expect(createRotationChallenge).not.toHaveBeenCalled());
+});
+it("disables completion when a recovered proof has expired", async () => {
+  jest.mocked(getRotationIntent).mockResolvedValue({ ...ready(), currentProof: { ...makeProof("current"), expiresAt: "2000-01-01T00:00:00.000Z" } }); render(<WalletRotationFlow currentWalletAddress={CURRENT} onRotationCompleted={jest.fn()} />); expect(await screen.findByRole("button", { name: "Confirm rotation" })).toBeDisabled();
 });

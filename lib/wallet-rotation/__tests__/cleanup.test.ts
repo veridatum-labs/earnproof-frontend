@@ -1,0 +1,25 @@
+import { clearRotatedAccount } from "../cleanup";
+import { clearStoredSession } from "@/lib/session";
+import { clearPendingRequests } from "@/lib/network/request-dedup";
+jest.mock("@/lib/session", () => ({ clearStoredSession: jest.fn() }));
+jest.mock("@/lib/network/request-dedup", () => ({ clearPendingRequests: jest.fn() }));
+jest.mock("@/lib/storage", () => ({ clearAllStorage: jest.fn() }));
+it("clears legacy protected stores and waits for cache deletion before redirecting", async () => {
+  localStorage.setItem("earnproof.wallet-rotations", "synthetic");
+  sessionStorage.setItem("earnproof:protected", "synthetic");
+  localStorage.setItem("unrelated", "keep");
+  let release!: (value: boolean) => void;
+  const cache = { keys: jest.fn().mockResolvedValue(["protected"]), delete: jest.fn(() => new Promise<boolean>(resolve => { release = resolve; })) };
+  Object.defineProperty(window, "caches", { configurable: true, value: cache });
+  let finished = false;
+  const cleanup = clearRotatedAccount().then(() => { finished = true; });
+  await Promise.resolve(); await Promise.resolve();
+  expect(finished).toBe(false);
+  release(true); await cleanup;
+  expect(clearStoredSession).toHaveBeenCalledWith("wallet_changed");
+  expect(clearPendingRequests).toHaveBeenCalled();
+  expect(localStorage.getItem("earnproof.wallet-rotations")).toBeNull();
+  expect(sessionStorage.getItem("earnproof:protected")).toBeNull();
+  expect(localStorage.getItem("unrelated")).toBe("keep");
+  Reflect.deleteProperty(window, "caches");
+});

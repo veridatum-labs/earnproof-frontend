@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { VerificationWidgetGate } from "@/components/verification/embed/verification-widget-gate";
 import { isApprovedProofId } from "@/lib/validation/qr-payload";
+import { parseEmbedAllowedParentOrigins } from "@/lib/validation/env";
+import type { EmbedParentOriginConfig } from "@/lib/security/embed-parent-origin";
 
 export const metadata: Metadata = {
   title: "EarnProof verification widget",
@@ -59,16 +61,28 @@ function InvalidIdShell() {
  * `components/verification/embed/verification-widget.tsx` for the full
  * trust-boundary contract (no bearer credentials, no private credential
  * JSON, no postMessage listener, id validated against the same allow-list
- * used for QR/URL proof-id input elsewhere in this app).
+ * used for QR/URL proof-id input elsewhere in this app, and parent origin
+ * validated against a configured allow-list — issue #368).
  */
 export default function EmbedVerifyPage({ params }: { params: { id: string } }) {
   const proofId = params.id?.trim() ?? "";
+
+  // Build parent-origin config from environment. An empty allow-list means
+  // the widget cannot be embedded (renders denied state when accessed via
+  // iframe), but the public /embed route itself stays online for
+  // standalone verification.
+  const allowedParentOrigins = parseEmbedAllowedParentOrigins();
+  const parentOriginConfig: EmbedParentOriginConfig = {
+    allowedParentOrigins,
+    deniedEmbeddingBehavior: "deny",
+    strictMessageValidation: true,
+  };
 
   return (
     <div className="flex min-h-screen items-start justify-center bg-slate-950 p-3 sm:p-4">
       <main aria-label="EarnProof proof verification" id="main-content">
         {isApprovedProofId(proofId) ? (
-          <VerificationWidgetGate proofId={proofId} />
+          <VerificationWidgetGate proofId={proofId} parentOriginConfig={parentOriginConfig} />
         ) : (
           <InvalidIdShell />
         )}

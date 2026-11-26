@@ -1,7 +1,9 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { TrustedSourceManagement } from "../trusted-source-management";
 import { getIssuers } from "@/lib/api/issuers";
-import { storeSession } from "@/lib/session";
+import { storeSession, resetSessionForTests, type SessionUser } from "@/lib/session";
+import { listTrustedSources } from "@/lib/trusted-sources/store";
+jest.mock("@/lib/trusted-sources/store", () => ({ listTrustedSources: jest.fn().mockResolvedValue([]) }));
 
 jest.mock("@/lib/api/issuers", () => ({
   getIssuers: jest.fn(),
@@ -9,12 +11,14 @@ jest.mock("@/lib/api/issuers", () => ({
 const mockGetIssuers = getIssuers as jest.MockedFunction<typeof getIssuers>;
 
 
-function setSession(role: string, userId = "user-1") {
-  storeSession({ token: "tok", user: { id: userId, role } });
+function setSession(role: SessionUser["role"], userId = "user-1") {
+  storeSession({ token: "tok", user: { id: userId, role, walletAddress: "synthetic-wallet", walletHash: "synthetic-hash" } });
 }
 
 beforeEach(() => {
   window.localStorage.clear();
+  jest.clearAllMocks();
+  resetSessionForTests();
   mockGetIssuers.mockReset();
   mockGetIssuers.mockResolvedValue([
     { id: "iss-1", name: "Acme Issuer", status: "ACTIVE" },
@@ -30,7 +34,7 @@ describe("TrustedSourceManagement authorization gate (#135)", () => {
   });
 
   it("shows an access-restricted message for a non-admin, non-issuer role", () => {
-    setSession("VIEWER");
+    setSession("WORKER");
 
     render(<TrustedSourceManagement />);
 
@@ -39,13 +43,14 @@ describe("TrustedSourceManagement authorization gate (#135)", () => {
   });
 
   it("does not invoke the issuer-loading API call for an unauthorized session", async () => {
-    setSession("VIEWER");
+    setSession("WORKER");
 
     render(<TrustedSourceManagement />);
 
     // Give any stray effect a tick to fire, then assert it never did.
     await new Promise((r) => setTimeout(r, 0));
     expect(mockGetIssuers).not.toHaveBeenCalled();
+    expect(listTrustedSources).not.toHaveBeenCalled();
   });
 
   it("renders the management UI for an ADMIN session", async () => {
@@ -87,7 +92,7 @@ describe("TrustedSourceManagement authorization gate (#135)", () => {
     render(<TrustedSourceManagement />);
 
     await waitFor(() => {
-      expect(screen.getByText("Failed to load issuers. Please try again.")).toBeInTheDocument();
+      expect(screen.getByText("Failed to load server trusted sources. Select an organization and refresh.")).toBeInTheDocument();
     });
   });
 });
