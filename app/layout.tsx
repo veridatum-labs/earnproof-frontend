@@ -64,6 +64,13 @@ export const metadata: Metadata = {
     shortcut: "/logo.svg",
     apple: "/logo.svg",
   },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
+    viewportFit: "cover", // Support for notched devices
+  },
 };
 
 // Nonce-based CSP requires request-time rendering so Next can tag its

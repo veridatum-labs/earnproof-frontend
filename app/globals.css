@@ -29,6 +29,46 @@ body {
   margin: 0;
 }
 
+/* Mobile safe area support for notched and rounded-corner devices.
+   Uses viewport-fit=cover and safe-area-inset to ensure content isn't
+   obscured by system UI (notches, home indicators, rounded corners). */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0, env(safe-area-inset-left));
+    padding-right: max(0, env(safe-area-inset-right));
+    padding-top: max(0, env(safe-area-inset-top));
+    padding-bottom: max(0, env(safe-area-inset-bottom));
+  }
+
+  /* Ensure header and footer respect safe areas */
+  header, [role="banner"] {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+    padding-left: max(0.5rem, env(safe-area-inset-left));
+    padding-right: max(0.5rem, env(safe-area-inset-right));
+  }
+
+  footer, [role="contentinfo"] {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    padding-left: max(0.5rem, env(safe-area-inset-left));
+    padding-right: max(0.5rem, env(safe-area-inset-right));
+  }
+
+  /* Ensure form inputs remain visible and accessible with virtual keyboards */
+  input:focus,
+  textarea:focus {
+    /* Scroll focused input into view, accounting for virtual keyboard height */
+    scroll-margin-bottom: max(4rem, calc(var(--keyboard-height, 280px) + 1rem));
+    scroll-margin-top: max(1rem, env(safe-area-inset-top));
+  }
+
+  /* Primary action buttons should not be hidden by system UI */
+  button[type="submit"],
+  button.primary,
+  [role="button"].primary {
+    margin-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+}
+
 button,
 a,
 input,
